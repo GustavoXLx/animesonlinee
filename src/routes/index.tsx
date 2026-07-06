@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Star, Play, Menu, Bell, Home, Compass, Bookmark, User } from "lucide-react";
+import { Search, Star, Play, Menu, Bell, Home as HomeIcon, Compass, Bookmark, User } from "lucide-react";
 import { animes } from "@/lib/animes";
 
 export const Route = createFileRoute("/")({
