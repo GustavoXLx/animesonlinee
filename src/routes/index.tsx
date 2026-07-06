@@ -128,7 +128,7 @@ function Home() {
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-neutral-950/95 backdrop-blur border-t border-white/5">
         <div className="grid grid-cols-4 py-2">
           {[
-            { i: Home, l: "Início" },
+            { i: HomeIcon, l: "Início" },
             { i: Compass, l: "Explorar" },
             { i: Bookmark, l: "Minha lista" },
             { i: User, l: "Perfil" },
