@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "AniStream — Descubra seu próximo anime" },
+      { name: "description", content: "Assista aos melhores animes online. Novos episódios toda semana." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "AniStream — Descubra seu próximo anime" },
+      { property: "og:description", content: "Assista aos melhores animes online. Novos episódios toda semana." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "AniStream — Descubra seu próximo anime" },
+      { name: "twitter:description", content: "Assista aos melhores animes online. Novos episódios toda semana." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b16c5ee3-a64b-444c-bbc1-f96fbfbf9793/id-preview-c2f8b2d2--39bb0125-250f-4f24-b30f-8dd6ba16770d.lovable.app-1783298424752.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b16c5ee3-a64b-444c-bbc1-f96fbfbf9793/id-preview-c2f8b2d2--39bb0125-250f-4f24-b30f-8dd6ba16770d.lovable.app-1783298424752.png" },
     ],
     links: [
       {
