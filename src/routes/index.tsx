@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Search, Star, Play, Menu, Bell, Home as HomeIcon, Compass, Bookmark, User } from "lucide-react";
 import { animes } from "@/lib/animes";
 
@@ -78,9 +78,9 @@ function Home() {
       {/* Hero */}
       {!q && (
         <section className="px-4 pt-4">
-          <div className={`relative rounded-3xl overflow-hidden h-64 bg-gradient-to-br ${featured.gradient}`}>
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="absolute top-3 left-3 text-6xl opacity-80">{featured.emoji}</div>
+          <div className="relative rounded-3xl overflow-hidden h-64 bg-neutral-900">
+            <img src={featured.cover} alt={featured.title} className="absolute inset-0 w-full h-full object-cover" width={512} height={768} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4">
               <span className="text-[10px] uppercase tracking-widest text-white/80">Em destaque</span>
               <h2 className="text-2xl font-black leading-tight mt-1">{featured.title}</h2>
@@ -159,13 +159,13 @@ function Row({ title, items }: { title: string; items: typeof animes }) {
   );
 }
 
-function AnimeCard({ a }: { a: (typeof animes)[number] }) {
+const AnimeCard = memo(function AnimeCard({ a }: { a: (typeof animes)[number] }) {
   return (
     <div className="group">
-      <div className={`relative aspect-[2/3] rounded-xl overflow-hidden bg-gradient-to-br ${a.gradient}`}>
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute top-2 left-2 text-3xl">{a.emoji}</div>
-        <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[10px] bg-black/60 px-1.5 py-0.5 rounded">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900">
+        <img src={a.cover} alt={a.title} loading="lazy" width={512} height={768} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute bottom-1 right-1.5 flex items-center gap-1 text-[10px] bg-black/70 px-1.5 py-0.5 rounded">
           <Star size={10} className="fill-yellow-400 text-yellow-400" />
           {a.rating}
         </div>
@@ -176,4 +176,5 @@ function AnimeCard({ a }: { a: (typeof animes)[number] }) {
       </div>
     </div>
   );
-}
+});
+
