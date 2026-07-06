@@ -159,13 +159,13 @@ function Row({ title, items }: { title: string; items: typeof animes }) {
   );
 }
 
-function AnimeCard({ a }: { a: (typeof animes)[number] }) {
+const AnimeCard = memo(function AnimeCard({ a }: { a: (typeof animes)[number] }) {
   return (
     <div className="group">
-      <div className={`relative aspect-[2/3] rounded-xl overflow-hidden bg-gradient-to-br ${a.gradient}`}>
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute top-2 left-2 text-3xl">{a.emoji}</div>
-        <div className="absolute bottom-1 right-2 flex items-center gap-1 text-[10px] bg-black/60 px-1.5 py-0.5 rounded">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900">
+        <img src={a.cover} alt={a.title} loading="lazy" width={512} height={768} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute bottom-1 right-1.5 flex items-center gap-1 text-[10px] bg-black/70 px-1.5 py-0.5 rounded">
           <Star size={10} className="fill-yellow-400 text-yellow-400" />
           {a.rating}
         </div>
@@ -176,4 +176,5 @@ function AnimeCard({ a }: { a: (typeof animes)[number] }) {
       </div>
     </div>
   );
-}
+});
+
