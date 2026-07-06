@@ -78,9 +78,9 @@ function Home() {
       {/* Hero */}
       {!q && (
         <section className="px-4 pt-4">
-          <div className={`relative rounded-3xl overflow-hidden h-64 bg-gradient-to-br ${featured.gradient}`}>
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="absolute top-3 left-3 text-6xl opacity-80">{featured.emoji}</div>
+          <div className="relative rounded-3xl overflow-hidden h-64 bg-neutral-900">
+            <img src={featured.cover} alt={featured.title} className="absolute inset-0 w-full h-full object-cover" width={512} height={768} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4">
               <span className="text-[10px] uppercase tracking-widest text-white/80">Em destaque</span>
               <h2 className="text-2xl font-black leading-tight mt-1">{featured.title}</h2>
