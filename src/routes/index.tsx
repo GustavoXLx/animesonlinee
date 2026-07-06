@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Search, Star, Play, Menu, Bell, Home as HomeIcon, Compass, Bookmark, User } from "lucide-react";
 import { animes } from "@/lib/animes";
 
