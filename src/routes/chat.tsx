@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { ArrowLeft, Send, Heart, Smile, X, Reply } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({ meta: [{ title: "Chat" }, { name: "robots", content: "noindex" }] }),
@@ -13,10 +14,18 @@ type Msg = {
   text: string;
   ts: number;
   reactions: string[];
-  replyTo?: string;
+  replyTo?: string | null;
 };
 
-const STORAGE_KEY = "licegu-chat-v1";
+type Row = {
+  id: string;
+  author: "gu" | "li";
+  text: string;
+  reactions: string[] | null;
+  reply_to: string | null;
+  created_at: string;
+};
+
 const MAX_VISIBLE = 30;
 const REACTIONS = ["❤️", "😂", "😍", "😢", "🔥", "👍"];
 
@@ -25,12 +34,15 @@ const AVATARS = {
   li: { name: "bb li", color: "from-pink-400 to-rose-600", initial: "L" },
 } as const;
 
-function loadMsgs(): Msg[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch { return []; }
+function rowToMsg(r: Row): Msg {
+  return {
+    id: r.id,
+    author: r.author,
+    text: r.text,
+    ts: new Date(r.created_at).getTime(),
+    reactions: r.reactions ?? [],
+    replyTo: r.reply_to,
+  };
 }
 
 function ChatPage() {
@@ -42,9 +54,8 @@ function ChatPage() {
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Init
+  // Auth-like gate + load me
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem("chat-unlocked") !== "1") {
@@ -53,18 +64,46 @@ function ChatPage() {
     }
     const saved = sessionStorage.getItem("chat-me") as "gu" | "li" | null;
     if (saved) setMe(saved);
-    setMsgs(loadMsgs());
   }, [nav]);
 
-  // Debounced save: no lag while typing/reacting fast
-  const persist = useCallback((next: Msg[]) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
-    }, 250);
-  }, []);
+  // Fetch + realtime
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (!cancelled && data) setMsgs((data as Row[]).map(rowToMsg));
+    })();
 
-  // Auto-scroll only when a NEW message arrives
+    const channel = supabase
+      .channel("messages-rt")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const m = rowToMsg(payload.new as Row);
+          setMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
+        (payload) => {
+          const m = rowToMsg(payload.new as Row);
+          setMsgs((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [me]);
+
   const lastCount = useRef(0);
   useEffect(() => {
     if (msgs.length !== lastCount.current) {
@@ -78,42 +117,53 @@ function ChatPage() {
     setMe(who);
   }, []);
 
-  const addMessage = useCallback((text: string) => {
-    if (!text.trim() || !me) return;
-    setReplyTo((currentReply) => {
-      setMsgs((prev) => {
-        const m: Msg = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          author: me,
-          text: text.trim(),
-          ts: Date.now(),
-          reactions: [],
-          replyTo: currentReply?.id,
-        };
-        const next = [...prev, m];
-        persist(next);
-        return next;
+  const addMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || !me) return;
+      const replyId = replyTo?.id ?? null;
+      setReplyTo(null);
+      const tempId = "tmp_" + Date.now();
+      const optimistic: Msg = {
+        id: tempId,
+        author: me,
+        text: text.trim(),
+        ts: Date.now(),
+        reactions: [],
+        replyTo: replyId,
+      };
+      setMsgs((p) => [...p, optimistic]);
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({ author: me, text: text.trim(), reply_to: replyId })
+        .select()
+        .single();
+      if (error) {
+        setMsgs((p) => p.filter((x) => x.id !== tempId));
+        return;
+      }
+      const real = rowToMsg(data as Row);
+      setMsgs((p) => {
+        if (p.some((x) => x.id === real.id)) return p.filter((x) => x.id !== tempId);
+        return p.map((x) => (x.id === tempId ? real : x));
       });
-      return null;
-    });
-  }, [me, persist]);
+    },
+    [me, replyTo]
+  );
 
-  const react = useCallback((id: string, emoji: string) => {
-    setMsgs((prev) => {
-      const next = prev.map((m) =>
-        m.id === id ? { ...m, reactions: [...m.reactions, emoji] } : m
-      );
-      persist(next);
-      return next;
-    });
+  const react = useCallback(async (id: string, emoji: string) => {
     setReactingId(null);
-  }, [persist]);
+    if (id.startsWith("tmp_")) return;
+    setMsgs((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, reactions: [...m.reactions, emoji] } : m))
+    );
+    const current = msgs.find((m) => m.id === id);
+    const next = [...(current?.reactions ?? []), emoji];
+    await supabase.from("messages").update({ reactions: next }).eq("id", id);
+  }, [msgs]);
 
   const onScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    if (scrollRef.current.scrollTop < 40) {
-      setShowAll((v) => v || true);
-    }
+    if (scrollRef.current.scrollTop < 40) setShowAll((v) => v || true);
   }, []);
 
   const visible = useMemo(
@@ -245,7 +295,6 @@ function ChatPage() {
   );
 }
 
-/* Composer keeps its own state so typing doesn't re-render the message list */
 const Composer = memo(function Composer({ onSend }: { onSend: (t: string) => void }) {
   const [text, setText] = useState("");
   const submit = () => {
