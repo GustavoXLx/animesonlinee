@@ -19,6 +19,8 @@ export type Database = {
           author: string
           created_at: string
           id: string
+          media_type: string | null
+          media_url: string | null
           reactions: string[]
           reply_to: string | null
           text: string
@@ -27,6 +29,8 @@ export type Database = {
           author: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           reactions?: string[]
           reply_to?: string | null
           text: string
@@ -35,6 +39,8 @@ export type Database = {
           author?: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           reactions?: string[]
           reply_to?: string | null
           text?: string
