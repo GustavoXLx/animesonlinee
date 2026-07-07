@@ -14,7 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          author: string
+          created_at: string
+          id: string
+          reactions: string[]
+          reply_to: string | null
+          text: string
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          id?: string
+          reactions?: string[]
+          reply_to?: string | null
+          text: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          id?: string
+          reactions?: string[]
+          reply_to?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
