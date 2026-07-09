@@ -77,18 +77,26 @@ function ChatPage() {
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
-    (async () => {
+    const other = me === "gu" ? "li" : "gu";
+
+    const refetch = async () => {
       const { data } = await supabase
         .from("messages")
         .select("*")
         .order("created_at", { ascending: true });
-      if (!cancelled && data) setMsgs((data as Row[]).map(rowToMsg));
-    })();
+      if (cancelled || !data) return;
+      const rows = (data as Row[]).map(rowToMsg);
+      setMsgs((prev) => {
+        // keep any optimistic tmp_ msgs not yet in DB
+        const tmp = prev.filter((x) => x.id.startsWith("tmp_"));
+        return [...rows, ...tmp];
+      });
+    };
 
-    const other = me === "gu" ? "li" : "gu";
+    refetch();
 
-    const channel = supabase
-      .channel("chat-room", { config: { presence: { key: me } } })
+    let channel = supabase
+      .channel("chat-room-" + me, { config: { presence: { key: me } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = rowToMsg(payload.new as Row);
         setMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
@@ -104,18 +112,34 @@ function ChatPage() {
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           await channel.track({ at: Date.now() });
+          refetch();
         }
       });
 
+    // Poll as a safety net in case realtime drops silently on mobile
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") refetch();
+    }, 4000);
+
     const onVisibility = () => {
-      if (document.visibilityState === "visible") channel.track({ at: Date.now() });
-      else channel.untrack();
+      if (document.visibilityState === "visible") {
+        refetch();
+        channel.track({ at: Date.now() });
+      } else {
+        channel.untrack();
+      }
     };
+    const onFocus = () => refetch();
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onFocus);
 
     return () => {
       cancelled = true;
+      clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onFocus);
       channel.untrack();
       supabase.removeChannel(channel);
     };
