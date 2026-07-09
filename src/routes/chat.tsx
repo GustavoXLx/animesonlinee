@@ -31,6 +31,7 @@ type Row = {
 };
 
 const MAX_VISIBLE = 30;
+const FETCH_LIMIT = 250;
 const REACTIONS = ["❤️", "😂", "😍", "😢", "🔥", "👍"];
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
 
@@ -83,9 +84,10 @@ function ChatPage() {
       const { data } = await supabase
         .from("messages")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(FETCH_LIMIT);
       if (cancelled || !data) return;
-      const rows = (data as Row[]).map(rowToMsg);
+      const rows = (data as Row[]).reverse().map(rowToMsg);
       setMsgs((prev) => {
         // keep any optimistic tmp_ msgs not yet in DB
         const tmp = prev.filter((x) => x.id.startsWith("tmp_"));
