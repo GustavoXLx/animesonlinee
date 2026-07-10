@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { GamesPanel } from "@/components/games/GamesPanel";
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
 import sticker2 from "@/assets/stickers/sticker_110652.jpg.asset.json";
@@ -72,6 +73,7 @@ function ChatPage() {
   const [otherOnline, setOtherOnline] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  const [showGames, setShowGames] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -349,6 +351,13 @@ function ChatPage() {
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
         <button onClick={() => nav({ to: "/" })} className="p-1"><ArrowLeft size={22} /></button>
+        <button
+          onClick={() => setShowGames(true)}
+          className="p-1.5 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600"
+          aria-label="Jogos"
+        >
+          <Gamepad2 size={16} />
+        </button>
         <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}>
           {otherInfo.initial}
           {otherOnline && (
@@ -492,6 +501,8 @@ function ChatPage() {
         onTyping={emitTyping}
         onOpenStickers={() => setShowStickers(true)}
       />
+
+      <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
     </div>
   );
 }
