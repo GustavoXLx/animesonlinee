@@ -501,6 +501,8 @@ function ChatPage() {
         onTyping={emitTyping}
         onOpenStickers={() => setShowStickers(true)}
       />
+
+      <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
     </div>
   );
 }
