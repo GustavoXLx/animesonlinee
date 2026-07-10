@@ -1,7 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
+import sticker2 from "@/assets/stickers/sticker_110652.jpg.asset.json";
+import sticker3 from "@/assets/stickers/sticker_110704.jpg.asset.json";
+import sticker4 from "@/assets/stickers/sticker_110722.jpg.asset.json";
+import sticker5 from "@/assets/stickers/sticker_110758.jpg.asset.json";
+import sticker6 from "@/assets/stickers/sticker_110825.jpg.asset.json";
+
+const STICKERS = [sticker1, sticker2, sticker3, sticker4, sticker5, sticker6].map((s) => s.url);
 
 export const Route = createFileRoute("/chat")({
   head: () => ({ meta: [{ title: "Chat" }, { name: "robots", content: "noindex" }] }),
@@ -33,7 +42,7 @@ type Row = {
 const MAX_VISIBLE = 30;
 const FETCH_LIMIT = 250;
 const REACTIONS = ["❤️", "😂", "😍", "😢", "🔥", "👍"];
-const SIGNED_URL_TTL = 60 * 60 * 24 * 365; // 1 year
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365;
 
 const AVATARS = {
   gu: { name: "bb gu", color: "from-sky-400 to-indigo-600", initial: "G" },
@@ -61,8 +70,15 @@ function ChatPage() {
   const [reactingId, setReactingId] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [otherOnline, setOtherOnline] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
+  const [newCount, setNewCount] = useState(0);
+  const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const atBottomRef = useRef(true);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -74,7 +90,6 @@ function ChatPage() {
     if (saved) setMe(saved);
   }, [nav]);
 
-  // Data + realtime + presence
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
@@ -89,7 +104,6 @@ function ChatPage() {
       if (cancelled || !data) return;
       const rows = (data as Row[]).reverse().map(rowToMsg);
       setMsgs((prev) => {
-        // keep any optimistic tmp_ msgs not yet in DB
         const tmp = prev.filter((x) => x.id.startsWith("tmp_"));
         return [...rows, ...tmp];
       });
@@ -97,11 +111,26 @@ function ChatPage() {
 
     refetch();
 
-    let channel = supabase
+    const clearOtherTyping = () => {
+      setOtherTyping(false);
+    };
+    let otherTypingTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const channel = supabase
       .channel("chat-room-" + me, { config: { presence: { key: me } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = rowToMsg(payload.new as Row);
-        setMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+        setMsgs((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          if (m.author !== me && !atBottomRef.current) {
+            setNewCount((c) => c + 1);
+          }
+          return [...prev, m];
+        });
+        if (m.author !== me) {
+          setOtherTyping(false);
+          if (otherTypingTimer) clearTimeout(otherTypingTimer);
+        }
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
         const m = rowToMsg(payload.new as Row);
@@ -111,6 +140,13 @@ function ChatPage() {
         const state = channel.presenceState();
         setOtherOnline(Boolean(state[other]?.length));
       })
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if ((payload.payload as { from?: string })?.from === other) {
+          setOtherTyping(true);
+          if (otherTypingTimer) clearTimeout(otherTypingTimer);
+          otherTypingTimer = setTimeout(clearOtherTyping, 3500);
+        }
+      })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           await channel.track({ at: Date.now() });
@@ -118,7 +154,8 @@ function ChatPage() {
         }
       });
 
-    // Poll as a safety net in case realtime drops silently on mobile
+    channelRef.current = channel;
+
     const poll = setInterval(() => {
       if (document.visibilityState === "visible") refetch();
     }, 4000);
@@ -139,37 +176,68 @@ function ChatPage() {
     return () => {
       cancelled = true;
       clearInterval(poll);
+      if (otherTypingTimer) clearTimeout(otherTypingTimer);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("online", onFocus);
       channel.untrack();
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [me]);
+
+  // Track scroll position to decide auto-scroll vs "new messages" badge
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop < 40) setShowAll((v) => v || true);
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    atBottomRef.current = near;
+    setAtBottom(near);
+    if (near) setNewCount(0);
+  }, []);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    endRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+    setNewCount(0);
+  }, []);
 
   const lastCount = useRef(0);
   useEffect(() => {
     if (msgs.length !== lastCount.current) {
+      const prev = lastCount.current;
       lastCount.current = msgs.length;
-      if (me) endRef.current?.scrollIntoView({ behavior: "auto" });
+      if (!me) return;
+      // Only autoscroll if user is near bottom, or if the newest is mine
+      const newest = msgs[msgs.length - 1];
+      if (prev === 0 || atBottomRef.current || newest?.author === me) {
+        endRef.current?.scrollIntoView({ behavior: "auto" });
+      }
     }
-  }, [msgs.length, me]);
+  }, [msgs, me]);
 
   const pickMe = useCallback((who: "gu" | "li") => {
     sessionStorage.setItem("chat-me", who);
     setMe(who);
   }, []);
 
+  const emitTyping = useCallback(() => {
+    if (!me || !channelRef.current) return;
+    channelRef.current.send({ type: "broadcast", event: "typing", payload: { from: me } });
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {}, 2000);
+  }, [me]);
+
   const sendMessage = useCallback(
-    async (opts: { text?: string; file?: File }) => {
+    async (opts: { text?: string; file?: File; stickerUrl?: string }) => {
       if (!me) return;
       const text = (opts.text ?? "").trim();
-      if (!text && !opts.file) return;
+      if (!text && !opts.file && !opts.stickerUrl) return;
       const replyId = replyTo?.id ?? null;
       setReplyTo(null);
 
-      let mediaUrl: string | null = null;
-      let mediaType: string | null = null;
+      let mediaUrl: string | null = opts.stickerUrl ?? null;
+      let mediaType: string | null = opts.stickerUrl ? "sticker" : null;
 
       const tempId = "tmp_" + Date.now() + Math.random().toString(36).slice(2, 6);
       const localPreview = opts.file ? URL.createObjectURL(opts.file) : null;
@@ -180,8 +248,8 @@ function ChatPage() {
         ts: Date.now(),
         reactions: [],
         replyTo: replyId,
-        mediaUrl: localPreview,
-        mediaType: opts.file?.type.startsWith("video") ? "video" : opts.file ? "image" : null,
+        mediaUrl: localPreview ?? mediaUrl,
+        mediaType: opts.file ? (opts.file.type.startsWith("video") ? "video" : "image") : mediaType,
       };
       setMsgs((p) => [...p, optimistic]);
 
@@ -240,11 +308,6 @@ function ChatPage() {
     [msgs]
   );
 
-  const onScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    if (scrollRef.current.scrollTop < 40) setShowAll((v) => v || true);
-  }, []);
-
   const visible = useMemo(
     () => (showAll ? msgs : msgs.slice(-MAX_VISIBLE)),
     [msgs, showAll]
@@ -294,8 +357,8 @@ function ChatPage() {
         </div>
         <div className="flex-1">
           <p className="font-semibold text-sm">{otherInfo.name}</p>
-          <p className={`text-[11px] ${otherOnline ? "text-emerald-400" : "text-white/40"}`}>
-            {otherOnline ? "online" : "offline"}
+          <p className={`text-[11px] ${otherTyping ? "text-pink-400" : otherOnline ? "text-emerald-400" : "text-white/40"}`}>
+            {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
         <button
@@ -333,6 +396,15 @@ function ChatPage() {
             onQuickHeart={() => react(m.id, "❤️")}
           />
         ))}
+        {otherTyping && (
+          <div className="flex justify-start">
+            <div className="bg-white/10 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        )}
         {msgs.length === 0 && (
           <div className="text-center text-white/40 text-sm py-16">
             comece a conversa 💌
@@ -340,6 +412,16 @@ function ChatPage() {
         )}
         <div ref={endRef} />
       </div>
+
+      {!atBottom && newCount > 0 && (
+        <button
+          onClick={() => scrollToBottom(true)}
+          className="absolute left-1/2 -translate-x-1/2 bottom-24 z-30 bg-gradient-to-r from-pink-500 to-rose-600 rounded-full px-4 py-2 text-xs font-semibold shadow-xl flex items-center gap-2 animate-fade-in"
+        >
+          <ArrowDown size={14} />
+          {newCount === 1 ? "1 nova mensagem" : `${newCount} novas mensagens`}
+        </button>
+      )}
 
       {reactingId && (
         <div
@@ -363,6 +445,37 @@ function ChatPage() {
         </div>
       )}
 
+      {showStickers && (
+        <div
+          className="absolute inset-0 z-40 bg-black/50 flex items-end"
+          onClick={() => setShowStickers(false)}
+        >
+          <div
+            className="w-full bg-neutral-900 border-t border-white/10 rounded-t-3xl p-4 pb-6 animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold">Figurinhas</p>
+              <button onClick={() => setShowStickers(false)}><X size={18} /></button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 max-h-72 overflow-y-auto">
+              {STICKERS.map((url) => (
+                <button
+                  key={url}
+                  onClick={() => {
+                    setShowStickers(false);
+                    sendMessage({ stickerUrl: url });
+                  }}
+                  className="aspect-square rounded-2xl overflow-hidden bg-white/5 active:scale-95 transition"
+                >
+                  <img src={url} alt="figurinha" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {replyTo && (
         <div className="px-3 py-2 border-t border-white/10 bg-neutral-900 flex items-center gap-2">
           <div className="w-1 h-8 bg-pink-500 rounded" />
@@ -374,19 +487,28 @@ function ChatPage() {
         </div>
       )}
 
-      <Composer onSend={sendMessage} />
+      <Composer
+        onSend={sendMessage}
+        onTyping={emitTyping}
+        onOpenStickers={() => setShowStickers(true)}
+      />
     </div>
   );
 }
 
 const Composer = memo(function Composer({
   onSend,
+  onTyping,
+  onOpenStickers,
 }: {
   onSend: (opts: { text?: string; file?: File }) => Promise<void>;
+  onTyping: () => void;
+  onOpenStickers: () => void;
 }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const lastTypingRef = useRef(0);
 
   const submit = () => {
     if (!text.trim()) return;
@@ -400,6 +522,15 @@ const Composer = memo(function Composer({
     if (!file) return;
     setUploading(true);
     try { await onSend({ file }); } finally { setUploading(false); }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    const now = Date.now();
+    if (now - lastTypingRef.current > 1500) {
+      lastTypingRef.current = now;
+      onTyping();
+    }
   };
 
   return (
@@ -418,9 +549,15 @@ const Composer = memo(function Composer({
       >
         {uploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
       </button>
+      <button
+        onClick={onOpenStickers}
+        className="w-10 h-10 shrink-0 rounded-full bg-white/10 flex items-center justify-center"
+      >
+        <Sticker size={16} />
+      </button>
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={handleChange}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
         }}
@@ -450,6 +587,42 @@ type RowProps = {
 
 const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart }: RowProps) {
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
+  const isSticker = m.mediaType === "sticker";
+
+  if (isSticker && m.mediaUrl) {
+    return (
+      <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+        <div className="max-w-[60%]">
+          <div className="relative" onDoubleClick={onReact}>
+            {reply && (
+              <div className={`mb-1 border-l-2 border-white/40 pl-2 text-[11px] opacity-70 ${mine ? "text-right border-r-2 border-l-0 pr-2 pl-0" : ""}`}>
+                <p className="font-semibold">{AVATARS[reply.author].name}</p>
+                <p className="line-clamp-1">{reply.text || "mídia"}</p>
+              </div>
+            )}
+            <img src={m.mediaUrl} alt="figurinha" className="w-40 h-40 object-contain rounded-2xl" loading="lazy" />
+            {m.reactions.length > 0 && (
+              <div className="absolute -bottom-2 right-2 bg-neutral-800 rounded-full px-1.5 py-0.5 text-xs shadow border border-white/10 flex items-center">
+                {uniqReactions.map((r) => (<span key={r}>{r}</span>))}
+                {m.reactions.length > 1 && (
+                  <span className="ml-1 text-[10px] opacity-70">{m.reactions.length}</span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className={`flex gap-3 mt-1.5 px-1 ${mine ? "justify-end" : "justify-start"}`}>
+            <span className="text-[10px] opacity-50">
+              {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+            <button onClick={onReact} className="text-white/40"><Smile size={14} /></button>
+            <button onClick={onReply} className="text-white/40"><Reply size={14} /></button>
+            <button onClick={onQuickHeart} className="text-white/40"><Heart size={14} /></button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div className="max-w-[78%]">
