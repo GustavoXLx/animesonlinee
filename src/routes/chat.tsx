@@ -351,6 +351,13 @@ function ChatPage() {
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
         <button onClick={() => nav({ to: "/" })} className="p-1"><ArrowLeft size={22} /></button>
+        <button
+          onClick={() => setShowGames(true)}
+          className="p-1.5 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600"
+          aria-label="Jogos"
+        >
+          <Gamepad2 size={16} />
+        </button>
         <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}>
           {otherInfo.initial}
           {otherOnline && (
