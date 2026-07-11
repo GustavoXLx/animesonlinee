@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { X, Sparkles, Grid3x3, Hand, ArrowLeft, RotateCcw, Send, Palette, Brush, Trophy } from "lucide-react";
+import { X, Sparkles, Grid3x3, Hand, ArrowLeft, RotateCcw, Send, Brush, Trophy } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
