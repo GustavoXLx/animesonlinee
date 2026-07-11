@@ -611,7 +611,7 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
                 <p className="line-clamp-1">{reply.text || "mídia"}</p>
               </div>
             )}
-            <img src={m.mediaUrl} alt="figurinha" className="w-40 h-40 object-contain rounded-2xl" loading="lazy" />
+            <img src={m.mediaUrl} alt="figurinha" className="w-24 h-24 object-contain rounded-2xl" loading="lazy" />
             {m.reactions.length > 0 && (
               <div className="absolute -bottom-2 right-2 bg-neutral-800 rounded-full px-1.5 py-0.5 text-xs shadow border border-white/10 flex items-center">
                 {uniqReactions.map((r) => (<span key={r}>{r}</span>))}
