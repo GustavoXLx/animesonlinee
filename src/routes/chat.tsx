@@ -119,7 +119,7 @@ function ChatPage() {
     let otherTypingTimer: ReturnType<typeof setTimeout> | null = null;
 
     const channel = supabase
-      .channel("chat-room-" + me, { config: { presence: { key: me } } })
+      .channel("chat-room-shared", { config: { presence: { key: me }, broadcast: { self: false } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const m = rowToMsg(payload.new as Row);
         setMsgs((prev) => {
