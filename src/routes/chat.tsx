@@ -75,6 +75,8 @@ function ChatPage() {
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [clearCutoff, setClearCutoff] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
