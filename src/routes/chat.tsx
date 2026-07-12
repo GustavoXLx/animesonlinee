@@ -546,6 +546,65 @@ function ChatPage() {
       />
 
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
+      {showGallery && <GalleryModal items={mediaMsgs} onClose={() => setShowGallery(false)} />}
+    </div>
+  );
+}
+
+function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void }) {
+  const [viewing, setViewing] = useState<Msg | null>(null);
+  return (
+    <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+        <button onClick={onClose} className="p-1"><ArrowLeft size={22} /></button>
+        <div className="flex-1">
+          <p className="font-bold">Galeria</p>
+          <p className="text-[11px] text-white/50">{items.length} {items.length === 1 ? "item" : "itens"} · fotos e vídeos</p>
+        </div>
+        <button onClick={onClose} className="p-1"><X size={22} /></button>
+      </header>
+      <div className="flex-1 overflow-y-auto p-2">
+        {items.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center">
+            <Images size={48} className="mb-3 opacity-40" />
+            nenhuma foto ou vídeo por aqui ainda 💫
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1.5">
+            {[...items].reverse().map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setViewing(m)}
+                className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
+              >
+                {m.mediaType === "video" ? (
+                  <>
+                    <video src={m.mediaUrl!} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Play size={22} className="drop-shadow-lg" fill="white" />
+                    </div>
+                  </>
+                ) : (
+                  <img src={m.mediaUrl!} alt="" loading="lazy" className="w-full h-full object-cover" />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
+                  {AVATARS[m.author].name} · {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {viewing && (
+        <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4" onClick={() => setViewing(null)}>
+          <button onClick={() => setViewing(null)} className="absolute top-4 right-4 p-2"><X size={24} /></button>
+          {viewing.mediaType === "video" ? (
+            <video src={viewing.mediaUrl!} controls autoPlay playsInline className="max-w-full max-h-full rounded-xl" onClick={(e) => e.stopPropagation()} />
+          ) : (
+            <img src={viewing.mediaUrl!} alt="" className="max-w-full max-h-full rounded-xl object-contain" onClick={(e) => e.stopPropagation()} />
+          )}
+        </div>
+      )}
     </div>
   );
 }
