@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 
@@ -12,6 +12,7 @@ import sticker5 from "@/assets/stickers/sticker_110758.jpg.asset.json";
 import sticker6 from "@/assets/stickers/sticker_110825.jpg.asset.json";
 
 const STICKERS = [sticker1, sticker2, sticker3, sticker4, sticker5, sticker6].map((s) => s.url);
+const CLEAR_KEY = (me: string) => `chat-clear-cutoff-${me}`;
 
 export const Route = createFileRoute("/chat")({
   head: () => ({ meta: [{ title: "Chat" }, { name: "robots", content: "noindex" }] }),
