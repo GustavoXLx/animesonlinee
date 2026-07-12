@@ -422,15 +422,20 @@ function ChatPage() {
         className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-2"
         style={{ contain: "strict" as never, willChange: "transform" }}
       >
-        {!showAll && msgs.length > MAX_VISIBLE && (
+        {!showAll && filteredMsgs.length > MAX_VISIBLE && (
           <div className="text-center">
             <button onClick={() => setShowAll(true)} className="text-[11px] text-white/40 py-2">
-              puxe pra cima ou toque pra ver mais ({msgs.length - MAX_VISIBLE})
+              puxe pra cima ou toque pra ver mais ({filteredMsgs.length - MAX_VISIBLE})
             </button>
           </div>
         )}
         {showAll && (
           <div className="text-center text-[11px] text-white/30">início da conversa</div>
+        )}
+        {clearCutoff > 0 && (
+          <div className="text-center text-[10px] text-white/30 py-1">
+            histórico local limpo · digite /limpar pra limpar de novo · /fotos pra galeria
+          </div>
         )}
         {visible.map((m) => (
           <MessageRow
@@ -452,9 +457,9 @@ function ChatPage() {
             </div>
           </div>
         )}
-        {msgs.length === 0 && (
+        {filteredMsgs.length === 0 && (
           <div className="text-center text-white/40 text-sm py-16">
-            comece a conversa 💌
+            {clearCutoff > 0 ? "seu histórico local está vazio ✨" : "comece a conversa 💌"}
           </div>
         )}
         <div ref={endRef} />
