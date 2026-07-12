@@ -227,6 +227,8 @@ function ChatPage() {
 
   const pickMe = useCallback((who: "gu" | "li") => {
     sessionStorage.setItem("chat-me", who);
+    const raw = localStorage.getItem(CLEAR_KEY(who));
+    setClearCutoff(raw ? Number(raw) || 0 : 0);
     setMe(who);
   }, []);
 
@@ -237,10 +239,24 @@ function ChatPage() {
     typingTimerRef.current = setTimeout(() => {}, 2000);
   }, [me]);
 
+  const clearLocalHistory = useCallback(() => {
+    if (!me) return;
+    const ts = Date.now();
+    localStorage.setItem(CLEAR_KEY(me), String(ts));
+    setClearCutoff(ts);
+    setReplyTo(null);
+  }, [me]);
+
   const sendMessage = useCallback(
     async (opts: { text?: string; file?: File; stickerUrl?: string }) => {
       if (!me) return;
       const text = (opts.text ?? "").trim();
+      // Slash commands (local, not sent)
+      if (text && !opts.file && !opts.stickerUrl) {
+        const cmd = text.toLowerCase();
+        if (cmd === "/fotos" || cmd === "/galeria") { setShowGallery(true); return; }
+        if (cmd === "/limpar" || cmd === "/clear") { clearLocalHistory(); return; }
+      }
       if (!text && !opts.file && !opts.stickerUrl) return;
       const replyId = replyTo?.id ?? null;
       setReplyTo(null);
