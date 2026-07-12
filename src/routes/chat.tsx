@@ -389,6 +389,13 @@ function ChatPage() {
         >
           <Gamepad2 size={16} />
         </button>
+        <button
+          onClick={() => setShowGallery(true)}
+          className="p-1.5 rounded-full bg-gradient-to-br from-amber-500 to-pink-600"
+          aria-label="Galeria"
+        >
+          <Images size={16} />
+        </button>
         <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}>
           {otherInfo.initial}
           {otherOnline && (
