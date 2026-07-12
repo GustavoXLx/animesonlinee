@@ -318,7 +318,7 @@ function ChatPage() {
         return p.map((x) => (x.id === tempId ? real : x));
       });
     },
-    [me, replyTo]
+    [me, replyTo, clearLocalHistory]
   );
 
   const react = useCallback(
@@ -333,9 +333,17 @@ function ChatPage() {
     [msgs]
   );
 
+  const filteredMsgs = useMemo(
+    () => (clearCutoff ? msgs.filter((m) => m.ts > clearCutoff) : msgs),
+    [msgs, clearCutoff]
+  );
   const visible = useMemo(
-    () => (showAll ? msgs : msgs.slice(-MAX_VISIBLE)),
-    [msgs, showAll]
+    () => (showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
+    [filteredMsgs, showAll]
+  );
+  const mediaMsgs = useMemo(
+    () => filteredMsgs.filter((m) => m.mediaUrl && (m.mediaType === "image" || m.mediaType === "video")),
+    [filteredMsgs]
   );
   const msgById = useMemo(() => {
     const m = new Map<string, Msg>();
