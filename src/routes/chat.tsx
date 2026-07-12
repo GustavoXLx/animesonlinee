@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 
@@ -12,6 +12,7 @@ import sticker5 from "@/assets/stickers/sticker_110758.jpg.asset.json";
 import sticker6 from "@/assets/stickers/sticker_110825.jpg.asset.json";
 
 const STICKERS = [sticker1, sticker2, sticker3, sticker4, sticker5, sticker6].map((s) => s.url);
+const CLEAR_KEY = (me: string) => `chat-clear-cutoff-${me}`;
 
 export const Route = createFileRoute("/chat")({
   head: () => ({ meta: [{ title: "Chat" }, { name: "robots", content: "noindex" }] }),
@@ -74,6 +75,8 @@ function ChatPage() {
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [clearCutoff, setClearCutoff] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -89,7 +92,11 @@ function ChatPage() {
       return;
     }
     const saved = sessionStorage.getItem("chat-me") as "gu" | "li" | null;
-    if (saved) setMe(saved);
+    if (saved) {
+      setMe(saved);
+      const raw = localStorage.getItem(CLEAR_KEY(saved));
+      setClearCutoff(raw ? Number(raw) || 0 : 0);
+    }
   }, [nav]);
 
   useEffect(() => {
@@ -220,6 +227,8 @@ function ChatPage() {
 
   const pickMe = useCallback((who: "gu" | "li") => {
     sessionStorage.setItem("chat-me", who);
+    const raw = localStorage.getItem(CLEAR_KEY(who));
+    setClearCutoff(raw ? Number(raw) || 0 : 0);
     setMe(who);
   }, []);
 
@@ -230,10 +239,24 @@ function ChatPage() {
     typingTimerRef.current = setTimeout(() => {}, 2000);
   }, [me]);
 
+  const clearLocalHistory = useCallback(() => {
+    if (!me) return;
+    const ts = Date.now();
+    localStorage.setItem(CLEAR_KEY(me), String(ts));
+    setClearCutoff(ts);
+    setReplyTo(null);
+  }, [me]);
+
   const sendMessage = useCallback(
     async (opts: { text?: string; file?: File; stickerUrl?: string }) => {
       if (!me) return;
       const text = (opts.text ?? "").trim();
+      // Slash commands (local, not sent)
+      if (text && !opts.file && !opts.stickerUrl) {
+        const cmd = text.toLowerCase();
+        if (cmd === "/fotos" || cmd === "/galeria") { setShowGallery(true); return; }
+        if (cmd === "/limpar" || cmd === "/clear") { clearLocalHistory(); return; }
+      }
       if (!text && !opts.file && !opts.stickerUrl) return;
       const replyId = replyTo?.id ?? null;
       setReplyTo(null);
@@ -295,7 +318,7 @@ function ChatPage() {
         return p.map((x) => (x.id === tempId ? real : x));
       });
     },
-    [me, replyTo]
+    [me, replyTo, clearLocalHistory]
   );
 
   const react = useCallback(
@@ -310,9 +333,17 @@ function ChatPage() {
     [msgs]
   );
 
+  const filteredMsgs = useMemo(
+    () => (clearCutoff ? msgs.filter((m) => m.ts > clearCutoff) : msgs),
+    [msgs, clearCutoff]
+  );
   const visible = useMemo(
-    () => (showAll ? msgs : msgs.slice(-MAX_VISIBLE)),
-    [msgs, showAll]
+    () => (showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
+    [filteredMsgs, showAll]
+  );
+  const mediaMsgs = useMemo(
+    () => filteredMsgs.filter((m) => m.mediaUrl && (m.mediaType === "image" || m.mediaType === "video")),
+    [filteredMsgs]
   );
   const msgById = useMemo(() => {
     const m = new Map<string, Msg>();
@@ -358,6 +389,13 @@ function ChatPage() {
         >
           <Gamepad2 size={16} />
         </button>
+        <button
+          onClick={() => setShowGallery(true)}
+          className="p-1.5 rounded-full bg-gradient-to-br from-amber-500 to-pink-600"
+          aria-label="Galeria"
+        >
+          <Images size={16} />
+        </button>
         <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}>
           {otherInfo.initial}
           {otherOnline && (
@@ -384,15 +422,20 @@ function ChatPage() {
         className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-2"
         style={{ contain: "strict" as never, willChange: "transform" }}
       >
-        {!showAll && msgs.length > MAX_VISIBLE && (
+        {!showAll && filteredMsgs.length > MAX_VISIBLE && (
           <div className="text-center">
             <button onClick={() => setShowAll(true)} className="text-[11px] text-white/40 py-2">
-              puxe pra cima ou toque pra ver mais ({msgs.length - MAX_VISIBLE})
+              puxe pra cima ou toque pra ver mais ({filteredMsgs.length - MAX_VISIBLE})
             </button>
           </div>
         )}
         {showAll && (
           <div className="text-center text-[11px] text-white/30">início da conversa</div>
+        )}
+        {clearCutoff > 0 && (
+          <div className="text-center text-[10px] text-white/30 py-1">
+            histórico local limpo · digite /limpar pra limpar de novo · /fotos pra galeria
+          </div>
         )}
         {visible.map((m) => (
           <MessageRow
@@ -414,9 +457,9 @@ function ChatPage() {
             </div>
           </div>
         )}
-        {msgs.length === 0 && (
+        {filteredMsgs.length === 0 && (
           <div className="text-center text-white/40 text-sm py-16">
-            comece a conversa 💌
+            {clearCutoff > 0 ? "seu histórico local está vazio ✨" : "comece a conversa 💌"}
           </div>
         )}
         <div ref={endRef} />
@@ -503,6 +546,65 @@ function ChatPage() {
       />
 
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
+      {showGallery && <GalleryModal items={mediaMsgs} onClose={() => setShowGallery(false)} />}
+    </div>
+  );
+}
+
+function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void }) {
+  const [viewing, setViewing] = useState<Msg | null>(null);
+  return (
+    <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
+        <button onClick={onClose} className="p-1"><ArrowLeft size={22} /></button>
+        <div className="flex-1">
+          <p className="font-bold">Galeria</p>
+          <p className="text-[11px] text-white/50">{items.length} {items.length === 1 ? "item" : "itens"} · fotos e vídeos</p>
+        </div>
+        <button onClick={onClose} className="p-1"><X size={22} /></button>
+      </header>
+      <div className="flex-1 overflow-y-auto p-2">
+        {items.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center">
+            <Images size={48} className="mb-3 opacity-40" />
+            nenhuma foto ou vídeo por aqui ainda 💫
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1.5">
+            {[...items].reverse().map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setViewing(m)}
+                className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
+              >
+                {m.mediaType === "video" ? (
+                  <>
+                    <video src={m.mediaUrl!} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Play size={22} className="drop-shadow-lg" fill="white" />
+                    </div>
+                  </>
+                ) : (
+                  <img src={m.mediaUrl!} alt="" loading="lazy" className="w-full h-full object-cover" />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
+                  {AVATARS[m.author].name} · {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {viewing && (
+        <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4" onClick={() => setViewing(null)}>
+          <button onClick={() => setViewing(null)} className="absolute top-4 right-4 p-2"><X size={24} /></button>
+          {viewing.mediaType === "video" ? (
+            <video src={viewing.mediaUrl!} controls autoPlay playsInline className="max-w-full max-h-full rounded-xl" onClick={(e) => e.stopPropagation()} />
+          ) : (
+            <img src={viewing.mediaUrl!} alt="" className="max-w-full max-h-full rounded-xl object-contain" onClick={(e) => e.stopPropagation()} />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -573,7 +675,7 @@ const Composer = memo(function Composer({
           if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
         }}
         rows={1}
-        placeholder="mensagem..."
+        placeholder="mensagem... (/fotos /limpar)"
         className="flex-1 bg-white/10 rounded-2xl px-4 py-2.5 text-sm outline-none resize-none max-h-32"
       />
       <button
