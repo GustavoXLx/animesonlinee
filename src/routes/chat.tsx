@@ -92,7 +92,11 @@ function ChatPage() {
       return;
     }
     const saved = sessionStorage.getItem("chat-me") as "gu" | "li" | null;
-    if (saved) setMe(saved);
+    if (saved) {
+      setMe(saved);
+      const raw = localStorage.getItem(CLEAR_KEY(saved));
+      setClearCutoff(raw ? Number(raw) || 0 : 0);
+    }
   }, [nav]);
 
   useEffect(() => {
