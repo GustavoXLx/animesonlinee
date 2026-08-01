@@ -353,7 +353,7 @@ function ChatPage() {
         return p.map((x) => (x.id === tempId ? real : x));
       });
     },
-    [me, replyTo, clearLocalHistory]
+    [me, replyTo, clearLocalHistory, site.chatOpen, toast]
   );
 
   const react = useCallback(
