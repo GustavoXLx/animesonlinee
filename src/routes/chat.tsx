@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play, Lock, LockOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
+import { useSiteState, setSiteState } from "@/lib/siteState";
+
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
 import sticker2 from "@/assets/stickers/sticker_110652.jpg.asset.json";
@@ -84,6 +86,25 @@ function ChatPage() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const atBottomRef = useRef(true);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const site = useSiteState();
+  const [sys, setSys] = useState<string | null>(null);
+  const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toast = useCallback((msg: string) => {
+    setSys(msg);
+    if (sysTimer.current) clearTimeout(sysTimer.current);
+    sysTimer.current = setTimeout(() => setSys(null), 2600);
+  }, []);
+
+  // Bloqueio remoto: quando o acesso está fechado, só o perfil bb gu (ou senha mestre) continua
+  useEffect(() => {
+    if (typeof window === "undefined" || !site.loaded || site.chatOpen) return;
+    const master = sessionStorage.getItem("chat-master") === "1";
+    if (master || me === "gu") return;
+    sessionStorage.removeItem("chat-unlocked");
+    nav({ to: "/" });
+  }, [site.loaded, site.chatOpen, me, nav]);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -256,7 +277,30 @@ function ChatPage() {
         const cmd = text.toLowerCase();
         if (cmd === "/fotos" || cmd === "/galeria") { setShowGallery(true); return; }
         if (cmd === "/limpar" || cmd === "/clear") { clearLocalHistory(); return; }
+        if (cmd === "/ajuda" || cmd === "/help") {
+          toast("/fotos · /limpar · /bloquear · /liberar · /aviso <texto> · /status");
+          return;
+        }
+        if (cmd === "/status") {
+          toast(site.chatOpen ? "chat liberado ✅" : "chat bloqueado 🔒");
+          return;
+        }
+        if (cmd === "/bloquear" || cmd === "/liberar") {
+          if (me !== "gu") { toast("comando indisponível"); return; }
+          const open = cmd === "/liberar";
+          await setSiteState({ chat_open: open });
+          toast(open ? "acesso liberado ✅" : "acesso bloqueado 🔒");
+          return;
+        }
+        if (cmd.startsWith("/aviso")) {
+          if (me !== "gu") { toast("comando indisponível"); return; }
+          const note = text.slice(6).trim();
+          await setSiteState({ note });
+          toast(note ? "recado publicado" : "recado removido");
+          return;
+        }
       }
+
       if (!text && !opts.file && !opts.stickerUrl) return;
       const replyId = replyTo?.id ?? null;
       setReplyTo(null);
@@ -318,7 +362,7 @@ function ChatPage() {
         return p.map((x) => (x.id === tempId ? real : x));
       });
     },
-    [me, replyTo, clearLocalHistory]
+    [me, replyTo, clearLocalHistory, site.chatOpen, toast]
   );
 
   const react = useCallback(
@@ -341,15 +385,28 @@ function ChatPage() {
     () => (showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
     [filteredMsgs, showAll]
   );
-  const mediaMsgs = useMemo(
-    () => filteredMsgs.filter((m) => m.mediaUrl && (m.mediaType === "image" || m.mediaType === "video")),
-    [filteredMsgs]
-  );
   const msgById = useMemo(() => {
     const m = new Map<string, Msg>();
     for (const x of msgs) m.set(x.id, x);
     return m;
   }, [msgs]);
+
+  // Pular pra mensagem original ao tocar na citação (estilo WhatsApp)
+  const jumpTo = useCallback((id: string) => {
+    const focus = () => {
+      const el = document.getElementById(`msg-${id}`);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-pink-400/80");
+      setTimeout(() => el.classList.remove("ring-2", "ring-pink-400/80"), 1400);
+      return true;
+    };
+    if (!focus()) {
+      setShowAll(true);
+      requestAnimationFrame(() => setTimeout(focus, 60));
+    }
+  }, []);
+
 
   if (!me) {
     return (
@@ -408,12 +465,26 @@ function ChatPage() {
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
+        {me === "gu" && (
+          <button
+            onClick={async () => {
+              const next = !site.chatOpen;
+              await setSiteState({ chat_open: next });
+              toast(next ? "acesso liberado ✅" : "acesso bloqueado 🔒");
+            }}
+            aria-label="Bloquear acesso"
+            className={`p-1.5 rounded-full ${site.chatOpen ? "bg-white/10 text-white/60" : "bg-red-500/20 text-red-400"}`}
+          >
+            {site.chatOpen ? <LockOpen size={14} /> : <Lock size={14} />}
+          </button>
+        )}
         <button
           onClick={() => { sessionStorage.removeItem("chat-me"); setMe(null); }}
           className="text-[11px] text-white/40"
         >
           trocar
         </button>
+
       </header>
 
       <div
@@ -446,8 +517,10 @@ function ChatPage() {
             onReact={() => setReactingId(m.id)}
             onReply={() => setReplyTo(m)}
             onQuickHeart={() => react(m.id, "❤️")}
+            onJump={jumpTo}
           />
         ))}
+
         {otherTyping && (
           <div className="flex justify-start">
             <div className="bg-white/10 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
@@ -545,14 +618,41 @@ function ChatPage() {
         onOpenStickers={() => setShowStickers(true)}
       />
 
+      {sys && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50 bg-neutral-800/95 border border-white/10 rounded-full px-4 py-2 text-[11px] shadow-xl animate-fade-in">
+          {sys}
+        </div>
+      )}
+
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
-      {showGallery && <GalleryModal items={mediaMsgs} onClose={() => setShowGallery(false)} />}
+
+      {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
     </div>
   );
 }
 
-function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void }) {
+function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void }) {
   const [viewing, setViewing] = useState<Msg | null>(null);
+  const [items, setItems] = useState<Msg[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .not("media_url", "is", null)
+        .in("media_type", ["image", "video"])
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const all = ((data ?? []) as Row[]).map(rowToMsg).filter((m) => m.ts > cutoff);
+      setItems(all);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [cutoff]);
+
   return (
     <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
       <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -564,7 +664,12 @@ function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void })
         <button onClick={onClose} className="p-1"><X size={22} /></button>
       </header>
       <div className="flex-1 overflow-y-auto p-2">
-        {items.length === 0 ? (
+        {loading ? (
+          <div className="h-full flex items-center justify-center text-white/40">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : items.length === 0 ? (
+
           <div className="h-full flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center">
             <Images size={48} className="mb-3 opacity-40" />
             nenhuma foto ou vídeo por aqui ainda 💫
@@ -696,23 +801,58 @@ type RowProps = {
   onReact: () => void;
   onReply: () => void;
   onQuickHeart: () => void;
+  onJump: (id: string) => void;
 };
 
-const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart }: RowProps) {
+const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart, onJump }: RowProps) {
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
   const isSticker = m.mediaType === "sticker";
+  const [dx, setDx] = useState(0);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const active = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    active.current = true;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!active.current) return;
+    const d = e.touches[0].clientX - startX.current;
+    const dy = Math.abs(e.touches[0].clientY - startY.current);
+    if (dy > 20) { active.current = false; setDx(0); return; }
+    if (d > 4) setDx(Math.min(d * 0.6, 64));
+  };
+  const onTouchEnd = () => {
+    if (active.current && dx > 40) onReply();
+    active.current = false;
+    setDx(0);
+  };
+
+  const quote = reply ? (
+    <button
+      onClick={() => onJump(reply.id)}
+      className="block w-full text-left mb-1 border-l-2 border-white/60 pl-2 text-[11px] opacity-80"
+    >
+      <span className="font-semibold block">{AVATARS[reply.author].name}</span>
+      <span className="line-clamp-1">{reply.text || (reply.mediaType ? "mídia" : "")}</span>
+    </button>
+  ) : null;
+
+  const swipe = {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    style: { transform: dx ? `translateX(${dx}px)` : undefined, transition: dx ? "none" : "transform 150ms" },
+  };
 
   if (isSticker && m.mediaUrl) {
     return (
-      <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-        <div className="max-w-[60%]">
+      <div id={`msg-${m.id}`} className={`flex ${mine ? "justify-end" : "justify-start"} rounded-2xl`}>
+        <div className="max-w-[60%]" {...swipe}>
           <div className="relative" onDoubleClick={onReact}>
-            {reply && (
-              <div className={`mb-1 border-l-2 border-white/40 pl-2 text-[11px] opacity-70 ${mine ? "text-right border-r-2 border-l-0 pr-2 pl-0" : ""}`}>
-                <p className="font-semibold">{AVATARS[reply.author].name}</p>
-                <p className="line-clamp-1">{reply.text || "mídia"}</p>
-              </div>
-            )}
+            {quote}
             <img src={m.mediaUrl} alt="figurinha" className="w-24 h-24 object-contain rounded-2xl" loading="lazy" />
             {m.reactions.length > 0 && (
               <div className="absolute -bottom-2 right-2 bg-neutral-800 rounded-full px-1.5 py-0.5 text-xs shadow border border-white/10 flex items-center">
@@ -737,8 +877,8 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
   }
 
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-      <div className="max-w-[78%]">
+    <div id={`msg-${m.id}`} className={`flex ${mine ? "justify-end" : "justify-start"} rounded-2xl`}>
+      <div className="max-w-[78%]" {...swipe}>
         <div
           onDoubleClick={onReact}
           className={`relative rounded-2xl px-3 py-2 ${
@@ -747,12 +887,7 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
               : "bg-white/10 rounded-bl-sm"
           }`}
         >
-          {reply && (
-            <div className="mb-1 border-l-2 border-white/60 pl-2 text-[11px] opacity-80">
-              <p className="font-semibold">{AVATARS[reply.author].name}</p>
-              <p className="line-clamp-1">{reply.text || (reply.mediaType ? "mídia" : "")}</p>
-            </div>
-          )}
+          {quote}
           {m.mediaUrl && m.mediaType === "image" && (
             <img
               src={m.mediaUrl}
@@ -788,3 +923,4 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
     </div>
   );
 });
+
