@@ -446,8 +446,10 @@ function ChatPage() {
             onReact={() => setReactingId(m.id)}
             onReply={() => setReplyTo(m)}
             onQuickHeart={() => react(m.id, "❤️")}
+            onJump={jumpTo}
           />
         ))}
+
         {otherTyping && (
           <div className="flex justify-start">
             <div className="bg-white/10 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
