@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
+import { useSiteState, setSiteState } from "@/lib/siteState";
+
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
 import sticker2 from "@/assets/stickers/sticker_110652.jpg.asset.json";
