@@ -341,15 +341,28 @@ function ChatPage() {
     () => (showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
     [filteredMsgs, showAll]
   );
-  const mediaMsgs = useMemo(
-    () => filteredMsgs.filter((m) => m.mediaUrl && (m.mediaType === "image" || m.mediaType === "video")),
-    [filteredMsgs]
-  );
   const msgById = useMemo(() => {
     const m = new Map<string, Msg>();
     for (const x of msgs) m.set(x.id, x);
     return m;
   }, [msgs]);
+
+  // Pular pra mensagem original ao tocar na citação (estilo WhatsApp)
+  const jumpTo = useCallback((id: string) => {
+    const focus = () => {
+      const el = document.getElementById(`msg-${id}`);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-pink-400/80");
+      setTimeout(() => el.classList.remove("ring-2", "ring-pink-400/80"), 1400);
+      return true;
+    };
+    if (!focus()) {
+      setShowAll(true);
+      requestAnimationFrame(() => setTimeout(focus, 60));
+    }
+  }, []);
+
 
   if (!me) {
     return (
