@@ -139,6 +139,12 @@ function Home() {
         </>
       )}
 
+      <p className="text-[10px] text-white/25 text-center px-6 pt-8">
+        AniStream v2.4.1 · catálogo atualizado diariamente{site.note ? ` · ${site.note}` : ""}
+      </p>
+
+
+
       {/* Bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-neutral-950/95 backdrop-blur border-t border-white/5">
         <div className="grid grid-cols-4 py-2">
