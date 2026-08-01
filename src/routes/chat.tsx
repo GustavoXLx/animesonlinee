@@ -546,7 +546,7 @@ function ChatPage() {
       />
 
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
-      {showGallery && <GalleryModal items={mediaMsgs} onClose={() => setShowGallery(false)} />}
+      {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
     </div>
   );
 }
