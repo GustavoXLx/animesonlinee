@@ -551,8 +551,28 @@ function ChatPage() {
   );
 }
 
-function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void }) {
+function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void }) {
   const [viewing, setViewing] = useState<Msg | null>(null);
+  const [items, setItems] = useState<Msg[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .not("media_url", "is", null)
+        .in("media_type", ["image", "video"])
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const all = ((data ?? []) as Row[]).map(rowToMsg).filter((m) => m.ts > cutoff);
+      setItems(all);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [cutoff]);
+
   return (
     <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
       <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -564,7 +584,12 @@ function GalleryModal({ items, onClose }: { items: Msg[]; onClose: () => void })
         <button onClick={onClose} className="p-1"><X size={22} /></button>
       </header>
       <div className="flex-1 overflow-y-auto p-2">
-        {items.length === 0 ? (
+        {loading ? (
+          <div className="h-full flex items-center justify-center text-white/40">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : items.length === 0 ? (
+
           <div className="h-full flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center">
             <Images size={48} className="mb-3 opacity-40" />
             nenhuma foto ou vídeo por aqui ainda 💫
