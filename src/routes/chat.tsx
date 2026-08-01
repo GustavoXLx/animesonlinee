@@ -696,23 +696,58 @@ type RowProps = {
   onReact: () => void;
   onReply: () => void;
   onQuickHeart: () => void;
+  onJump: (id: string) => void;
 };
 
-const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart }: RowProps) {
+const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart, onJump }: RowProps) {
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
   const isSticker = m.mediaType === "sticker";
+  const [dx, setDx] = useState(0);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const active = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    active.current = true;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!active.current) return;
+    const d = e.touches[0].clientX - startX.current;
+    const dy = Math.abs(e.touches[0].clientY - startY.current);
+    if (dy > 20) { active.current = false; setDx(0); return; }
+    if (d > 4) setDx(Math.min(d * 0.6, 64));
+  };
+  const onTouchEnd = () => {
+    if (active.current && dx > 40) onReply();
+    active.current = false;
+    setDx(0);
+  };
+
+  const quote = reply ? (
+    <button
+      onClick={() => onJump(reply.id)}
+      className="block w-full text-left mb-1 border-l-2 border-white/60 pl-2 text-[11px] opacity-80"
+    >
+      <span className="font-semibold block">{AVATARS[reply.author].name}</span>
+      <span className="line-clamp-1">{reply.text || (reply.mediaType ? "mídia" : "")}</span>
+    </button>
+  ) : null;
+
+  const swipe = {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    style: { transform: dx ? `translateX(${dx}px)` : undefined, transition: dx ? "none" : "transform 150ms" },
+  };
 
   if (isSticker && m.mediaUrl) {
     return (
-      <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-        <div className="max-w-[60%]">
+      <div id={`msg-${m.id}`} className={`flex ${mine ? "justify-end" : "justify-start"} rounded-2xl`}>
+        <div className="max-w-[60%]" {...swipe}>
           <div className="relative" onDoubleClick={onReact}>
-            {reply && (
-              <div className={`mb-1 border-l-2 border-white/40 pl-2 text-[11px] opacity-70 ${mine ? "text-right border-r-2 border-l-0 pr-2 pl-0" : ""}`}>
-                <p className="font-semibold">{AVATARS[reply.author].name}</p>
-                <p className="line-clamp-1">{reply.text || "mídia"}</p>
-              </div>
-            )}
+            {quote}
             <img src={m.mediaUrl} alt="figurinha" className="w-24 h-24 object-contain rounded-2xl" loading="lazy" />
             {m.reactions.length > 0 && (
               <div className="absolute -bottom-2 right-2 bg-neutral-800 rounded-full px-1.5 py-0.5 text-xs shadow border border-white/10 flex items-center">
@@ -737,8 +772,8 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
   }
 
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-      <div className="max-w-[78%]">
+    <div id={`msg-${m.id}`} className={`flex ${mine ? "justify-end" : "justify-start"} rounded-2xl`}>
+      <div className="max-w-[78%]" {...swipe}>
         <div
           onDoubleClick={onReact}
           className={`relative rounded-2xl px-3 py-2 ${
@@ -747,12 +782,7 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
               : "bg-white/10 rounded-bl-sm"
           }`}
         >
-          {reply && (
-            <div className="mb-1 border-l-2 border-white/60 pl-2 text-[11px] opacity-80">
-              <p className="font-semibold">{AVATARS[reply.author].name}</p>
-              <p className="line-clamp-1">{reply.text || (reply.mediaType ? "mídia" : "")}</p>
-            </div>
-          )}
+          {quote}
           {m.mediaUrl && m.mediaType === "image" && (
             <img
               src={m.mediaUrl}
@@ -788,3 +818,4 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
     </div>
   );
 });
+
