@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, ArrowLeft } from "lucide-react";
-import { useSiteState } from "@/lib/siteState";
 
 export const Route = createFileRoute("/unlock")({
   head: () => ({ meta: [{ title: "Área restrita" }, { name: "robots", content: "noindex" }] }),
@@ -12,22 +11,17 @@ function Unlock() {
   const nav = useNavigate();
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
-  const site = useSiteState();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const v = pw.trim();
-    const master = v === "licegu1415";
-    if (master || (v === "licegu" && site.chatOpen)) {
+    if (pw === "licegu") {
       sessionStorage.setItem("chat-unlocked", "1");
-      if (master) sessionStorage.setItem("chat-master", "1");
       nav({ to: "/chat" });
     } else {
       setErr(true);
       setPw("");
     }
   };
-
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
