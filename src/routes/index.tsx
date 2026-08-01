@@ -50,7 +50,14 @@ function Home() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-indigo-600 flex items-center justify-center font-black">A</div>
             <span className="font-bold tracking-tight">AniStream</span>
+            <span
+              aria-hidden
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                site.loaded && site.chatOpen ? "bg-emerald-400" : "bg-white/15"
+              }`}
+            />
           </div>
+
           <div className="flex items-center gap-3">
             <button
               aria-label="Buscar"
