@@ -465,12 +465,26 @@ function ChatPage() {
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
+        {me === "gu" && (
+          <button
+            onClick={async () => {
+              const next = !site.chatOpen;
+              await setSiteState({ chat_open: next });
+              toast(next ? "acesso liberado ✅" : "acesso bloqueado 🔒");
+            }}
+            aria-label="Bloquear acesso"
+            className={`p-1.5 rounded-full ${site.chatOpen ? "bg-white/10 text-white/60" : "bg-red-500/20 text-red-400"}`}
+          >
+            {site.chatOpen ? <Unlock size={14} /> : <Lock size={14} />}
+          </button>
+        )}
         <button
           onClick={() => { sessionStorage.removeItem("chat-me"); setMe(null); }}
           className="text-[11px] text-white/40"
         >
           trocar
         </button>
+
       </header>
 
       <div
