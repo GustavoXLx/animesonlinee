@@ -475,7 +475,7 @@ function ChatPage() {
             aria-label="Bloquear acesso"
             className={`p-1.5 rounded-full ${site.chatOpen ? "bg-white/10 text-white/60" : "bg-red-500/20 text-red-400"}`}
           >
-            {site.chatOpen ? <Unlock size={14} /> : <Lock size={14} />}
+            {site.chatOpen ? <LockOpen size={14} /> : <Lock size={14} />}
           </button>
         )}
         <button
