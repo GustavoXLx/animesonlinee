@@ -96,6 +96,15 @@ function ChatPage() {
     sysTimer.current = setTimeout(() => setSys(null), 2600);
   }, []);
 
+  // Bloqueio remoto: quando o acesso está fechado, só o perfil bb gu (ou senha mestre) continua
+  useEffect(() => {
+    if (typeof window === "undefined" || !site.loaded || site.chatOpen) return;
+    const master = sessionStorage.getItem("chat-master") === "1";
+    if (master || me === "gu") return;
+    sessionStorage.removeItem("chat-unlocked");
+    nav({ to: "/" });
+  }, [site.loaded, site.chatOpen, me, nav]);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
