@@ -55,6 +55,27 @@ export type Database = {
           },
         ]
       }
+      site_state: {
+        Row: {
+          chat_open: boolean
+          id: string
+          note: string
+          updated_at: string
+        }
+        Insert: {
+          chat_open?: boolean
+          id: string
+          note?: string
+          updated_at?: string
+        }
+        Update: {
+          chat_open?: boolean
+          id?: string
+          note?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

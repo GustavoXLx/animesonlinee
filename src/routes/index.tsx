@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, memo } from "react";
 import { Search, Star, Play, Menu, Bell, Home as HomeIcon, Compass, Bookmark, User } from "lucide-react";
 import { animes } from "@/lib/animes";
+import { useSiteState } from "@/lib/siteState";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,14 +18,21 @@ function Home() {
   const [q, setQ] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const navigate = useNavigate();
+  const site = useSiteState();
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q.trim() === "1415") {
+    const v = q.trim();
+    if (v === "1415" && site.chatOpen) {
       navigate({ to: "/unlock" });
       return;
     }
+    if (v === "14151415") {
+      // acesso mestre (bb gu) — funciona mesmo bloqueado
+      navigate({ to: "/unlock" });
+    }
   };
+
 
   const filtered = animes.filter((a) =>
     a.title.toLowerCase().includes(q.toLowerCase()) || a.genre.toLowerCase().includes(q.toLowerCase())
@@ -42,7 +50,14 @@ function Home() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-indigo-600 flex items-center justify-center font-black">A</div>
             <span className="font-bold tracking-tight">AniStream</span>
+            <span
+              aria-hidden
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                site.loaded && site.chatOpen ? "bg-emerald-400" : "bg-white/15"
+              }`}
+            />
           </div>
+
           <div className="flex items-center gap-3">
             <button
               aria-label="Buscar"
@@ -123,6 +138,12 @@ function Home() {
           </section>
         </>
       )}
+
+      <p className="text-[10px] text-white/25 text-center px-6 pt-8">
+        AniStream v2.4.1 · catálogo atualizado diariamente{site.note ? ` · ${site.note}` : ""}
+      </p>
+
+
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-neutral-950/95 backdrop-blur border-t border-white/5">
