@@ -604,7 +604,14 @@ function ChatPage() {
         onOpenStickers={() => setShowStickers(true)}
       />
 
+      {sys && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50 bg-neutral-800/95 border border-white/10 rounded-full px-4 py-2 text-[11px] shadow-xl animate-fade-in">
+          {sys}
+        </div>
+      )}
+
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
+
       {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
     </div>
   );
