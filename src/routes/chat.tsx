@@ -84,6 +84,16 @@ function ChatPage() {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const atBottomRef = useRef(true);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const site = useSiteState();
+  const [sys, setSys] = useState<string | null>(null);
+  const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toast = useCallback((msg: string) => {
+    setSys(msg);
+    if (sysTimer.current) clearTimeout(sysTimer.current);
+    sysTimer.current = setTimeout(() => setSys(null), 2600);
+  }, []);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
