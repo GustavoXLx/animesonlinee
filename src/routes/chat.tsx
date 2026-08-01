@@ -256,7 +256,30 @@ function ChatPage() {
         const cmd = text.toLowerCase();
         if (cmd === "/fotos" || cmd === "/galeria") { setShowGallery(true); return; }
         if (cmd === "/limpar" || cmd === "/clear") { clearLocalHistory(); return; }
+        if (cmd === "/ajuda" || cmd === "/help") {
+          toast("/fotos · /limpar · /bloquear · /liberar · /aviso <texto> · /status");
+          return;
+        }
+        if (cmd === "/status") {
+          toast(site.chatOpen ? "chat liberado ✅" : "chat bloqueado 🔒");
+          return;
+        }
+        if (cmd === "/bloquear" || cmd === "/liberar") {
+          if (me !== "gu") { toast("comando indisponível"); return; }
+          const open = cmd === "/liberar";
+          await setSiteState({ chat_open: open });
+          toast(open ? "acesso liberado ✅" : "acesso bloqueado 🔒");
+          return;
+        }
+        if (cmd.startsWith("/aviso")) {
+          if (me !== "gu") { toast("comando indisponível"); return; }
+          const note = text.slice(6).trim();
+          await setSiteState({ note });
+          toast(note ? "recado publicado" : "recado removido");
+          return;
+        }
       }
+
       if (!text && !opts.file && !opts.stickerUrl) return;
       const replyId = replyTo?.id ?? null;
       setReplyTo(null);
