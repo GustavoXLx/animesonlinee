@@ -14,68 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      messages: {
-        Row: {
-          author: string
-          created_at: string
-          id: string
-          media_type: string | null
-          media_url: string | null
-          reactions: string[]
-          reply_to: string | null
-          text: string
-        }
-        Insert: {
-          author: string
-          created_at?: string
-          id?: string
-          media_type?: string | null
-          media_url?: string | null
-          reactions?: string[]
-          reply_to?: string | null
-          text: string
-        }
-        Update: {
-          author?: string
-          created_at?: string
-          id?: string
-          media_type?: string | null
-          media_url?: string | null
-          reactions?: string[]
-          reply_to?: string | null
-          text?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_reply_to_fkey"
-            columns: ["reply_to"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      site_state: {
-        Row: {
-          chat_open: boolean
-          id: string
-          note: string
-          updated_at: string
-        }
-        Insert: {
-          chat_open?: boolean
-          id: string
-          note?: string
-          updated_at?: string
-        }
-        Update: {
-          chat_open?: boolean
-          id?: string
-          note?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
