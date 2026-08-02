@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS public.messages CASCADE;
+DROP TABLE IF EXISTS public.site_state CASCADE;
