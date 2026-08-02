@@ -127,7 +127,7 @@ function Home() {
       )}
 
       <p className="text-[10px] text-white/25 text-center px-6 pt-8">
-        AniStream v2.4.1 · catálogo atualizado diariamente{site.note ? ` · ${site.note}` : ""}
+        AniStream v2.4.1 · catálogo atualizado diariamente
       </p>
 
 
