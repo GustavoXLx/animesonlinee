@@ -153,3 +153,17 @@
 }
 .animate-slide-in-left { animation: slide-in-left 0.25s ease-out; }
 .animate-fade-in { animation: fade-in 0.2s ease-out; }
+
+@keyframes emoji-rise {
+  0% { transform: translateY(0) scale(0.8) rotate(0deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-115vh) scale(1.25) rotate(25deg); opacity: 0; }
+}
+@keyframes rage-shake {
+  0%, 100% { transform: translate(0, 0) rotate(-1deg); }
+  25% { transform: translate(-4px, 2px) rotate(1.5deg); }
+  50% { transform: translate(4px, -2px) rotate(-1.5deg); }
+  75% { transform: translate(-2px, -3px) rotate(1deg); }
+}
+.animate-emoji-rise { animation: emoji-rise linear infinite; }
+.animate-rage-shake { animation: rage-shake 0.45s ease-in-out infinite; }

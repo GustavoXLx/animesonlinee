@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Lock, ArrowLeft } from "lucide-react";
 import { useSiteState } from "@/lib/siteState";
+import { usePanicExit } from "@/lib/panic";
 
 export const Route = createFileRoute("/unlock")({
   head: () => ({ meta: [{ title: "Área restrita" }, { name: "robots", content: "noindex" }] }),
@@ -13,8 +14,11 @@ function Unlock() {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
   const site = useSiteState();
+  const escapeHome = useCallback(() => nav({ to: "/", replace: true }), [nav]);
+  usePanicExit(escapeHome);
 
   const submit = (e: React.FormEvent) => {
+
     e.preventDefault();
     const v = pw.trim();
     const master = v === "licegu1415";

@@ -4,6 +4,8 @@ import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, A
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
+import { usePanicExit, useAutoLock, isSpecialDay } from "@/lib/panic";
+import { LiEffect } from "@/components/LiEffect";
 
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
@@ -89,6 +91,14 @@ function ChatPage() {
   const site = useSiteState();
   const [sys, setSys] = useState<string | null>(null);
   const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [liEffect, setLiEffect] = useState(false);
+
+  const escapeHome = useCallback(() => {
+    nav({ to: "/", replace: true });
+  }, [nav]);
+  usePanicExit(escapeHome);
+  useAutoLock(escapeHome);
+
 
   const toast = useCallback((msg: string) => {
     setSys(msg);
@@ -250,6 +260,7 @@ function ChatPage() {
     sessionStorage.setItem("chat-me", who);
     const raw = localStorage.getItem(CLEAR_KEY(who));
     setClearCutoff(raw ? Number(raw) || 0 : 0);
+    if (who === "li" && isSpecialDay()) setLiEffect(true);
     setMe(who);
   }, []);
 
@@ -437,6 +448,7 @@ function ChatPage() {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
+      {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
         <button onClick={() => nav({ to: "/" })} className="p-1"><ArrowLeft size={22} /></button>
         <button
