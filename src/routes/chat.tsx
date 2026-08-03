@@ -91,6 +91,14 @@ function ChatPage() {
   const site = useSiteState();
   const [sys, setSys] = useState<string | null>(null);
   const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [liEffect, setLiEffect] = useState(false);
+
+  const escapeHome = useCallback(() => {
+    nav({ to: "/", replace: true });
+  }, [nav]);
+  usePanicExit(escapeHome);
+  useAutoLock(escapeHome);
+
 
   const toast = useCallback((msg: string) => {
     setSys(msg);
