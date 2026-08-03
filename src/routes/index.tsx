@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, memo } from "react";
 import { Search, Star, Play, Menu, Bell, Home as HomeIcon, Compass, Bookmark, User } from "lucide-react";
 import { animes } from "@/lib/animes";
+import { useSiteState } from "@/lib/siteState";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,16 +21,26 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [q, setQ] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const navigate = useNavigate();
+  const site = useSiteState();
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const v = q.trim();
+    if (v === "1415" && site.chatOpen) {
+      navigate({ to: "/unlock" });
+      return;
+    }
+    if (v === "14151415") {
+      // acesso mestre (bb gu) — funciona mesmo bloqueado
+      navigate({ to: "/unlock" });
+    }
   };
-
-
 
   const filtered = animes.filter((a) =>
     a.title.toLowerCase().includes(q.toLowerCase()) || a.genre.toLowerCase().includes(q.toLowerCase())
   );
+
 
   const featured = animes[5];
   const trending = animes.slice(0, 8);
