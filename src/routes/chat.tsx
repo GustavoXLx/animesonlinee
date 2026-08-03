@@ -4,6 +4,8 @@ import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, A
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
+import { usePanicExit, useAutoLock, isSpecialDay } from "@/lib/panic";
+import { LiEffect } from "@/components/LiEffect";
 
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
