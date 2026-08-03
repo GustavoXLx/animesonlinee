@@ -121,19 +121,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  // Limpeza definitiva de qualquer resíduo local salvo no aparelho.
-  useEffect(() => {
-    try {
-      for (const key of Object.keys(localStorage)) {
-        if (/chat|msg|message|profile|sticker|gallery|unlock|game|head|gartic|sintonia/i.test(key)) {
-          localStorage.removeItem(key);
-        }
-      }
-      sessionStorage.clear();
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
