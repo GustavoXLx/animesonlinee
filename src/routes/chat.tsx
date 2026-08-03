@@ -260,6 +260,7 @@ function ChatPage() {
     sessionStorage.setItem("chat-me", who);
     const raw = localStorage.getItem(CLEAR_KEY(who));
     setClearCutoff(raw ? Number(raw) || 0 : 0);
+    if (who === "li" && isSpecialDay()) setLiEffect(true);
     setMe(who);
   }, []);
 
