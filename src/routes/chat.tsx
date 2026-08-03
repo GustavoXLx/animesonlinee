@@ -448,6 +448,7 @@ function ChatPage() {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
+      {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
         <button onClick={() => nav({ to: "/" })} className="p-1"><ArrowLeft size={22} /></button>
         <button
