@@ -70,7 +70,7 @@ function rowToMsg(r: Row): Msg {
   };
 }
 
-export function SecretChat({ onExit }: { onExit: () => void }) {
+export function SecretChat({ onExit, master = false }: { onExit: () => void; master?: boolean }) {
   const [me, setMe] = useState<"gu" | "li" | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [showAll, setShowAll] = useState(false);

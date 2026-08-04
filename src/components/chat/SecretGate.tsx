@@ -10,6 +10,7 @@ import { SecretChat } from "./SecretChat";
  */
 export function SecretGate({ onExit }: { onExit: () => void }) {
   const [open, setOpen] = useState(false);
+  const [master, setMaster] = useState(false);
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
   const [busy, setBusy] = useState(false);
