@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "chat media insert" ON storage.objects;
