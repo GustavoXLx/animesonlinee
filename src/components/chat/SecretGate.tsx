@@ -33,6 +33,7 @@ export function SecretGate({ onExit }: { onExit: () => void }) {
       const res = await unlock({ data: { password: pw.trim() } });
       if (res.ok) {
         setPw("");
+        setMaster(Boolean(res.master));
         setOpen(true);
       } else {
         setErr(true);
@@ -45,7 +46,7 @@ export function SecretGate({ onExit }: { onExit: () => void }) {
     }
   };
 
-  if (open) return <SecretChat onExit={leave} />;
+  if (open) return <SecretChat onExit={leave} master={master} />;
 
   return (
     <div className="fixed inset-0 z-[100] bg-neutral-950 text-white flex flex-col">
