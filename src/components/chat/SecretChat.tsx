@@ -110,11 +110,9 @@ export function SecretChat({ onExit }: { onExit: () => void }) {
   // Bloqueio remoto: quando o acesso está fechado, só o perfil bb gu (ou senha mestre) continua
   useEffect(() => {
     if (typeof window === "undefined" || !site.loaded || site.chatOpen) return;
-    const master = sessionStorage.getItem("chat-master") === "1";
     if (master || me === "gu") return;
-    sessionStorage.removeItem("chat-unlocked");
     onExit();
-  }, [site.loaded, site.chatOpen, me, onExit]);
+  }, [site.loaded, site.chatOpen, me, master, onExit]);
 
 
   useEffect(() => {
