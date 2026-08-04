@@ -68,8 +68,7 @@ function rowToMsg(r: Row): Msg {
   };
 }
 
-function ChatPage() {
-  const nav = useNavigate();
+export function SecretChat({ onExit }: { onExit: () => void }) {
   const [me, setMe] = useState<"gu" | "li" | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [showAll, setShowAll] = useState(false);
