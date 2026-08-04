@@ -1,25 +1,28 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getSiteState, updateSiteState } from "@/lib/chat.functions";
 
 export type SiteState = { chatOpen: boolean; note: string };
 
 const DEFAULT_STATE: SiteState = { chatOpen: true, note: "" };
 
 export async function fetchSiteState(): Promise<SiteState> {
-  const { data } = await supabase
-    .from("site_state")
-    .select("chat_open, note")
-    .eq("id", "main")
-    .maybeSingle();
-  if (!data) return DEFAULT_STATE;
-  return { chatOpen: data.chat_open, note: data.note ?? "" };
+  try {
+    const s = await getSiteState();
+    return { chatOpen: s.chatOpen, note: s.note };
+  } catch {
+    return DEFAULT_STATE;
+  }
 }
 
 export async function setSiteState(patch: Partial<{ chat_open: boolean; note: string }>) {
-  await supabase.from("site_state").update(patch).eq("id", "main");
+  try {
+    await updateSiteState({ data: patch });
+  } catch {
+    /* noop */
+  }
 }
 
-/** Live site state (bloqueio remoto do chat). */
+/** Live site state (bloqueio remoto do chat) — lido pelo servidor, sem acesso direto ao banco. */
 export function useSiteState() {
   const [state, setState] = useState<SiteState>(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
@@ -34,21 +37,9 @@ export function useSiteState() {
     };
     load();
 
-    const ch = supabase
-      .channel("site-state")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "site_state" },
-        (payload) => {
-          const r = payload.new as { chat_open: boolean; note: string | null };
-          setState({ chatOpen: r.chat_open, note: r.note ?? "" });
-        },
-      )
-      .subscribe();
-
     const poll = setInterval(() => {
       if (document.visibilityState === "visible") load();
-    }, 8000);
+    }, 10000);
     const onFocus = () => load();
     window.addEventListener("focus", onFocus);
 
@@ -56,7 +47,6 @@ export function useSiteState() {
       cancelled = true;
       clearInterval(poll);
       window.removeEventListener("focus", onFocus);
-      supabase.removeChannel(ch);
     };
   }, []);
 
