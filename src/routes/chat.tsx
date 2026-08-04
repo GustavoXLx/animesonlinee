@@ -1,10 +1,4 @@
-import {
-  listMessages,
-  listMedia,
-  sendMessage as sendMessageFn,
-  reactMessage,
-  createUpload,
-} from "@/lib/chat.functions";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play, Lock, LockOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +18,10 @@ import sticker6 from "@/assets/stickers/sticker_110825.jpg.asset.json";
 const STICKERS = [sticker1, sticker2, sticker3, sticker4, sticker5, sticker6].map((s) => s.url);
 const CLEAR_KEY = (me: string) => `chat-clear-cutoff-${me}`;
 
+export const Route = createFileRoute("/chat")({
+  head: () => ({ meta: [{ title: "Chat" }, { name: "robots", content: "noindex" }] }),
+  component: ChatPage,
+});
 
 type Msg = {
   id: string;
@@ -50,7 +48,7 @@ type Row = {
 const MAX_VISIBLE = 30;
 const FETCH_LIMIT = 250;
 const REACTIONS = ["❤️", "😂", "😍", "😢", "🔥", "👍"];
-
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365;
 
 const AVATARS = {
   gu: { name: "bb gu", color: "from-sky-400 to-indigo-600", initial: "G" },
@@ -70,7 +68,8 @@ function rowToMsg(r: Row): Msg {
   };
 }
 
-export function SecretChat({ onExit, master = false }: { onExit: () => void; master?: boolean }) {
+function ChatPage() {
+  const nav = useNavigate();
   const [me, setMe] = useState<"gu" | "li" | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [showAll, setShowAll] = useState(false);
@@ -95,8 +94,8 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [liEffect, setLiEffect] = useState(false);
 
   const escapeHome = useCallback(() => {
-    onExit();
-  }, [onExit]);
+    nav({ to: "/", replace: true });
+  }, [nav]);
   usePanicExit(escapeHome);
   useAutoLock(escapeHome);
 
@@ -110,20 +109,26 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   // Bloqueio remoto: quando o acesso está fechado, só o perfil bb gu (ou senha mestre) continua
   useEffect(() => {
     if (typeof window === "undefined" || !site.loaded || site.chatOpen) return;
+    const master = sessionStorage.getItem("chat-master") === "1";
     if (master || me === "gu") return;
-    onExit();
-  }, [site.loaded, site.chatOpen, me, master, onExit]);
+    sessionStorage.removeItem("chat-unlocked");
+    nav({ to: "/" });
+  }, [site.loaded, site.chatOpen, me, nav]);
 
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("chat-unlocked") !== "1") {
+      nav({ to: "/unlock" });
+      return;
+    }
     const saved = sessionStorage.getItem("chat-me") as "gu" | "li" | null;
     if (saved) {
       setMe(saved);
       const raw = localStorage.getItem(CLEAR_KEY(saved));
       setClearCutoff(raw ? Number(raw) || 0 : 0);
     }
-  }, []);
+  }, [nav]);
 
   useEffect(() => {
     if (!me) return;
@@ -131,22 +136,15 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     const other = me === "gu" ? "li" : "gu";
 
     const refetch = async () => {
-      let data: Row[] | null = null;
-      try {
-        const res = await listMessages({ data: { limit: FETCH_LIMIT } });
-        data = (res.rows ?? []) as Row[];
-      } catch {
-        return;
-      }
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(FETCH_LIMIT);
       if (cancelled || !data) return;
-      const rows = data.map(rowToMsg);
+      const rows = (data as Row[]).reverse().map(rowToMsg);
       setMsgs((prev) => {
         const tmp = prev.filter((x) => x.id.startsWith("tmp_"));
-        const known = new Set(prev.map((x) => x.id));
-        if (!atBottomRef.current) {
-          const fresh = rows.filter((r) => !known.has(r.id) && r.author !== me).length;
-          if (fresh > 0) setNewCount((c) => c + fresh);
-        }
         return [...rows, ...tmp];
       });
     };
@@ -160,8 +158,23 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
 
     const channel = supabase
       .channel("chat-room-shared", { config: { presence: { key: me }, broadcast: { self: false } } })
-      .on("broadcast", { event: "ping" }, () => {
-        refetch();
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const m = rowToMsg(payload.new as Row);
+        setMsgs((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          if (m.author !== me && !atBottomRef.current) {
+            setNewCount((c) => c + 1);
+          }
+          return [...prev, m];
+        });
+        if (m.author !== me) {
+          setOtherTyping(false);
+          if (otherTypingTimer) clearTimeout(otherTypingTimer);
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (payload) => {
+        const m = rowToMsg(payload.new as Row);
+        setMsgs((prev) => prev.map((x) => (x.id === m.id ? m : x)));
       })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
@@ -185,7 +198,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
 
     const poll = setInterval(() => {
       if (document.visibilityState === "visible") refetch();
-    }, 3000);
+    }, 4000);
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -320,48 +333,41 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
       };
       setMsgs((p) => [...p, optimistic]);
 
-      let mediaPath: string | null = null;
       if (opts.file) {
-        try {
-          const ext = opts.file.name.split(".").pop() || "bin";
-          const { path, token } = await createUpload({ data: { ext } });
-          const { error: upErr } = await supabase.storage
-            .from("chat-media")
-            .uploadToSignedUrl(path, token, opts.file, { contentType: opts.file.type });
-          if (upErr) throw upErr;
-          mediaPath = path;
-          mediaType = opts.file.type.startsWith("video") ? "video" : "image";
-        } catch {
+        const ext = opts.file.name.split(".").pop() || "bin";
+        const path = `${me}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("chat-media")
+          .upload(path, opts.file, { contentType: opts.file.type });
+        if (upErr) {
           setMsgs((p) => p.filter((x) => x.id !== tempId));
-          if (localPreview) URL.revokeObjectURL(localPreview);
           return;
         }
+        const { data: signed } = await supabase.storage
+          .from("chat-media")
+          .createSignedUrl(path, SIGNED_URL_TTL);
+        mediaUrl = signed?.signedUrl ?? null;
+        mediaType = opts.file.type.startsWith("video") ? "video" : "image";
       }
 
-      let row: Row | null = null;
-      try {
-        const res = await sendMessageFn({
-          data: {
-            author: me,
-            text,
-            replyTo: replyId,
-            mediaPath,
-            mediaType,
-            stickerUrl: opts.stickerUrl ?? null,
-          },
-        });
-        row = res.row as Row;
-      } catch {
-        /* falha no envio */
-      }
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          author: me,
+          text,
+          reply_to: replyId,
+          media_url: mediaUrl,
+          media_type: mediaType,
+        })
+        .select()
+        .single();
 
       if (localPreview) URL.revokeObjectURL(localPreview);
-      if (!row) {
+      if (error) {
         setMsgs((p) => p.filter((x) => x.id !== tempId));
         return;
       }
-      channelRef.current?.send({ type: "broadcast", event: "ping", payload: {} });
-      const real = rowToMsg(row);
+      const real = rowToMsg(data as Row);
       setMsgs((p) => {
         if (p.some((x) => x.id === real.id)) return p.filter((x) => x.id !== tempId);
         return p.map((x) => (x.id === tempId ? real : x));
@@ -377,12 +383,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
       const current = msgs.find((m) => m.id === id);
       const next = [...(current?.reactions ?? []), emoji];
       setMsgs((prev) => prev.map((m) => (m.id === id ? { ...m, reactions: next } : m)));
-      try {
-        await reactMessage({ data: { id, reactions: next } });
-        channelRef.current?.send({ type: "broadcast", event: "ping", payload: {} });
-      } catch {
-        /* noop */
-      }
+      await supabase.from("messages").update({ reactions: next }).eq("id", id);
     },
     [msgs]
   );
@@ -437,7 +438,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             </button>
           ))}
         </div>
-        <button onClick={onExit} className="mt-10 text-xs text-white/40">voltar</button>
+        <button onClick={() => nav({ to: "/" })} className="mt-10 text-xs text-white/40">voltar</button>
       </div>
     );
   }
@@ -449,7 +450,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
       {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
-        <button onClick={onExit} className="p-1"><ArrowLeft size={22} /></button>
+        <button onClick={() => nav({ to: "/" })} className="p-1"><ArrowLeft size={22} /></button>
         <button
           onClick={() => setShowGames(true)}
           className="p-1.5 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600"
@@ -650,15 +651,14 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let rows: Row[] = [];
-      try {
-        const res = await listMedia();
-        rows = (res.rows ?? []) as Row[];
-      } catch {
-        rows = [];
-      }
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .not("media_url", "is", null)
+        .in("media_type", ["image", "video"])
+        .order("created_at", { ascending: true });
       if (cancelled) return;
-      const all = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
+      const all = ((data ?? []) as Row[]).map(rowToMsg).filter((m) => m.ts > cutoff);
       setItems(all);
       setLoading(false);
     })();
