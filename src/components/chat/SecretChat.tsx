@@ -34,6 +34,12 @@ const STICKERS = [
 ].map((s) => s.url);
 const EMOJIS = "❤️ 😂 🥺 😍 😘 🤭 😭 🔥 ✨ 🥰 😴 🙈 👀 🤝 💋 💐 🍀 🐶 🐱 🌙 ☕ 🎧 🍕 🎮 💍 🫂 😤 🙄 👏 🤡".split(" ");
 
+function fileKind(f: File) {
+  if (f.type.startsWith("video")) return "video";
+  if (f.type.startsWith("audio")) return "audio";
+  return "image";
+}
+
 const CLEAR_KEY = (me: string) => `chat-clear-cutoff-${me}`;
 
 
@@ -332,7 +338,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         reactions: [],
         replyTo: replyId,
         mediaUrl: localPreview ?? mediaUrl,
-        mediaType: opts.file ? (opts.file.type.startsWith("video") ? "video" : "image") : mediaType,
+        mediaType: opts.file ? fileKind(opts.file) : mediaType,
       };
       setMsgs((p) => [...p, optimistic]);
 
@@ -346,7 +352,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             .uploadToSignedUrl(path, token, opts.file, { contentType: opts.file.type });
           if (upErr) throw upErr;
           mediaPath = path;
-          mediaType = opts.file.type.startsWith("video") ? "video" : "image";
+          mediaType = fileKind(opts.file);
         } catch {
           setMsgs((p) => p.filter((x) => x.id !== tempId));
           if (localPreview) URL.revokeObjectURL(localPreview);
