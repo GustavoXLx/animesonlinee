@@ -53,7 +53,11 @@ export const unlock = createServerFn({ method: "POST" })
     }
     if (!master) {
       const db = await admin();
-      const { data: st } = await db.from("site_state").select("chat_open").eq("id", "main").maybeSingle();
+      const { data: st } = await db
+        .from("site_state")
+        .select("chat_open")
+        .eq("id", "main")
+        .maybeSingle();
       if (st && st.chat_open === false) return { ok: false as const };
     }
     const session = await useSession<GateSession>(sessionConfig());
@@ -160,7 +164,11 @@ export const reactMessage = createServerFn({ method: "POST" })
 /** Estado público mínimo (só diz se o acesso está liberado + recado). */
 export const getSiteState = createServerFn({ method: "GET" }).handler(async () => {
   const db = await admin();
-  const { data } = await db.from("site_state").select("chat_open, note").eq("id", "main").maybeSingle();
+  const { data } = await db
+    .from("site_state")
+    .select("chat_open, note")
+    .eq("id", "main")
+    .maybeSingle();
   return { chatOpen: data?.chat_open ?? true, note: data?.note ?? "" };
 });
 

@@ -18,7 +18,6 @@ import {
   ChevronRight,
   Newspaper,
   MessageSquare,
-
 } from "lucide-react";
 import { animes, catalog, genres, schedule, type Anime } from "@/lib/animes";
 import { useSiteState } from "@/lib/siteState";
@@ -153,7 +152,9 @@ function Home() {
               Simulcast
             </span>
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <span className="text-[10px] uppercase tracking-widest text-white/80">Em destaque</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/80">
+                Em destaque
+              </span>
               <h1 className="text-2xl font-black leading-tight mt-1">{featured.title}</h1>
               <div className="flex items-center gap-2 text-xs text-white/80 mt-1">
                 <Star size={12} className="fill-yellow-400 text-yellow-400" /> {featured.rating}
@@ -251,7 +252,11 @@ function Home() {
             </div>
           </section>
 
-          <Row title="Em alta agora" icon={<TrendingUp size={16} className="text-emerald-400" />} items={trending} />
+          <Row
+            title="Em alta agora"
+            icon={<TrendingUp size={16} className="text-emerald-400" />}
+            items={trending}
+          />
 
           {/* Top 10 */}
           <section className="pt-6">
@@ -270,7 +275,11 @@ function Home() {
             </div>
           </section>
 
-          <Row title="Nova temporada 2025" icon={<Tv size={16} className="text-sky-400" />} items={newSeason} />
+          <Row
+            title="Nova temporada 2025"
+            icon={<Tv size={16} className="text-sky-400" />}
+            items={newSeason}
+          />
 
           {/* Cronograma */}
           <section className="px-4 pt-8">
@@ -282,7 +291,9 @@ function Home() {
                 <div
                   key={d.day}
                   className={`rounded-2xl border p-3 ${
-                    d.day === today ? "border-fuchsia-500/60 bg-fuchsia-500/10" : "border-white/10 bg-white/5"
+                    d.day === today
+                      ? "border-fuchsia-500/60 bg-fuchsia-500/10"
+                      : "border-white/10 bg-white/5"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -321,8 +332,8 @@ function Home() {
             <div className="mt-4 flex items-start gap-2 rounded-2xl bg-white/5 border border-white/10 p-3">
               <ShieldCheck size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <p className="text-[11px] text-white/60 leading-relaxed">
-                Streaming licenciado, sem anúncios invasivos e com legendas oficiais em português. Sua
-                lista e seu progresso ficam salvos no dispositivo.
+                Streaming licenciado, sem anúncios invasivos e com legendas oficiais em português.
+                Sua lista e seu progresso ficam salvos no dispositivo.
               </p>
             </div>
           </section>
@@ -368,9 +379,18 @@ function Home() {
             </h2>
             <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
               {[
-                { u: "@larissa.k", t: "Melhor player pra assistir no celular, nunca travou pra mim." },
-                { u: "@dan_otaku", t: "Cronograma semanal salvou minha vida, nunca mais perdi episódio." },
-                { u: "@yuu.sc", t: "Legendas bem feitas e catálogo com clássicos. Recomendo demais." },
+                {
+                  u: "@larissa.k",
+                  t: "Melhor player pra assistir no celular, nunca travou pra mim.",
+                },
+                {
+                  u: "@dan_otaku",
+                  t: "Cronograma semanal salvou minha vida, nunca mais perdi episódio.",
+                },
+                {
+                  u: "@yuu.sc",
+                  t: "Legendas bem feitas e catálogo com clássicos. Recomendo demais.",
+                },
               ].map((r) => (
                 <div
                   key={r.u}
@@ -391,10 +411,7 @@ function Home() {
               <p className="text-[11px] text-white/55 mt-1">
                 Um resumo semanal com os episódios novos e as estreias da temporada.
               </p>
-              <form
-                onSubmit={(e) => e.preventDefault()}
-                className="mt-3 flex gap-2"
-              >
+              <form onSubmit={(e) => e.preventDefault()} className="mt-3 flex gap-2">
                 <input
                   type="email"
                   placeholder="seu@email.com"
@@ -413,7 +430,6 @@ function Home() {
               </div>
             </div>
           </section>
-
 
           {/* FAQ */}
           <section className="px-4 pt-8">
@@ -443,11 +459,16 @@ function Home() {
 
           <footer className="px-4 pt-10">
             <div className="grid grid-cols-2 gap-2 text-[11px] text-white/50">
-              {["Sobre nós", "Central de ajuda", "Termos de uso", "Privacidade", "Contato", "Trabalhe conosco"].map(
-                (l) => (
-                  <span key={l}>{l}</span>
-                ),
-              )}
+              {[
+                "Sobre nós",
+                "Central de ajuda",
+                "Termos de uso",
+                "Privacidade",
+                "Contato",
+                "Trabalhe conosco",
+              ].map((l) => (
+                <span key={l}>{l}</span>
+              ))}
             </div>
           </footer>
         </>
@@ -524,4 +545,3 @@ const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
     </Link>
   );
 });
-

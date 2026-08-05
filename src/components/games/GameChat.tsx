@@ -76,7 +76,9 @@ export function GameChat({ gameKey, me }: { gameKey: string; me: Me }) {
       </header>
       <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
         {lines.length === 0 && (
-          <p className="pt-8 text-center text-[11px] text-white/35">converse aqui enquanto joga 💬</p>
+          <p className="pt-8 text-center text-[11px] text-white/35">
+            converse aqui enquanto joga 💬
+          </p>
         )}
         {lines.map((l) => (
           <div key={l.id} className={`flex ${l.from === me ? "justify-end" : "justify-start"}`}>

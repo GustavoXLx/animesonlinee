@@ -8,7 +8,7 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
   const [peerOnline, setPeerOnline] = useState(false);
   const stateRef = useRef<T>(initial);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const listenersRef = useRef<Record<string, ((payload: unknown, from: Me) => void)>>({});
+  const listenersRef = useRef<Record<string, (payload: unknown, from: Me) => void>>({});
 
   useEffect(() => {
     stateRef.current = state;
@@ -34,7 +34,11 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
       })
       .on("broadcast", { event: "sync-request" }, (payload) => {
         if ((payload.payload as { from?: Me })?.from !== me) {
-          channel.send({ type: "broadcast", event: "state", payload: { state: stateRef.current, from: me } });
+          channel.send({
+            type: "broadcast",
+            event: "state",
+            payload: { state: stateRef.current, from: me },
+          });
         }
       })
       .on("broadcast", { event: "msg" }, (payload) => {
@@ -63,22 +67,38 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameKey, me]);
 
-  const setState = useCallback((next: T | ((p: T) => T)) => {
-    setStateLocal((prev) => {
-      const value = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
-      stateRef.current = value;
-      chanRef.current?.send({ type: "broadcast", event: "state", payload: { state: value, from: me } });
-      return value;
-    });
-  }, [me]);
+  const setState = useCallback(
+    (next: T | ((p: T) => T)) => {
+      setStateLocal((prev) => {
+        const value = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
+        stateRef.current = value;
+        chanRef.current?.send({
+          type: "broadcast",
+          event: "state",
+          payload: { state: value, from: me },
+        });
+        return value;
+      });
+    },
+    [me],
+  );
 
-  const sendEvent = useCallback((event: string, data: unknown) => {
-    chanRef.current?.send({ type: "broadcast", event: "msg", payload: { event, data, from: me } });
-  }, [me]);
+  const sendEvent = useCallback(
+    (event: string, data: unknown) => {
+      chanRef.current?.send({
+        type: "broadcast",
+        event: "msg",
+        payload: { event, data, from: me },
+      });
+    },
+    [me],
+  );
 
   const onEvent = useCallback((event: string, cb: (data: unknown, from: Me) => void) => {
     listenersRef.current[event] = cb as (p: unknown, from: Me) => void;
-    return () => { delete listenersRef.current[event]; };
+    return () => {
+      delete listenersRef.current[event];
+    };
   }, []);
 
   return { state, setState, peerOnline, sendEvent, onEvent };

@@ -21,7 +21,9 @@ export const Route = createFileRoute("/anime/$animeId")({
     return { anime, detail: animeDetail(anime) };
   },
   head: ({ loaderData }) => {
-    const title = loaderData ? `${loaderData.anime.title} — assistir online | AniStream` : "AniStream";
+    const title = loaderData
+      ? `${loaderData.anime.title} — assistir online | AniStream`
+      : "AniStream";
     const desc = loaderData?.detail.synopsis.slice(0, 155) ?? "Animes legendados e dublados.";
     return {
       meta: [
@@ -38,7 +40,11 @@ export const Route = createFileRoute("/anime/$animeId")({
 });
 
 const REVIEWS = [
-  { u: "hana_92", t: "Direção de arte impecável, trilha sonora fica na cabeça semanas depois.", s: 5 },
+  {
+    u: "hana_92",
+    t: "Direção de arte impecável, trilha sonora fica na cabeça semanas depois.",
+    s: 5,
+  },
   { u: "kenzo.ttv", t: "Começa devagar, mas do episódio 5 em diante não dá pra parar.", s: 4 },
   { u: "mariana_r", t: "Assisti dublado com minha irmã e a adaptação ficou ótima.", s: 5 },
 ];
@@ -70,7 +76,10 @@ function AnimePage() {
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="mb-2 flex flex-wrap gap-1.5">
             {detail.tags.map((t: string) => (
-              <span key={t} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold">
+              <span
+                key={t}
+                className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold"
+              >
                 {t}
               </span>
             ))}
@@ -163,9 +172,17 @@ function AnimePage() {
         {tab === "eps" && (
           <ul className="mt-3 space-y-2">
             {eps.map((e) => (
-              <li key={e.n} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2">
+              <li
+                key={e.n}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2"
+              >
                 <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-xl bg-neutral-900">
-                  <img src={anime.cover} alt="" loading="lazy" className="h-full w-full object-cover opacity-70" />
+                  <img
+                    src={anime.cover}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover opacity-70"
+                  />
                   <Play size={16} className="absolute inset-0 m-auto fill-white" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -240,7 +257,12 @@ function AnimePage() {
                   className="w-28 shrink-0"
                 >
                   <div className="aspect-[2/3] overflow-hidden rounded-xl bg-neutral-900">
-                    <img src={s.cover} alt={s.title} loading="lazy" className="h-full w-full object-cover" />
+                    <img
+                      src={s.cover}
+                      alt={s.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <p className="mt-1 line-clamp-2 text-[11px] font-semibold">{s.title}</p>
                 </Link>

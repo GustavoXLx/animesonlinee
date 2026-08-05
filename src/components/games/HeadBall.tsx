@@ -67,8 +67,28 @@ type Input = { left: boolean; right: boolean; jump: boolean; kick: boolean; dash
 
 const initSnap = (): Snapshot => ({
   ball: { x: W / 2, y: H / 3, vx: 0, vy: 0, spin: 0 },
-  gu: { x: 180, y: GROUND_Y - HEAD_R, vx: 0, vy: 0, onGround: true, kickT: 0, dashCd: 0, facing: 1, runPhase: 0 },
-  li: { x: W - 180, y: GROUND_Y - HEAD_R, vx: 0, vy: 0, onGround: true, kickT: 0, dashCd: 0, facing: -1, runPhase: 0 },
+  gu: {
+    x: 180,
+    y: GROUND_Y - HEAD_R,
+    vx: 0,
+    vy: 0,
+    onGround: true,
+    kickT: 0,
+    dashCd: 0,
+    facing: 1,
+    runPhase: 0,
+  },
+  li: {
+    x: W - 180,
+    y: GROUND_Y - HEAD_R,
+    vx: 0,
+    vy: 0,
+    onGround: true,
+    kickT: 0,
+    dashCd: 0,
+    facing: -1,
+    runPhase: 0,
+  },
   score: { gu: 0, li: 0 },
   finished: null,
   t: 0,
@@ -79,11 +99,17 @@ function loadLook(me: Me): Look {
   try {
     const raw = localStorage.getItem(`headball-look-${me}`);
     if (raw) return { ...DEFAULT_LOOKS[me], ...JSON.parse(raw) };
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return DEFAULT_LOOKS[me];
 }
 function saveLook(me: Me, look: Look) {
-  try { localStorage.setItem(`headball-look-${me}`, JSON.stringify(look)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(`headball-look-${me}`, JSON.stringify(look));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function HeadBall({ me }: { me: Me }) {
@@ -100,8 +126,20 @@ export function HeadBall({ me }: { me: Me }) {
   const snapRef = useRef<Snapshot>(initSnap());
   const [scoreState, setScoreState] = useState({ gu: 0, li: 0 });
   const [finished, setFinished] = useState<null | Me | "draw">(null);
-  const inputRef = useRef<Input>({ left: false, right: false, jump: false, kick: false, dash: false });
-  const remoteInputRef = useRef<Input>({ left: false, right: false, jump: false, kick: false, dash: false });
+  const inputRef = useRef<Input>({
+    left: false,
+    right: false,
+    jump: false,
+    kick: false,
+    dash: false,
+  });
+  const remoteInputRef = useRef<Input>({
+    left: false,
+    right: false,
+    jump: false,
+    kick: false,
+    dash: false,
+  });
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [goalFlash, setGoalFlash] = useState<null | Me>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -169,7 +207,11 @@ export function HeadBall({ me }: { me: Me }) {
 
   // rebroadcast look
   useEffect(() => {
-    chanRef.current?.send({ type: "broadcast", event: "look", payload: { look: myLook, from: me } });
+    chanRef.current?.send({
+      type: "broadcast",
+      event: "look",
+      payload: { look: myLook, from: me },
+    });
     saveLook(me, myLook);
   }, [myLook, me]);
 
@@ -221,7 +263,13 @@ export function HeadBall({ me }: { me: Me }) {
       const overlap = HEAD_R * 2 - Math.abs(pdx);
       if (overlap > 0 && Math.abs(s.gu.y - s.li.y) < HEAD_R * 1.5) {
         const push = overlap / 2;
-        if (pdx >= 0) { s.gu.x -= push; s.li.x += push; } else { s.gu.x += push; s.li.x -= push; }
+        if (pdx >= 0) {
+          s.gu.x -= push;
+          s.li.x += push;
+        } else {
+          s.gu.x += push;
+          s.li.x -= push;
+        }
       }
 
       // ball
@@ -236,16 +284,27 @@ export function HeadBall({ me }: { me: Me }) {
         s.ball.vy *= -0.62;
         s.ball.vx *= 0.88;
       }
-      if (s.ball.y < BALL_R + 20) { s.ball.y = BALL_R + 20; s.ball.vy = -s.ball.vy * 0.55; }
+      if (s.ball.y < BALL_R + 20) {
+        s.ball.y = BALL_R + 20;
+        s.ball.vy = -s.ball.vy * 0.55;
+      }
       // walls (only outside goal opening)
       if (s.ball.x < BALL_R + GOAL_W && s.ball.y < GROUND_Y - GOAL_H) {
-        s.ball.x = BALL_R + GOAL_W; s.ball.vx = -s.ball.vx * 0.75;
+        s.ball.x = BALL_R + GOAL_W;
+        s.ball.vx = -s.ball.vx * 0.75;
       }
       if (s.ball.x > W - BALL_R - GOAL_W && s.ball.y < GROUND_Y - GOAL_H) {
-        s.ball.x = W - BALL_R - GOAL_W; s.ball.vx = -s.ball.vx * 0.75;
+        s.ball.x = W - BALL_R - GOAL_W;
+        s.ball.vx = -s.ball.vx * 0.75;
       }
-      if (s.ball.x < BALL_R) { s.ball.x = BALL_R; s.ball.vx = Math.abs(s.ball.vx) * 0.6; }
-      if (s.ball.x > W - BALL_R) { s.ball.x = W - BALL_R; s.ball.vx = -Math.abs(s.ball.vx) * 0.6; }
+      if (s.ball.x < BALL_R) {
+        s.ball.x = BALL_R;
+        s.ball.vx = Math.abs(s.ball.vx) * 0.6;
+      }
+      if (s.ball.x > W - BALL_R) {
+        s.ball.x = W - BALL_R;
+        s.ball.vx = -Math.abs(s.ball.vx) * 0.6;
+      }
 
       // head collision
       for (const p of [s.gu, s.li] as PlayerState[]) {
@@ -254,7 +313,8 @@ export function HeadBall({ me }: { me: Me }) {
         const dist = Math.hypot(dx, dy);
         const minD = HEAD_R + BALL_R;
         if (dist < minD && dist > 0) {
-          const nx = dx / dist, ny = dy / dist;
+          const nx = dx / dist,
+            ny = dy / dist;
           s.ball.x = p.x + nx * minD;
           s.ball.y = p.y + ny * minD;
           const rel = s.ball.vx - p.vx;
@@ -313,7 +373,11 @@ export function HeadBall({ me }: { me: Me }) {
           snapAcc += dt;
           if (snapAcc >= 1 / 20) {
             snapAcc = 0;
-            chanRef.current?.send({ type: "broadcast", event: "snap", payload: { snap: snapRef.current } });
+            chanRef.current?.send({
+              type: "broadcast",
+              event: "snap",
+              payload: { snap: snapRef.current },
+            });
           }
         } else {
           inputAcc += dt;
@@ -322,12 +386,18 @@ export function HeadBall({ me }: { me: Me }) {
             inputAcc = 0;
             if (key !== lastSentInput) {
               lastSentInput = key;
-              chanRef.current?.send({ type: "broadcast", event: "input", payload: { input: inputRef.current, from: me } });
+              chanRef.current?.send({
+                type: "broadcast",
+                event: "input",
+                payload: { input: inputRef.current, from: me },
+              });
             }
           }
         }
         // update my dash cooldown display
-        setDashCd(inputRef.current ? (isHost ? snapRef.current.gu.dashCd : snapRef.current.li.dashCd) : 0);
+        setDashCd(
+          inputRef.current ? (isHost ? snapRef.current.gu.dashCd : snapRef.current.li.dashCd) : 0,
+        );
       }
 
       // update particles
@@ -361,7 +431,12 @@ export function HeadBall({ me }: { me: Me }) {
         ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
       }
       ctx.globalAlpha = 1;
-      drawScoreboard(ctx, s.score, me === "gu" ? myLook : otherLook, me === "li" ? myLook : otherLook);
+      drawScoreboard(
+        ctx,
+        s.score,
+        me === "gu" ? myLook : otherLook,
+        me === "li" ? myLook : otherLook,
+      );
     };
 
     raf = requestAnimationFrame(loop);
@@ -373,11 +448,26 @@ export function HeadBall({ me }: { me: Me }) {
     const map = (e: KeyboardEvent, down: boolean) => {
       const k = e.key.toLowerCase();
       let changed = false;
-      if (k === "a" || k === "arrowleft") { inputRef.current.left = down; changed = true; }
-      if (k === "d" || k === "arrowright") { inputRef.current.right = down; changed = true; }
-      if (k === "w" || k === "arrowup" || k === " ") { inputRef.current.jump = down; changed = true; }
-      if (k === "s" || k === "arrowdown" || k === "k") { inputRef.current.kick = down; changed = true; }
-      if (k === "shift" || k === "j") { inputRef.current.dash = down; changed = true; }
+      if (k === "a" || k === "arrowleft") {
+        inputRef.current.left = down;
+        changed = true;
+      }
+      if (k === "d" || k === "arrowright") {
+        inputRef.current.right = down;
+        changed = true;
+      }
+      if (k === "w" || k === "arrowup" || k === " ") {
+        inputRef.current.jump = down;
+        changed = true;
+      }
+      if (k === "s" || k === "arrowdown" || k === "k") {
+        inputRef.current.kick = down;
+        changed = true;
+      }
+      if (k === "shift" || k === "j") {
+        inputRef.current.dash = down;
+        changed = true;
+      }
       if (changed) e.preventDefault();
     };
     const dn = (e: KeyboardEvent) => map(e, true);
@@ -399,10 +489,19 @@ export function HeadBall({ me }: { me: Me }) {
   };
 
   const btn = (key: keyof Input) => ({
-    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); inputRef.current[key] = true; },
-    onPointerUp: () => { inputRef.current[key] = false; },
-    onPointerLeave: () => { inputRef.current[key] = false; },
-    onPointerCancel: () => { inputRef.current[key] = false; },
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      inputRef.current[key] = true;
+    },
+    onPointerUp: () => {
+      inputRef.current[key] = false;
+    },
+    onPointerLeave: () => {
+      inputRef.current[key] = false;
+    },
+    onPointerCancel: () => {
+      inputRef.current[key] = false;
+    },
   });
 
   // ============ LOBBY ============
@@ -417,8 +516,20 @@ export function HeadBall({ me }: { me: Me }) {
           </div>
 
           <div className="w-full max-w-md grid grid-cols-2 gap-3">
-            <PlayerCard side="left" look={me === "gu" ? myLook : otherLook} isMe={me === "gu"} online={me === "gu" || peerOnline} ready={me === "gu" ? meReady : peerReady} />
-            <PlayerCard side="right" look={me === "li" ? myLook : otherLook} isMe={me === "li"} online={me === "li" || peerOnline} ready={me === "li" ? meReady : peerReady} />
+            <PlayerCard
+              side="left"
+              look={me === "gu" ? myLook : otherLook}
+              isMe={me === "gu"}
+              online={me === "gu" || peerOnline}
+              ready={me === "gu" ? meReady : peerReady}
+            />
+            <PlayerCard
+              side="right"
+              look={me === "li" ? myLook : otherLook}
+              isMe={me === "li"}
+              online={me === "li" || peerOnline}
+              ready={me === "li" ? meReady : peerReady}
+            />
           </div>
 
           {!peerOnline && (
@@ -454,12 +565,23 @@ export function HeadBall({ me }: { me: Me }) {
           </button>
 
           <div className="text-[11px] text-white/40 max-w-sm text-center leading-relaxed">
-            <b className="text-white/60">controles:</b> ← → mover · ↑/espaço pular · ↓/K chutar · Shift/J dash<br/>
+            <b className="text-white/60">controles:</b> ← → mover · ↑/espaço pular · ↓/K chutar ·
+            Shift/J dash
+            <br />
             no celular use os botões abaixo do campo
           </div>
         </div>
 
-        {showCustom && <CustomizeModal look={myLook} onSave={(l) => { setMyLook(l); setShowCustom(false); }} onClose={() => setShowCustom(false)} />}
+        {showCustom && (
+          <CustomizeModal
+            look={myLook}
+            onSave={(l) => {
+              setMyLook(l);
+              setShowCustom(false);
+            }}
+            onClose={() => setShowCustom(false)}
+          />
+        )}
       </div>
     );
   }
@@ -475,34 +597,74 @@ export function HeadBall({ me }: { me: Me }) {
         />
         {goalFlash && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-7xl sm:text-9xl font-black text-yellow-300 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)] animate-pulse">GOL!</p>
+            <p className="text-7xl sm:text-9xl font-black text-yellow-300 drop-shadow-[0_0_30px_rgba(250,204,21,0.8)] animate-pulse">
+              GOL!
+            </p>
           </div>
         )}
         {finished && (
           <div className="absolute inset-0 bg-black/80 backdrop-blur flex flex-col items-center justify-center gap-4 z-10">
             <p className="text-6xl">{finished === me ? "🏆" : "😢"}</p>
-            <p className="text-3xl font-black">{finished === me ? "você venceu!" : "você perdeu"}</p>
-            <p className="text-white/60">{scoreState.gu} × {scoreState.li}</p>
-            <button onClick={restartMatch} className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full px-8 py-3 font-bold shadow-xl active:scale-95">
+            <p className="text-3xl font-black">
+              {finished === me ? "você venceu!" : "você perdeu"}
+            </p>
+            <p className="text-white/60">
+              {scoreState.gu} × {scoreState.li}
+            </p>
+            <button
+              onClick={restartMatch}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full px-8 py-3 font-bold shadow-xl active:scale-95"
+            >
               revanche
             </button>
           </div>
         )}
-        <button onClick={() => setShowCustom(true)} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center" title="personalizar">
+        <button
+          onClick={() => setShowCustom(true)}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center"
+          title="personalizar"
+        >
           <Palette size={16} />
         </button>
-        <button onClick={restartMatch} className="absolute top-3 right-14 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center" title="reiniciar">
+        <button
+          onClick={restartMatch}
+          className="absolute top-3 right-14 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center"
+          title="reiniciar"
+        >
           <RotateCcw size={16} />
         </button>
       </div>
 
       {/* touch controls */}
       <div className="p-3 border-t border-white/10 grid grid-cols-5 gap-2 shrink-0 bg-neutral-950">
-        <button {...btn("left")} className="h-16 rounded-2xl bg-white/10 active:bg-amber-500/40 font-black text-3xl">←</button>
-        <button {...btn("right")} className="h-16 rounded-2xl bg-white/10 active:bg-amber-500/40 font-black text-3xl">→</button>
-        <button {...btn("jump")} className="h-16 rounded-2xl bg-sky-500/30 active:bg-sky-500/60 font-bold text-sm">PULA</button>
-        <button {...btn("kick")} className="h-16 rounded-2xl bg-rose-500/40 active:bg-rose-500/70 font-bold text-sm">CHUTE</button>
-        <button {...btn("dash")} className="h-16 rounded-2xl bg-fuchsia-500/40 active:bg-fuchsia-500/70 font-bold text-sm relative">
+        <button
+          {...btn("left")}
+          className="h-16 rounded-2xl bg-white/10 active:bg-amber-500/40 font-black text-3xl"
+        >
+          ←
+        </button>
+        <button
+          {...btn("right")}
+          className="h-16 rounded-2xl bg-white/10 active:bg-amber-500/40 font-black text-3xl"
+        >
+          →
+        </button>
+        <button
+          {...btn("jump")}
+          className="h-16 rounded-2xl bg-sky-500/30 active:bg-sky-500/60 font-bold text-sm"
+        >
+          PULA
+        </button>
+        <button
+          {...btn("kick")}
+          className="h-16 rounded-2xl bg-rose-500/40 active:bg-rose-500/70 font-bold text-sm"
+        >
+          CHUTE
+        </button>
+        <button
+          {...btn("dash")}
+          className="h-16 rounded-2xl bg-fuchsia-500/40 active:bg-fuchsia-500/70 font-bold text-sm relative"
+        >
           <Zap size={16} className="inline" /> DASH
           {dashCd > 0 && (
             <span className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center text-xs">
@@ -512,7 +674,16 @@ export function HeadBall({ me }: { me: Me }) {
         </button>
       </div>
 
-      {showCustom && <CustomizeModal look={myLook} onSave={(l) => { setMyLook(l); setShowCustom(false); }} onClose={() => setShowCustom(false)} />}
+      {showCustom && (
+        <CustomizeModal
+          look={myLook}
+          onSave={(l) => {
+            setMyLook(l);
+            setShowCustom(false);
+          }}
+          onClose={() => setShowCustom(false)}
+        />
+      )}
     </div>
   );
 }
@@ -523,7 +694,10 @@ function applyInput(p: PlayerState, i: Input, dt: number) {
   p.vx = p.vx * 0.65 + target * 0.35;
   if (i.left) p.facing = -1;
   if (i.right) p.facing = 1;
-  if (i.jump && p.onGround) { p.vy = JUMP_V; p.onGround = false; }
+  if (i.jump && p.onGround) {
+    p.vy = JUMP_V;
+    p.onGround = false;
+  }
   if (i.kick && p.kickT <= 0) p.kickT = 0.28;
   if (i.dash && p.dashCd <= 0 && (i.left || i.right)) {
     p.vx = p.facing * DASH_V;
@@ -717,7 +891,12 @@ function drawBall(ctx: CanvasRenderingContext2D, b: { x: number; y: number; spin
   ctx.restore();
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, p: PlayerState, look: Look, defaultFacing: 1 | -1) {
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  p: PlayerState,
+  look: Look,
+  defaultFacing: 1 | -1,
+) {
   const facing = p.facing || defaultFacing;
   // shadow
   ctx.fillStyle = "rgba(0,0,0,0.35)";
@@ -734,13 +913,17 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: PlayerState, look: Look, d
   // shorts
   ctx.fillStyle = look.shorts;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(p.x - 24, p.y + HEAD_R + 4, 48, 16, 4) : ctx.rect(p.x - 24, p.y + HEAD_R + 4, 48, 16);
+  ctx.roundRect
+    ? ctx.roundRect(p.x - 24, p.y + HEAD_R + 4, 48, 16, 4)
+    : ctx.rect(p.x - 24, p.y + HEAD_R + 4, 48, 16);
   ctx.fill();
 
   // shirt / torso
   ctx.fillStyle = look.shirt;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(p.x - 26, p.y + HEAD_R - 8, 52, 22, 6) : ctx.rect(p.x - 26, p.y + HEAD_R - 8, 52, 22);
+  ctx.roundRect
+    ? ctx.roundRect(p.x - 26, p.y + HEAD_R - 8, 52, 22, 6)
+    : ctx.rect(p.x - 26, p.y + HEAD_R - 8, 52, 22);
   ctx.fill();
   // shirt highlight
   ctx.fillStyle = "rgba(255,255,255,0.15)";
@@ -840,7 +1023,12 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: PlayerState, look: Look, d
   }
 }
 
-function drawScoreboard(ctx: CanvasRenderingContext2D, score: { gu: number; li: number }, guLook: Look, liLook: Look) {
+function drawScoreboard(
+  ctx: CanvasRenderingContext2D,
+  score: { gu: number; li: number },
+  guLook: Look,
+  liLook: Look,
+) {
   const bx = W / 2 - 130;
   const by = 12;
   // panel
@@ -873,7 +1061,15 @@ function drawScoreboard(ctx: CanvasRenderingContext2D, score: { gu: number; li: 
 
 function lighten(hex: string, pct: number) {
   const h = hex.replace("#", "");
-  const num = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+  const num = parseInt(
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h,
+    16,
+  );
   let r = (num >> 16) + pct;
   let g = ((num >> 8) & 0xff) + pct;
   let b = (num & 0xff) + pct;
@@ -884,18 +1080,40 @@ function lighten(hex: string, pct: number) {
 }
 
 // ============ LOBBY CARD ============
-function PlayerCard({ side, look, isMe, online, ready }: { side: "left" | "right"; look: Look; isMe: boolean; online: boolean; ready: boolean }) {
+function PlayerCard({
+  side,
+  look,
+  isMe,
+  online,
+  ready,
+}: {
+  side: "left" | "right";
+  look: Look;
+  isMe: boolean;
+  online: boolean;
+  ready: boolean;
+}) {
   return (
-    <div className={`relative rounded-3xl p-4 border-2 transition ${
-      ready ? "border-emerald-400 bg-emerald-500/10" : online ? "border-white/20 bg-white/5" : "border-white/10 bg-white/[0.02] opacity-60"
-    }`}>
+    <div
+      className={`relative rounded-3xl p-4 border-2 transition ${
+        ready
+          ? "border-emerald-400 bg-emerald-500/10"
+          : online
+            ? "border-white/20 bg-white/5"
+            : "border-white/10 bg-white/[0.02] opacity-60"
+      }`}
+    >
       <div className="flex flex-col items-center gap-2">
         <MiniAvatar look={look} facing={side === "left" ? 1 : -1} />
         <p className="font-bold text-sm">{look.name}</p>
         <p className="text-[10px] uppercase tracking-wider">
-          {!online ? <span className="text-white/40">offline</span> :
-            ready ? <span className="text-emerald-400">✓ pronto</span> :
-            <span className="text-amber-300">esperando</span>}
+          {!online ? (
+            <span className="text-white/40">offline</span>
+          ) : ready ? (
+            <span className="text-emerald-400">✓ pronto</span>
+          ) : (
+            <span className="text-amber-300">esperando</span>
+          )}
         </p>
         {isMe && <span className="text-[9px] text-fuchsia-400">você</span>}
       </div>
@@ -906,10 +1124,22 @@ function PlayerCard({ side, look, isMe, online, ready }: { side: "left" | "right
 function MiniAvatar({ look, facing }: { look: Look; facing: 1 | -1 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const c = ref.current; if (!c) return;
-    const ctx = c.getContext("2d"); if (!ctx) return;
+    const c = ref.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
-    const p: PlayerState = { x: c.width / 2, y: c.height / 2 - 5, vx: 0, vy: 0, onGround: true, kickT: 0, dashCd: 0, facing: facing, runPhase: 0 };
+    const p: PlayerState = {
+      x: c.width / 2,
+      y: c.height / 2 - 5,
+      vx: 0,
+      vy: 0,
+      onGround: true,
+      kickT: 0,
+      dashCd: 0,
+      facing: facing,
+      runPhase: 0,
+    };
     // temporarily lower ground to fit
     drawPlayer(ctx, p, look, facing);
   }, [look, facing]);
@@ -917,7 +1147,15 @@ function MiniAvatar({ look, facing }: { look: Look; facing: 1 | -1 }) {
 }
 
 // ============ CUSTOMIZE ============
-function CustomizeModal({ look, onSave, onClose }: { look: Look; onSave: (l: Look) => void; onClose: () => void }) {
+function CustomizeModal({
+  look,
+  onSave,
+  onClose,
+}: {
+  look: Look;
+  onSave: (l: Look) => void;
+  onClose: () => void;
+}) {
   const [l, setL] = useState<Look>(look);
   const swatch = (label: string, key: keyof Look, opts: string[]) => (
     <div>
@@ -928,7 +1166,16 @@ function CustomizeModal({ look, onSave, onClose }: { look: Look; onSave: (l: Loo
             key={c || "none"}
             onClick={() => setL({ ...l, [key]: c })}
             className={`w-9 h-9 rounded-full border-2 transition ${l[key] === c ? "border-white scale-110" : "border-white/20"}`}
-            style={c ? { background: c } : { backgroundImage: "linear-gradient(45deg,#333 25%,transparent 25%,transparent 75%,#333 75%),linear-gradient(45deg,#333 25%,transparent 25%,transparent 75%,#333 75%)", backgroundSize: "8px 8px", backgroundPosition: "0 0,4px 4px" }}
+            style={
+              c
+                ? { background: c }
+                : {
+                    backgroundImage:
+                      "linear-gradient(45deg,#333 25%,transparent 25%,transparent 75%,#333 75%),linear-gradient(45deg,#333 25%,transparent 25%,transparent 75%,#333 75%)",
+                    backgroundSize: "8px 8px",
+                    backgroundPosition: "0 0,4px 4px",
+                  }
+            }
           />
         ))}
       </div>
@@ -936,8 +1183,14 @@ function CustomizeModal({ look, onSave, onClose }: { look: Look; onSave: (l: Loo
   );
   const previewLook = useMemo(() => l, [l]);
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[60] bg-black/80 flex items-end sm:items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <p className="font-bold text-lg">personalizar personagem</p>
         <div className="bg-gradient-to-b from-sky-900 to-emerald-900 rounded-2xl h-40 flex items-center justify-center">
           <MiniAvatar look={previewLook} facing={1} />
@@ -949,12 +1202,46 @@ function CustomizeModal({ look, onSave, onClose }: { look: Look; onSave: (l: Loo
           className="w-full bg-white/10 rounded-full px-4 py-2.5 text-sm outline-none"
         />
         {swatch("pele", "skin", ["#fde7cd", "#f5d0a9", "#c68863", "#8d5524", "#5c3317"])}
-        {swatch("camisa", "shirt", ["#3b82f6", "#ec4899", "#10b981", "#f59e0b", "#a855f7", "#ef4444", "#06b6d4", "#111827"])}
-        {swatch("shorts", "shorts", ["#1e3a8a", "#831843", "#064e3b", "#78350f", "#4c1d95", "#7f1d1d", "#0891b2", "#000000"])}
-        {swatch("cabelo/chapéu", "hat", ["", "#facc15", "#111827", "#7c2d12", "#f472b6", "#22d3ee", "#ffffff", "#dc2626"])}
+        {swatch("camisa", "shirt", [
+          "#3b82f6",
+          "#ec4899",
+          "#10b981",
+          "#f59e0b",
+          "#a855f7",
+          "#ef4444",
+          "#06b6d4",
+          "#111827",
+        ])}
+        {swatch("shorts", "shorts", [
+          "#1e3a8a",
+          "#831843",
+          "#064e3b",
+          "#78350f",
+          "#4c1d95",
+          "#7f1d1d",
+          "#0891b2",
+          "#000000",
+        ])}
+        {swatch("cabelo/chapéu", "hat", [
+          "",
+          "#facc15",
+          "#111827",
+          "#7c2d12",
+          "#f472b6",
+          "#22d3ee",
+          "#ffffff",
+          "#dc2626",
+        ])}
         <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="flex-1 py-3 rounded-full bg-white/10 font-semibold">cancelar</button>
-          <button onClick={() => onSave(l)} className="flex-1 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold">salvar</button>
+          <button onClick={onClose} className="flex-1 py-3 rounded-full bg-white/10 font-semibold">
+            cancelar
+          </button>
+          <button
+            onClick={() => onSave(l)}
+            className="flex-1 py-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold"
+          >
+            salvar
+          </button>
         </div>
       </div>
     </div>
