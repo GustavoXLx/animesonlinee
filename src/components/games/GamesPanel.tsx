@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { X, Sparkles, Grid3x3, Hand, ArrowLeft, RotateCcw, Send, Brush, Trophy } from "lucide-react";
+import { X, Sparkles, Grid3x3, Hand, ArrowLeft, RotateCcw, Send, Brush, Trophy, CircleDot, Brain, Type, Flame } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
+import { GameChat } from "./GameChat";
+import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
 
-type GameKey = "sintonia" | "velha" | "ppt" | "gartic" | "headball";
+type GameKey = "sintonia" | "velha" | "ppt" | "gartic" | "headball" | "lig4" | "memoria" | "forca" | "verdade";
 
 const GAMES: { key: GameKey; name: string; desc: string; icon: React.ComponentType<{ size?: number }>; gradient: string }[] = [
   { key: "headball", name: "Head Ball ⚽", desc: "futebol 1x1 com cabeças", icon: Trophy, gradient: "from-emerald-500 to-teal-600" },
@@ -12,6 +14,10 @@ const GAMES: { key: GameKey; name: string; desc: string; icon: React.ComponentTy
   { key: "sintonia", name: "Sintonia", desc: "adivinhe a intensidade pela dica", icon: Sparkles, gradient: "from-fuchsia-500 to-indigo-600" },
   { key: "velha", name: "Jogo da Velha", desc: "clássico X e O", icon: Grid3x3, gradient: "from-sky-500 to-blue-600" },
   { key: "ppt", name: "Pedra Papel Tesoura", desc: "melhor de sempre", icon: Hand, gradient: "from-amber-500 to-rose-600" },
+  { key: "lig4", name: "Lig 4", desc: "conecte quatro peças", icon: CircleDot, gradient: "from-sky-500 to-indigo-600" },
+  { key: "memoria", name: "Jogo da Memória", desc: "ache os pares primeiro", icon: Brain, gradient: "from-violet-500 to-fuchsia-600" },
+  { key: "forca", name: "Forca", desc: "palavra secreta + dica", icon: Type, gradient: "from-amber-500 to-orange-600" },
+  { key: "verdade", name: "Verdade ou Desafio", desc: "só pra nós dois 😏", icon: Flame, gradient: "from-rose-500 to-red-600" },
 ];
 
 export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
@@ -40,16 +46,20 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
           {active === "ppt" && <PPT me={me} />}
           {active === "gartic" && <Gartic me={me} />}
           {active === "headball" && <HeadBall me={me} />}
+          {active === "lig4" && <Lig4 me={me} />}
+          {active === "memoria" && <Memoria me={me} />}
+          {active === "forca" && <Forca me={me} />}
+          {active === "verdade" && <VerdadeDesafio me={me} />}
         </div>
+        <GameChat gameKey={active} me={me} />
       </div>
     );
   }
 
-  // ==== Launcher (side drawer) ====
+  // ==== Launcher (tela cheia) ====
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={onClose} />
-      <aside className="relative w-[88%] max-w-sm h-full bg-neutral-950 border-r border-white/10 flex flex-col animate-slide-in-left">
+    <div className="fixed inset-0 z-50 flex bg-neutral-950 animate-fade-in">
+      <aside className="relative w-full h-full bg-neutral-950 flex flex-col">
         <header className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-fuchsia-500 to-indigo-600 flex items-center justify-center">
             <Sparkles size={16} />
@@ -57,8 +67,9 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
           <h2 className="flex-1 font-bold">Joguinhos 💕</h2>
           <button onClick={onClose} className="p-1"><X size={20} /></button>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <p className="text-xs text-white/50 mb-2">escolham o mesmo jogo pra começar</p>
+        <div className="flex-1 overflow-y-auto p-4">
+          <p className="text-xs text-white/50 mb-3">escolham o mesmo jogo pra começar · dá pra conversar dentro do jogo 💬</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
           {GAMES.map((g) => (
             <button
               key={g.key}
@@ -74,6 +85,7 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
               </div>
             </button>
           ))}
+          </div>
         </div>
       </aside>
     </div>
