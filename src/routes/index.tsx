@@ -408,7 +408,7 @@ function Row({ title, items, icon }: { title: string; items: Anime[]; icon?: Rea
 
 const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
   return (
-    <div className="group">
+    <Link to="/anime/$animeId" params={{ animeId: String(a.id) }} className="group block">
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900">
         <img
           src={a.cover}
@@ -430,6 +430,7 @@ const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
           {a.genre} · {a.year}
         </p>
       </div>
-    </div>
+    </Link>
   );
 });
+
