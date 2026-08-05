@@ -403,14 +403,50 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     [msgs]
   );
 
+  const copyMsg = useCallback(
+    async (m: Msg) => {
+      setMenuMsg(null);
+      try {
+        await navigator.clipboard.writeText(m.text || "");
+        toast("copiado");
+      } catch {
+        toast("não deu pra copiar");
+      }
+    },
+    [toast],
+  );
+
+  const removeMsg = useCallback(
+    async (m: Msg) => {
+      setMenuMsg(null);
+      setMsgs((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, text: "", mediaUrl: null, mediaType: "deleted", reactions: [] } : x)),
+      );
+      if (m.id.startsWith("tmp_")) return;
+      try {
+        await deleteMessage({ data: { id: m.id } });
+        channelRef.current?.send({ type: "broadcast", event: "ping", payload: {} });
+      } catch {
+        /* noop */
+      }
+    },
+    [],
+  );
+
   const filteredMsgs = useMemo(
     () => (clearCutoff ? msgs.filter((m) => m.ts > clearCutoff) : msgs),
     [msgs, clearCutoff]
   );
+  const searchHits = useMemo(() => {
+    const t = search.trim().toLowerCase();
+    if (!t) return null;
+    return filteredMsgs.filter((m) => m.text.toLowerCase().includes(t));
+  }, [filteredMsgs, search]);
   const visible = useMemo(
-    () => (showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
-    [filteredMsgs, showAll]
+    () => (searchHits ? searchHits : showAll ? filteredMsgs : filteredMsgs.slice(-MAX_VISIBLE)),
+    [filteredMsgs, showAll, searchHits]
   );
+
   const msgById = useMemo(() => {
     const m = new Map<string, Msg>();
     for (const x of msgs) m.set(x.id, x);
