@@ -34,6 +34,16 @@ const STICKERS = [
 ].map((s) => s.url);
 const EMOJIS = "❤️ 😂 🥺 😍 😘 🤭 😭 🔥 ✨ 🥰 😴 🙈 👀 🤝 💋 💐 🍀 🐶 🐱 🌙 ☕ 🎧 🍕 🎮 💍 🫂 😤 🙄 👏 🤡".split(" ");
 
+function dayLabel(ts: number) {
+  const d = new Date(ts);
+  const today = new Date();
+  const y = new Date(today.getTime() - 86400000);
+  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (same(d, today)) return "hoje";
+  if (same(d, y)) return "ontem";
+  return d.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
 function fileKind(f: File) {
   if (f.type.startsWith("video")) return "video";
   if (f.type.startsWith("audio")) return "audio";
@@ -909,9 +919,10 @@ type RowProps = {
   onReply: () => void;
   onQuickHeart: () => void;
   onJump: (id: string) => void;
+  onMenu: () => void;
 };
 
-const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart, onJump }: RowProps) {
+const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, onQuickHeart, onJump, onMenu }: RowProps) {
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
   const isSticker = m.mediaType === "sticker";
   const [dx, setDx] = useState(0);
@@ -919,23 +930,38 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
   const startY = useRef(0);
   const active = useRef(false);
 
+  const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearHold = () => {
+    if (holdRef.current) clearTimeout(holdRef.current);
+    holdRef.current = null;
+  };
+
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
     active.current = true;
+    clearHold();
+    holdRef.current = setTimeout(() => {
+      active.current = false;
+      setDx(0);
+      onMenu();
+    }, 480);
   };
   const onTouchMove = (e: React.TouchEvent) => {
     if (!active.current) return;
     const d = e.touches[0].clientX - startX.current;
     const dy = Math.abs(e.touches[0].clientY - startY.current);
+    if (dy > 20 || Math.abs(d) > 6) clearHold();
     if (dy > 20) { active.current = false; setDx(0); return; }
     if (d > 4) setDx(Math.min(d * 0.6, 64));
   };
   const onTouchEnd = () => {
+    clearHold();
     if (active.current && dx > 40) onReply();
     active.current = false;
     setDx(0);
   };
+  useEffect(() => clearHold, []);
 
   const quote = reply ? (
     <button
@@ -951,6 +977,7 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    onContextMenu: (e: React.MouseEvent) => { e.preventDefault(); onMenu(); },
     style: { transform: dx ? `translateX(${dx}px)` : undefined, transition: dx ? "none" : "transform 150ms" },
   };
 
@@ -1005,6 +1032,14 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
           )}
           {m.mediaUrl && m.mediaType === "video" && (
             <video src={m.mediaUrl} controls playsInline className="rounded-xl max-h-72 mb-1" />
+          )}
+          {m.mediaUrl && m.mediaType === "audio" && (
+            <audio src={m.mediaUrl} controls preload="metadata" className="mb-1 h-9 w-56 max-w-full" />
+          )}
+          {m.mediaType === "deleted" && (
+            <p className="flex items-center gap-1 text-sm italic opacity-60">
+              <Trash2 size={12} /> mensagem apagada
+            </p>
           )}
           {m.text && (
             <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>
