@@ -324,6 +324,94 @@ function Home() {
             </div>
           </section>
 
+          {/* Notícias / editorial */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Newspaper size={16} className="text-indigo-400" /> Notícias do mundo dos animes
+            </h2>
+            <div className="space-y-2">
+              {[
+                {
+                  t: "2ª temporada de Dragon Heart Saga confirmada para outubro",
+                  d: "O estúdio divulgou o primeiro teaser com o novo elenco de dubladores.",
+                  tag: "Anúncio",
+                },
+                {
+                  t: "Guia da temporada: os 8 títulos mais esperados",
+                  d: "Nossa redação assistiu aos episódios de estreia e montou o ranking.",
+                  tag: "Guia",
+                },
+                {
+                  t: "Entrevista: como Kokoro no Melody gravou a trilha ao vivo",
+                  d: "A diretora musical conta o processo dos 42 minutos de orquestra.",
+                  tag: "Entrevista",
+                },
+              ].map((n) => (
+                <article key={n.t} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-fuchsia-400">
+                    {n.tag}
+                  </span>
+                  <h3 className="text-xs font-semibold leading-snug mt-0.5">{n.t}</h3>
+                  <p className="text-[11px] text-white/50 mt-1">{n.d}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* Avaliações de usuários */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <MessageSquare size={16} className="text-emerald-400" /> O que dizem nossos usuários
+            </h2>
+            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+              {[
+                { u: "@larissa.k", t: "Melhor player pra assistir no celular, nunca travou pra mim." },
+                { u: "@dan_otaku", t: "Cronograma semanal salvou minha vida, nunca mais perdi episódio." },
+                { u: "@yuu.sc", t: "Legendas bem feitas e catálogo com clássicos. Recomendo demais." },
+              ].map((r) => (
+                <div
+                  key={r.u}
+                  className="shrink-0 w-64 rounded-2xl border border-white/10 bg-white/5 p-3"
+                >
+                  <p className="text-[10px] text-yellow-400">★★★★★</p>
+                  <p className="text-[11px] text-white/70 mt-1.5">{r.t}</p>
+                  <p className="text-[10px] text-white/40 mt-2">{r.u}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Newsletter + apps */}
+          <section className="px-4 pt-8">
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/10 p-4">
+              <h2 className="font-semibold text-sm">Receba os lançamentos por e-mail</h2>
+              <p className="text-[11px] text-white/55 mt-1">
+                Um resumo semanal com os episódios novos e as estreias da temporada.
+              </p>
+              <form
+                onSubmit={(e) => e.preventDefault()}
+                className="mt-3 flex gap-2"
+              >
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="flex-1 bg-white/10 rounded-full px-4 py-2 text-xs outline-none placeholder:text-white/40"
+                />
+                <button className="bg-white text-black text-xs font-bold px-4 rounded-full">
+                  Assinar
+                </button>
+              </form>
+              <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-white/50">
+                {["App Android", "App iOS", "Smart TV", "Chromecast"].map((p) => (
+                  <span key={p} className="rounded-full border border-white/15 px-2.5 py-1">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
+
+
           {/* FAQ */}
           <section className="px-4 pt-8">
             <h2 className="font-semibold mb-3">Perguntas frequentes</h2>
