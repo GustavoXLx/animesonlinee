@@ -686,6 +686,42 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
+      {menuMsg && (
+        <div className="absolute inset-0 z-40 flex items-end bg-black/50" onClick={() => setMenuMsg(null)}>
+          <div
+            className="w-full rounded-t-3xl border-t border-white/10 bg-neutral-900 p-2 pb-6 animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-2 flex justify-center gap-1 py-2">
+              {REACTIONS.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => { const id = menuMsg.id; setMenuMsg(null); react(id, r); }}
+                  className="text-2xl p-1 transition active:scale-125"
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            {[
+              { icon: <Reply size={16} />, label: "Responder", run: () => { setReplyTo(menuMsg); setMenuMsg(null); } },
+              { icon: <Copy size={16} />, label: "Copiar texto", run: () => copyMsg(menuMsg) },
+              { icon: <Search size={16} />, label: "Ver original", run: () => { setMenuMsg(null); if (menuMsg.replyTo) jumpTo(menuMsg.replyTo); } },
+              { icon: <Trash2 size={16} className="text-red-400" />, label: "Apagar para todos", run: () => removeMsg(menuMsg) },
+            ].map((a) => (
+              <button
+                key={a.label}
+                onClick={a.run}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm active:bg-white/10"
+              >
+                {a.icon}
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {showStickers && (
         <div
           className="absolute inset-0 z-40 bg-black/50 flex items-end"
@@ -842,8 +878,56 @@ const Composer = memo(function Composer({
 }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [secs, setSecs] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const lastTypingRef = useRef(0);
+  const recRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopTick = () => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = null;
+    setSecs(0);
+  };
+
+  const startRec = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        if (blob.size > 800) {
+          const file = new File([blob], `audio.webm`, { type: "audio/webm" });
+          setUploading(true);
+          try { await onSend({ file }); } finally { setUploading(false); }
+        }
+      };
+      rec.start();
+      recRef.current = rec;
+      setRecording(true);
+      tickRef.current = setInterval(() => setSecs((v) => v + 1), 1000);
+    } catch {
+      /* microfone negado */
+    }
+  };
+
+  const stopRec = (send: boolean) => {
+    const rec = recRef.current;
+    recRef.current = null;
+    setRecording(false);
+    stopTick();
+    if (!rec) return;
+    if (!send) rec.onstop = null as never;
+    rec.stop();
+  };
+
+  useEffect(() => () => { stopTick(); recRef.current?.stop(); }, []);
 
   const submit = () => {
     if (!text.trim()) return;
@@ -868,8 +952,42 @@ const Composer = memo(function Composer({
     }
   };
 
+  if (recording) {
+    return (
+      <div className="flex items-center gap-3 border-t border-white/10 bg-neutral-950 p-3">
+        <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+        <p className="flex-1 text-sm">
+          gravando áudio · {String(Math.floor(secs / 60)).padStart(2, "0")}:{String(secs % 60).padStart(2, "0")}
+        </p>
+        <button onClick={() => stopRec(false)} className="rounded-full bg-white/10 px-3 py-2 text-xs">
+          cancelar
+        </button>
+        <button
+          onClick={() => stopRec(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-rose-600"
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-3 border-t border-white/10 flex items-end gap-2 bg-neutral-950">
+    <div className="border-t border-white/10 bg-neutral-950">
+      {showEmoji && (
+        <div className="grid max-h-40 grid-cols-8 gap-1 overflow-y-auto border-b border-white/10 p-2">
+          {EMOJIS.map((e) => (
+            <button
+              key={e}
+              onClick={() => setText((t) => t + e)}
+              className="rounded-lg py-1.5 text-xl active:bg-white/10"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-end gap-2 p-3">
       <input
         ref={fileRef}
         type="file"
@@ -890,6 +1008,13 @@ const Composer = memo(function Composer({
       >
         <Sticker size={16} />
       </button>
+      <button
+        onClick={() => setShowEmoji((v) => !v)}
+        aria-label="Emojis"
+        className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${showEmoji ? "bg-white/25" : "bg-white/10"}`}
+      >
+        {showEmoji ? <Pause size={16} /> : <Smile size={16} />}
+      </button>
       <textarea
         value={text}
         onChange={handleChange}
@@ -900,13 +1025,23 @@ const Composer = memo(function Composer({
         placeholder="mensagem... (/fotos /limpar)"
         className="flex-1 bg-white/10 rounded-2xl px-4 py-2.5 text-sm outline-none resize-none max-h-32"
       />
-      <button
-        onClick={submit}
-        disabled={!text.trim()}
-        className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center disabled:opacity-40"
-      >
-        <Send size={16} />
-      </button>
+      {text.trim() ? (
+        <button
+          onClick={submit}
+          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center"
+        >
+          <Send size={16} />
+        </button>
+      ) : (
+        <button
+          onClick={startRec}
+          aria-label="Gravar áudio"
+          className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center"
+        >
+          <Mic size={16} />
+        </button>
+      )}
+      </div>
     </div>
   );
 });
