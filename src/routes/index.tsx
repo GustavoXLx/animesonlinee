@@ -16,6 +16,9 @@ import {
   Sparkles,
   Tv,
   ChevronRight,
+  Newspaper,
+  MessageSquare,
+
 } from "lucide-react";
 import { animes, catalog, genres, schedule, type Anime } from "@/lib/animes";
 import { useSiteState } from "@/lib/siteState";
