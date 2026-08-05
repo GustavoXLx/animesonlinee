@@ -175,3 +175,16 @@ export const updateSiteState = createServerFn({ method: "POST" })
     if (Object.keys(patch).length) await db.from("site_state").update(patch).eq("id", "main");
     return { ok: true as const };
   });
+
+/** Apaga a mensagem para todos (estilo WhatsApp "apagar para todos"). */
+export const deleteMessage = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db
+      .from("messages")
+      .update({ text: "", media_url: null, media_type: "deleted", reactions: [] })
+      .eq("id", data.id);
+    return { ok: true as const };
+  });
