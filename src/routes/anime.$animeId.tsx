@@ -69,7 +69,7 @@ function AnimePage() {
         </Link>
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {detail.tags.map((t) => (
+            {detail.tags.map((t: string) => (
               <span key={t} className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold">
                 {t}
               </span>
@@ -199,7 +199,7 @@ function AnimePage() {
             <div>
               <p className="mb-1.5 text-white/40">Elenco de voz</p>
               <div className="flex flex-wrap gap-2">
-                {detail.cast.map((c) => (
+                {detail.cast.map((c: string) => (
                   <span key={c} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px]">
                     {c}
                   </span>
