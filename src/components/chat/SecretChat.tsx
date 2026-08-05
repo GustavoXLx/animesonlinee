@@ -105,6 +105,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [sys, setSys] = useState<string | null>(null);
   const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liEffect, setLiEffect] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+
 
   const escapeHome = useCallback(() => {
     onExit();
