@@ -1179,8 +1179,9 @@ const MessageRow = memo(function MessageRow({ m, mine, reply, onReact, onReply, 
           {m.text && (
             <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>
           )}
-          <span className="block text-[10px] opacity-60 mt-1">
+          <span className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
             {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {mine && <CheckCheck size={12} className={m.id.startsWith("tmp_") ? "opacity-50" : ""} />}
           </span>
           {m.reactions.length > 0 && (
             <div className="absolute -bottom-2 right-2 bg-neutral-800 rounded-full px-1.5 py-0.5 text-xs shadow border border-white/10 flex items-center">
