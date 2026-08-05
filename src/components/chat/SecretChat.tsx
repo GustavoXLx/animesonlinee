@@ -4,9 +4,10 @@ import {
   sendMessage as sendMessageFn,
   reactMessage,
   createUpload,
+  deleteMessage,
 } from "@/lib/chat.functions";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play, Lock, LockOpen } from "lucide-react";
+import { ArrowLeft, Send, Heart, Smile, X, Reply, Paperclip, Loader2, Sticker, ArrowDown, Gamepad2, Images, Play, Lock, LockOpen, Search, Copy, Trash2, Mic, Pause, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
@@ -20,8 +21,19 @@ import sticker3 from "@/assets/stickers/sticker_110704.jpg.asset.json";
 import sticker4 from "@/assets/stickers/sticker_110722.jpg.asset.json";
 import sticker5 from "@/assets/stickers/sticker_110758.jpg.asset.json";
 import sticker6 from "@/assets/stickers/sticker_110825.jpg.asset.json";
+import sticker7 from "@/assets/stickers/sticker_b173449.jpg.asset.json";
+import sticker8 from "@/assets/stickers/sticker_b173505.jpg.asset.json";
+import sticker9 from "@/assets/stickers/sticker_b173528.jpg.asset.json";
+import sticker10 from "@/assets/stickers/sticker_b173540.jpg.asset.json";
+import sticker11 from "@/assets/stickers/sticker_b173556.jpg.asset.json";
+import sticker12 from "@/assets/stickers/sticker_b173622.jpg.asset.json";
 
-const STICKERS = [sticker1, sticker2, sticker3, sticker4, sticker5, sticker6].map((s) => s.url);
+const STICKERS = [
+  sticker1, sticker2, sticker3, sticker4, sticker5, sticker6,
+  sticker7, sticker8, sticker9, sticker10, sticker11, sticker12,
+].map((s) => s.url);
+const EMOJIS = "❤️ 😂 🥺 😍 😘 🤭 😭 🔥 ✨ 🥰 😴 🙈 👀 🤝 💋 💐 🍀 🐶 🐱 🌙 ☕ 🎧 🍕 🎮 💍 🫂 😤 🙄 👏 🤡".split(" ");
+
 const CLEAR_KEY = (me: string) => `chat-clear-cutoff-${me}`;
 
 
