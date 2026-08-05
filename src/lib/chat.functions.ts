@@ -53,7 +53,11 @@ export const unlock = createServerFn({ method: "POST" })
     }
     if (!master) {
       const db = await admin();
-      const { data: st } = await db.from("site_state").select("chat_open").eq("id", "main").maybeSingle();
+      const { data: st } = await db
+        .from("site_state")
+        .select("chat_open")
+        .eq("id", "main")
+        .maybeSingle();
       if (st && st.chat_open === false) return { ok: false as const };
     }
     const session = await useSession<GateSession>(sessionConfig());
@@ -160,7 +164,11 @@ export const reactMessage = createServerFn({ method: "POST" })
 /** Estado público mínimo (só diz se o acesso está liberado + recado). */
 export const getSiteState = createServerFn({ method: "GET" }).handler(async () => {
   const db = await admin();
-  const { data } = await db.from("site_state").select("chat_open, note").eq("id", "main").maybeSingle();
+  const { data } = await db
+    .from("site_state")
+    .select("chat_open, note")
+    .eq("id", "main")
+    .maybeSingle();
   return { chatOpen: data?.chat_open ?? true, note: data?.note ?? "" };
 });
 
@@ -173,5 +181,18 @@ export const updateSiteState = createServerFn({ method: "POST" })
     if (typeof data.chat_open === "boolean") patch.chat_open = data.chat_open;
     if (typeof data.note === "string") patch.note = data.note.slice(0, 200);
     if (Object.keys(patch).length) await db.from("site_state").update(patch).eq("id", "main");
+    return { ok: true as const };
+  });
+
+/** Apaga a mensagem para todos (estilo WhatsApp "apagar para todos"). */
+export const deleteMessage = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db
+      .from("messages")
+      .update({ text: "", media_url: null, media_type: "deleted", reactions: [] })
+      .eq("id", data.id);
     return { ok: true as const };
   });

@@ -3,18 +3,82 @@ import { RotateCcw, Send, Eraser, Trash2 } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 
 const WORDS = [
-  "gato", "pizza", "sol", "coração", "arco-íris", "sereia", "cachorro", "praia",
-  "banana", "guitarra", "carro", "avião", "sorvete", "unicórnio", "abacaxi",
-  "bolo", "estrela", "lua", "castelo", "dinossauro", "robô", "hambúrguer",
-  "casa", "árvore", "flor", "peixe", "borboleta", "beijo", "abraço", "café",
-  "chocolate", "óculos", "chapéu", "sapato", "bicicleta", "elefante", "leão",
-  "girafa", "pinguim", "panda", "livro", "relógio", "câmera", "computador",
-  "celular", "chuva", "neve", "fogo", "montanha", "rio", "onda", "nuvem",
-  "coelho", "rato", "vaca", "porco", "cavalo", "galinha", "pato", "sapo",
-  "cobra", "aranha", "abelha", "formiga",
+  "gato",
+  "pizza",
+  "sol",
+  "coração",
+  "arco-íris",
+  "sereia",
+  "cachorro",
+  "praia",
+  "banana",
+  "guitarra",
+  "carro",
+  "avião",
+  "sorvete",
+  "unicórnio",
+  "abacaxi",
+  "bolo",
+  "estrela",
+  "lua",
+  "castelo",
+  "dinossauro",
+  "robô",
+  "hambúrguer",
+  "casa",
+  "árvore",
+  "flor",
+  "peixe",
+  "borboleta",
+  "beijo",
+  "abraço",
+  "café",
+  "chocolate",
+  "óculos",
+  "chapéu",
+  "sapato",
+  "bicicleta",
+  "elefante",
+  "leão",
+  "girafa",
+  "pinguim",
+  "panda",
+  "livro",
+  "relógio",
+  "câmera",
+  "computador",
+  "celular",
+  "chuva",
+  "neve",
+  "fogo",
+  "montanha",
+  "rio",
+  "onda",
+  "nuvem",
+  "coelho",
+  "rato",
+  "vaca",
+  "porco",
+  "cavalo",
+  "galinha",
+  "pato",
+  "sapo",
+  "cobra",
+  "aranha",
+  "abelha",
+  "formiga",
 ];
 
-const COLORS = ["#ffffff", "#f43f5e", "#f59e0b", "#84cc16", "#06b6d4", "#6366f1", "#a855f7", "#000000"];
+const COLORS = [
+  "#ffffff",
+  "#f43f5e",
+  "#f59e0b",
+  "#84cc16",
+  "#06b6d4",
+  "#6366f1",
+  "#a855f7",
+  "#000000",
+];
 
 type Phase = "idle" | "playing" | "reveal";
 
@@ -47,7 +111,11 @@ const ROUND_MS = 90_000;
 type Stroke = { x: number; y: number; nx: number; ny: number; c: string; w: number };
 
 export function Gartic({ me }: { me: Me }) {
-  const { state, setState, peerOnline, sendEvent, onEvent } = useGameChannel<GarticState>("gartic", me, initial);
+  const { state, setState, peerOnline, sendEvent, onEvent } = useGameChannel<GarticState>(
+    "gartic",
+    me,
+    initial,
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [color, setColor] = useState("#ffffff");
   const [brush, setBrush] = useState(4);
@@ -143,7 +211,14 @@ export function Gartic({ me }: { me: Me }) {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx || !lastRef.current) return;
     const p = getPos(e);
-    const seg: Stroke = { x: lastRef.current.x, y: lastRef.current.y, nx: p.x, ny: p.y, c: color, w: brush };
+    const seg: Stroke = {
+      x: lastRef.current.x,
+      y: lastRef.current.y,
+      nx: p.x,
+      ny: p.y,
+      c: color,
+      w: brush,
+    };
     drawSeg(ctx, seg);
     strokeBufferRef.current.push(seg);
     lastRef.current = p;
@@ -161,7 +236,10 @@ export function Gartic({ me }: { me: Me }) {
     flushTimer.current = setTimeout(flushStrokesNow, 80);
   };
   const flushStrokesNow = () => {
-    if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+    if (flushTimer.current) {
+      clearTimeout(flushTimer.current);
+      flushTimer.current = null;
+    }
     if (strokeBufferRef.current.length === 0) return;
     sendEvent("stroke", strokeBufferRef.current);
     strokeBufferRef.current = [];
@@ -207,7 +285,8 @@ export function Gartic({ me }: { me: Me }) {
         <div className="text-xs min-w-0 flex-1">
           <p className="text-white/50">placar · rodada {state.round}</p>
           <p className="font-bold truncate">
-            gu <span className="text-fuchsia-400">{state.scores.gu}</span> · li <span className="text-fuchsia-400">{state.scores.li}</span>
+            gu <span className="text-fuchsia-400">{state.scores.gu}</span> · li{" "}
+            <span className="text-fuchsia-400">{state.scores.li}</span>
           </p>
         </div>
         {state.phase === "playing" && (
@@ -216,13 +295,17 @@ export function Gartic({ me }: { me: Me }) {
             <p className={`font-bold ${remaining < 15 ? "text-rose-400" : ""}`}>{remaining}s</p>
           </div>
         )}
-        <button onClick={reset} className="p-2 text-white/50"><RotateCcw size={16} /></button>
+        <button onClick={reset} className="p-2 text-white/50">
+          <RotateCcw size={16} />
+        </button>
       </div>
 
       {state.phase === "idle" && (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
           <p className="text-lg font-bold">🎨 Gartic</p>
-          <p className="text-sm text-white/60">um desenha, o outro adivinha. quem adivinhar ganha 3 pts.</p>
+          <p className="text-sm text-white/60">
+            um desenha, o outro adivinha. quem adivinhar ganha 3 pts.
+          </p>
           <button
             onClick={startRound}
             className="bg-gradient-to-r from-fuchsia-500 to-indigo-600 rounded-full px-6 py-3 font-semibold"
@@ -256,7 +339,10 @@ export function Gartic({ me }: { me: Me }) {
             {state.guesses.length > 0 && (
               <div className="absolute top-2 right-2 max-h-40 w-40 overflow-y-auto bg-black/60 backdrop-blur rounded-xl p-2 space-y-1 text-xs">
                 {state.guesses.slice(-8).map((g, i) => (
-                  <div key={i} className={g.correct ? "text-emerald-400 font-bold" : "text-white/70"}>
+                  <div
+                    key={i}
+                    className={g.correct ? "text-emerald-400 font-bold" : "text-white/70"}
+                  >
                     <b>{g.from}:</b> {g.text}
                   </div>
                 ))}
@@ -285,10 +371,19 @@ export function Gartic({ me }: { me: Me }) {
                     <span className="rounded-full bg-white" style={{ width: w, height: w }} />
                   </button>
                 ))}
-                <button onClick={() => setColor("#0a0a0a")} className="p-1.5 rounded-full bg-white/10"><Eraser size={14} /></button>
-                <button onClick={clearCanvas} className="p-1.5 rounded-full bg-white/10 ml-auto"><Trash2 size={14} /></button>
+                <button
+                  onClick={() => setColor("#0a0a0a")}
+                  className="p-1.5 rounded-full bg-white/10"
+                >
+                  <Eraser size={14} />
+                </button>
+                <button onClick={clearCanvas} className="p-1.5 rounded-full bg-white/10 ml-auto">
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <button onClick={() => endRound(null)} className="w-full text-xs text-white/40 py-1">desistir da rodada</button>
+              <button onClick={() => endRound(null)} className="w-full text-xs text-white/40 py-1">
+                desistir da rodada
+              </button>
             </div>
           ) : (
             <div className="p-3 border-t border-white/10 flex gap-2">
@@ -299,7 +394,12 @@ export function Gartic({ me }: { me: Me }) {
                 placeholder="chute aqui..."
                 className="flex-1 bg-white/10 rounded-full px-4 py-2.5 text-sm outline-none"
               />
-              <button onClick={submitGuess} className="w-11 h-11 rounded-full bg-fuchsia-500 flex items-center justify-center"><Send size={16} /></button>
+              <button
+                onClick={submitGuess}
+                className="w-11 h-11 rounded-full bg-fuchsia-500 flex items-center justify-center"
+              >
+                <Send size={16} />
+              </button>
             </div>
           )}
         </>
@@ -313,8 +413,8 @@ export function Gartic({ me }: { me: Me }) {
             {state.winner === null
               ? "ninguém acertou 😅"
               : state.winner === me
-              ? "você acertou! 🎉"
-              : "a outra pessoa acertou!"}
+                ? "você acertou! 🎉"
+                : "a outra pessoa acertou!"}
           </p>
           <button
             onClick={startRound}
@@ -349,7 +449,11 @@ function getPos(e: React.PointerEvent): { x: number; y: number } {
 }
 
 function norm(s: string) {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
 function WaitingPeer() {

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, memo, useMemo } from "react";
 import {
   Search,
@@ -16,6 +16,8 @@ import {
   Sparkles,
   Tv,
   ChevronRight,
+  Newspaper,
+  MessageSquare,
 } from "lucide-react";
 import { animes, catalog, genres, schedule, type Anime } from "@/lib/animes";
 import { useSiteState } from "@/lib/siteState";
@@ -150,7 +152,9 @@ function Home() {
               Simulcast
             </span>
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <span className="text-[10px] uppercase tracking-widest text-white/80">Em destaque</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/80">
+                Em destaque
+              </span>
               <h1 className="text-2xl font-black leading-tight mt-1">{featured.title}</h1>
               <div className="flex items-center gap-2 text-xs text-white/80 mt-1">
                 <Star size={12} className="fill-yellow-400 text-yellow-400" /> {featured.rating}
@@ -248,7 +252,11 @@ function Home() {
             </div>
           </section>
 
-          <Row title="Em alta agora" icon={<TrendingUp size={16} className="text-emerald-400" />} items={trending} />
+          <Row
+            title="Em alta agora"
+            icon={<TrendingUp size={16} className="text-emerald-400" />}
+            items={trending}
+          />
 
           {/* Top 10 */}
           <section className="pt-6">
@@ -267,7 +275,11 @@ function Home() {
             </div>
           </section>
 
-          <Row title="Nova temporada 2025" icon={<Tv size={16} className="text-sky-400" />} items={newSeason} />
+          <Row
+            title="Nova temporada 2025"
+            icon={<Tv size={16} className="text-sky-400" />}
+            items={newSeason}
+          />
 
           {/* Cronograma */}
           <section className="px-4 pt-8">
@@ -279,7 +291,9 @@ function Home() {
                 <div
                   key={d.day}
                   className={`rounded-2xl border p-3 ${
-                    d.day === today ? "border-fuchsia-500/60 bg-fuchsia-500/10" : "border-white/10 bg-white/5"
+                    d.day === today
+                      ? "border-fuchsia-500/60 bg-fuchsia-500/10"
+                      : "border-white/10 bg-white/5"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -318,9 +332,102 @@ function Home() {
             <div className="mt-4 flex items-start gap-2 rounded-2xl bg-white/5 border border-white/10 p-3">
               <ShieldCheck size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <p className="text-[11px] text-white/60 leading-relaxed">
-                Streaming licenciado, sem anúncios invasivos e com legendas oficiais em português. Sua
-                lista e seu progresso ficam salvos no dispositivo.
+                Streaming licenciado, sem anúncios invasivos e com legendas oficiais em português.
+                Sua lista e seu progresso ficam salvos no dispositivo.
               </p>
+            </div>
+          </section>
+
+          {/* Notícias / editorial */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Newspaper size={16} className="text-indigo-400" /> Notícias do mundo dos animes
+            </h2>
+            <div className="space-y-2">
+              {[
+                {
+                  t: "2ª temporada de Dragon Heart Saga confirmada para outubro",
+                  d: "O estúdio divulgou o primeiro teaser com o novo elenco de dubladores.",
+                  tag: "Anúncio",
+                },
+                {
+                  t: "Guia da temporada: os 8 títulos mais esperados",
+                  d: "Nossa redação assistiu aos episódios de estreia e montou o ranking.",
+                  tag: "Guia",
+                },
+                {
+                  t: "Entrevista: como Kokoro no Melody gravou a trilha ao vivo",
+                  d: "A diretora musical conta o processo dos 42 minutos de orquestra.",
+                  tag: "Entrevista",
+                },
+              ].map((n) => (
+                <article key={n.t} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-fuchsia-400">
+                    {n.tag}
+                  </span>
+                  <h3 className="text-xs font-semibold leading-snug mt-0.5">{n.t}</h3>
+                  <p className="text-[11px] text-white/50 mt-1">{n.d}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* Avaliações de usuários */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <MessageSquare size={16} className="text-emerald-400" /> O que dizem nossos usuários
+            </h2>
+            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+              {[
+                {
+                  u: "@larissa.k",
+                  t: "Melhor player pra assistir no celular, nunca travou pra mim.",
+                },
+                {
+                  u: "@dan_otaku",
+                  t: "Cronograma semanal salvou minha vida, nunca mais perdi episódio.",
+                },
+                {
+                  u: "@yuu.sc",
+                  t: "Legendas bem feitas e catálogo com clássicos. Recomendo demais.",
+                },
+              ].map((r) => (
+                <div
+                  key={r.u}
+                  className="shrink-0 w-64 rounded-2xl border border-white/10 bg-white/5 p-3"
+                >
+                  <p className="text-[10px] text-yellow-400">★★★★★</p>
+                  <p className="text-[11px] text-white/70 mt-1.5">{r.t}</p>
+                  <p className="text-[10px] text-white/40 mt-2">{r.u}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Newsletter + apps */}
+          <section className="px-4 pt-8">
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/10 p-4">
+              <h2 className="font-semibold text-sm">Receba os lançamentos por e-mail</h2>
+              <p className="text-[11px] text-white/55 mt-1">
+                Um resumo semanal com os episódios novos e as estreias da temporada.
+              </p>
+              <form onSubmit={(e) => e.preventDefault()} className="mt-3 flex gap-2">
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="flex-1 bg-white/10 rounded-full px-4 py-2 text-xs outline-none placeholder:text-white/40"
+                />
+                <button className="bg-white text-black text-xs font-bold px-4 rounded-full">
+                  Assinar
+                </button>
+              </form>
+              <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-white/50">
+                {["App Android", "App iOS", "Smart TV", "Chromecast"].map((p) => (
+                  <span key={p} className="rounded-full border border-white/15 px-2.5 py-1">
+                    {p}
+                  </span>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -352,11 +459,16 @@ function Home() {
 
           <footer className="px-4 pt-10">
             <div className="grid grid-cols-2 gap-2 text-[11px] text-white/50">
-              {["Sobre nós", "Central de ajuda", "Termos de uso", "Privacidade", "Contato", "Trabalhe conosco"].map(
-                (l) => (
-                  <span key={l}>{l}</span>
-                ),
-              )}
+              {[
+                "Sobre nós",
+                "Central de ajuda",
+                "Termos de uso",
+                "Privacidade",
+                "Contato",
+                "Trabalhe conosco",
+              ].map((l) => (
+                <span key={l}>{l}</span>
+              ))}
             </div>
           </footer>
         </>
@@ -408,7 +520,7 @@ function Row({ title, items, icon }: { title: string; items: Anime[]; icon?: Rea
 
 const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
   return (
-    <div className="group">
+    <Link to="/anime/$animeId" params={{ animeId: String(a.id) }} className="group block">
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900">
         <img
           src={a.cover}
@@ -430,6 +542,6 @@ const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
           {a.genre} · {a.year}
         </p>
       </div>
-    </div>
+    </Link>
   );
 });
