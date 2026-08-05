@@ -548,6 +548,16 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           </button>
         )}
         <button
+          onClick={() => {
+            setShowSearch((v) => !v);
+            setSearch("");
+          }}
+          aria-label="Buscar na conversa"
+          className={`p-1.5 rounded-full ${showSearch ? "bg-white/20" : "bg-white/10"}`}
+        >
+          <Search size={14} />
+        </button>
+        <button
           onClick={() => { sessionStorage.removeItem("chat-me"); setMe(null); }}
           className="text-[11px] text-white/40"
         >
@@ -556,20 +566,37 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
 
       </header>
 
+      {showSearch && (
+        <div className="px-3 py-2 border-b border-white/10 bg-neutral-900 flex items-center gap-2">
+          <Search size={14} className="text-white/40" />
+          <input
+            autoFocus
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="buscar mensagens..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/30"
+          />
+          <span className="text-[10px] text-white/40">
+            {searchHits ? `${searchHits.length} resultado(s)` : ""}
+          </span>
+          <button onClick={() => { setShowSearch(false); setSearch(""); }}><X size={16} /></button>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         onScroll={onScroll}
         className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-2"
         style={{ contain: "strict" as never, willChange: "transform" }}
       >
-        {!showAll && filteredMsgs.length > MAX_VISIBLE && (
+        {!searchHits && !showAll && filteredMsgs.length > MAX_VISIBLE && (
           <div className="text-center">
             <button onClick={() => setShowAll(true)} className="text-[11px] text-white/40 py-2">
               puxe pra cima ou toque pra ver mais ({filteredMsgs.length - MAX_VISIBLE})
             </button>
           </div>
         )}
-        {showAll && (
+        {!searchHits && showAll && (
           <div className="text-center text-[11px] text-white/30">início da conversa</div>
         )}
         {clearCutoff > 0 && (
@@ -577,18 +604,28 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             histórico local limpo · digite /limpar pra limpar de novo · /fotos pra galeria
           </div>
         )}
-        {visible.map((m) => (
-          <MessageRow
-            key={m.id}
-            m={m}
-            mine={m.author === me}
-            reply={m.replyTo ? msgById.get(m.replyTo) : undefined}
-            onReact={() => setReactingId(m.id)}
-            onReply={() => setReplyTo(m)}
-            onQuickHeart={() => react(m.id, "❤️")}
-            onJump={jumpTo}
-          />
+        {visible.map((m, i) => (
+          <div key={m.id}>
+            {(!searchHits && dayLabel(m.ts) !== (i > 0 ? dayLabel(visible[i - 1].ts) : null)) && (
+              <div className="flex justify-center py-2">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] text-white/50">
+                  {dayLabel(m.ts)}
+                </span>
+              </div>
+            )}
+            <MessageRow
+              m={m}
+              mine={m.author === me}
+              reply={m.replyTo ? msgById.get(m.replyTo) : undefined}
+              onReact={() => setReactingId(m.id)}
+              onReply={() => setReplyTo(m)}
+              onQuickHeart={() => react(m.id, "❤️")}
+              onJump={jumpTo}
+              onMenu={() => setMenuMsg(m)}
+            />
+          </div>
         ))}
+
 
         {otherTyping && (
           <div className="flex justify-start">
