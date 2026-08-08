@@ -12,13 +12,16 @@ export function panicWipe() {
 }
 
 /**
- * Saída de emergência: 4 toques/cliques rápidos na tela ou tecla ESC
- * levam de volta ao site de animes e travam o acesso.
+ * Saída de emergência: 8 toques BEM rápidos na tela (ou tecla ESC).
+ * Rolagem, arraste e toques espaçados nunca disparam.
  */
 export function usePanicExit(onExit: () => void) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let taps: number[] = [];
+    let start: { x: number; y: number } | null = null;
+    let moved = false;
+    let lastScroll = 0;
 
     const fire = () => {
       taps = [];
@@ -26,20 +29,56 @@ export function usePanicExit(onExit: () => void) {
       onExit();
     };
 
-    const onPointer = () => {
+    const onScroll = () => {
+      lastScroll = Date.now();
+      taps = [];
+    };
+
+    const onDown = (e: PointerEvent) => {
+      start = { x: e.clientX, y: e.clientY };
+      moved = false;
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!start) return;
+      if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) moved = true;
+    };
+
+    const onUp = () => {
       const now = Date.now();
-      taps = [...taps, now].filter((t) => now - t < 700);
-      if (taps.length >= 4) fire();
+      // ignora se acabou de rolar a tela ou se o dedo arrastou (scroll/swipe)
+      if (moved || now - lastScroll < 500) {
+        taps = [];
+        start = null;
+        return;
+      }
+      start = null;
+      // toques precisam ser bem rápidos: intervalo máximo de 280ms entre eles
+      if (taps.length && now - taps[taps.length - 1] > 280) taps = [];
+      taps.push(now);
+      if (taps.length >= 8) fire();
     };
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") fire();
     };
 
-    window.addEventListener("pointerdown", onPointer, true);
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onScroll, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("touchmove", onScroll, true);
+    window.addEventListener("wheel", onScroll, true);
     window.addEventListener("keydown", onKey, true);
     return () => {
-      window.removeEventListener("pointerdown", onPointer, true);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onScroll, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("touchmove", onScroll, true);
+      window.removeEventListener("wheel", onScroll, true);
       window.removeEventListener("keydown", onKey, true);
     };
   }, [onExit]);

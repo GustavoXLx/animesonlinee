@@ -2,7 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { createHash, timingSafeEqual } from "node:crypto";
 
-type GateSession = { unlocked?: boolean; master?: boolean };
+type GateSession = {
+  unlocked?: boolean;
+  master?: boolean;
+  /** só quem acertou o código na busca pode tentar a senha */
+  armed?: boolean;
+  fails?: number;
+  blockedUntil?: number;
+};
 
 const sessionConfig = () => ({
   password: process.env["SESSION_SECRET"]!,
@@ -25,6 +32,7 @@ async function gate() {
 }
 
 const SIGNED_TTL = 60 * 60 * 24 * 7;
+const slow = (ms = 400) => new Promise((r) => setTimeout(r, ms + Math.random() * 400));
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -36,21 +44,49 @@ export const checkTrigger = createServerFn({ method: "POST" })
   .inputValidator((d: { code: string }) => d)
   .handler(async ({ data }) => {
     const code = (data.code ?? "").trim();
-    if (matches(code, process.env["SITE_TRIGGER_MASTER"])) return { ok: true, master: true };
-    if (matches(code, process.env["SITE_TRIGGER_CODE"])) return { ok: true, master: false };
-    return { ok: false, master: false };
+    const master = matches(code, process.env["SITE_TRIGGER_MASTER"]);
+    const normal = matches(code, process.env["SITE_TRIGGER_CODE"]);
+    if (!master && !normal) {
+      await slow(150);
+      return { ok: false, master: false };
+    }
+    const session = await useSession<GateSession>(sessionConfig());
+    await session.update({ ...session.data, armed: true });
+    return { ok: true, master };
   });
 
 export const unlock = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => d)
   .handler(async ({ data }) => {
+    const session = await useSession<GateSession>(sessionConfig());
+    const now = Date.now();
+
+    // sem passar pelo código secreto da busca, a senha nem é avaliada
+    if (!session.data.armed) {
+      await slow(600);
+      return { ok: false as const };
+    }
+    // bloqueio temporário após tentativas erradas
+    if (session.data.blockedUntil && session.data.blockedUntil > now) {
+      await slow(800);
+      return { ok: false as const };
+    }
+
     const pw = (data.password ?? "").trim();
     const master = matches(pw, process.env["MASTER_PASSWORD"]);
     const normal = matches(pw, process.env["SITE_PASSWORD"]);
+
     if (!master && !normal) {
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      const fails = (session.data.fails ?? 0) + 1;
+      await session.update({
+        ...session.data,
+        fails,
+        ...(fails >= 5 ? { blockedUntil: now + 10 * 60 * 1000, fails: 0, armed: false } : {}),
+      });
+      await slow(600);
       return { ok: false as const };
     }
+
     if (!master) {
       const db = await admin();
       const { data: st } = await db
@@ -60,8 +96,7 @@ export const unlock = createServerFn({ method: "POST" })
         .maybeSingle();
       if (st && st.chat_open === false) return { ok: false as const };
     }
-    const session = await useSession<GateSession>(sessionConfig());
-    await session.update({ unlocked: true, master });
+    await session.update({ unlocked: true, master, armed: true, fails: 0 });
     return { ok: true as const, master };
   });
 
@@ -195,4 +230,103 @@ export const deleteMessage = createServerFn({ method: "POST" })
       .update({ text: "", media_url: null, media_type: "deleted", reactions: [] })
       .eq("id", data.id);
     return { ok: true as const };
+  });
+
+type Judged = {
+  guScore: number;
+  liScore: number;
+  guComment: string;
+  liComment: string;
+  winner: "gu" | "li" | "empate";
+  summary: string;
+};
+
+/** Nota da IA para os esquadrões do jogo Leilão. */
+export const judgeAuction = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { theme: string; slots: string[]; gu: string[]; li: string[]; budget: number }) => d,
+  )
+  .handler(async ({ data }): Promise<Judged> => {
+    await gate();
+    const fmt = (arr: string[]) =>
+      data.slots.map((s, i) => `${s}: ${arr[i] ?? "vazio"}`).join(" | ");
+    const prompt = `Tema do leilão: ${data.theme}
+Orçamento de cada jogador: R$${data.budget}
+Esquadrão de "bb gu": ${fmt(data.gu)}
+Esquadrão de "bb li": ${fmt(data.li)}
+
+Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/habilidade, fama, sucesso e história real de cada escolha, e o encaixe no tema. Seja justo e concreto: escolhas mais icônicas e vitoriosas valem mais. Comente em português brasileiro, curto e divertido (máx 2 frases por time).`;
+
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Você é um juiz divertido de um jogo de leilão. Responda SEMPRE chamando a função julgar.",
+            },
+            { role: "user", content: prompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "julgar",
+                description: "Dá as notas dos dois esquadrões",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    guScore: { type: "number" },
+                    liScore: { type: "number" },
+                    guComment: { type: "string" },
+                    liComment: { type: "string" },
+                    winner: { type: "string", enum: ["gu", "li", "empate"] },
+                    summary: { type: "string" },
+                  },
+                  required: [
+                    "guScore",
+                    "liScore",
+                    "guComment",
+                    "liComment",
+                    "winner",
+                    "summary",
+                  ],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "julgar" } },
+        }),
+      });
+      if (!res.ok) throw new Error(`ai_${res.status}`);
+      const json = (await res.json()) as {
+        choices?: {
+          message?: { tool_calls?: { function?: { arguments?: string } }[] };
+        }[];
+      };
+      const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+      if (!args) throw new Error("no_args");
+      const parsed = JSON.parse(args) as Judged;
+      return parsed;
+    } catch {
+      const score = () => Math.round((5 + Math.random() * 4) * 10) / 10;
+      const g = score();
+      const l = score();
+      return {
+        guScore: g,
+        liScore: l,
+        guComment: "Time equilibrado!",
+        liComment: "Boas escolhas!",
+        winner: g === l ? "empate" : g > l ? "gu" : "li",
+        summary: "O juiz oficial cochilou, então valeu a nota rápida 😅",
+      };
+    }
   });

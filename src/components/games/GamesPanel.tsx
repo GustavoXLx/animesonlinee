@@ -13,12 +13,14 @@ import {
   Brain,
   Type,
   Flame,
+  Gavel,
 } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
 import { GameChat } from "./GameChat";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
+import { Leilao } from "./Leilao";
 
 type GameKey =
   | "sintonia"
@@ -29,7 +31,8 @@ type GameKey =
   | "lig4"
   | "memoria"
   | "forca"
-  | "verdade";
+  | "verdade"
+  | "leilao";
 
 const GAMES: {
   key: GameKey;
@@ -44,6 +47,13 @@ const GAMES: {
     desc: "futebol 1x1 com cabeças",
     icon: Trophy,
     gradient: "from-emerald-500 to-teal-600",
+  },
+  {
+    key: "leilao",
+    name: "Leilão 🔨",
+    desc: "monte seu esquadrão dando lances",
+    icon: Gavel,
+    gradient: "from-amber-400 to-yellow-600",
   },
   {
     key: "gartic",
@@ -141,6 +151,7 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}
           {active === "verdade" && <VerdadeDesafio me={me} />}
+          {active === "leilao" && <Leilao me={me} />}
         </div>
         <GameChat gameKey={active} me={me} />
       </div>
