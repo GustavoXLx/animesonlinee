@@ -2,7 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { createHash, timingSafeEqual } from "node:crypto";
 
-type GateSession = { unlocked?: boolean; master?: boolean };
+type GateSession = {
+  unlocked?: boolean;
+  master?: boolean;
+  /** só quem acertou o código na busca pode tentar a senha */
+  armed?: boolean;
+  fails?: number;
+  blockedUntil?: number;
+};
 
 const sessionConfig = () => ({
   password: process.env["SESSION_SECRET"]!,
@@ -25,6 +32,7 @@ async function gate() {
 }
 
 const SIGNED_TTL = 60 * 60 * 24 * 7;
+const slow = (ms = 400) => new Promise((r) => setTimeout(r, ms + Math.random() * 400));
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -36,21 +44,49 @@ export const checkTrigger = createServerFn({ method: "POST" })
   .inputValidator((d: { code: string }) => d)
   .handler(async ({ data }) => {
     const code = (data.code ?? "").trim();
-    if (matches(code, process.env["SITE_TRIGGER_MASTER"])) return { ok: true, master: true };
-    if (matches(code, process.env["SITE_TRIGGER_CODE"])) return { ok: true, master: false };
-    return { ok: false, master: false };
+    const master = matches(code, process.env["SITE_TRIGGER_MASTER"]);
+    const normal = matches(code, process.env["SITE_TRIGGER_CODE"]);
+    if (!master && !normal) {
+      await slow(150);
+      return { ok: false, master: false };
+    }
+    const session = await useSession<GateSession>(sessionConfig());
+    await session.update({ ...session.data, armed: true });
+    return { ok: true, master };
   });
 
 export const unlock = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => d)
   .handler(async ({ data }) => {
+    const session = await useSession<GateSession>(sessionConfig());
+    const now = Date.now();
+
+    // sem passar pelo código secreto da busca, a senha nem é avaliada
+    if (!session.data.armed) {
+      await slow(600);
+      return { ok: false as const };
+    }
+    // bloqueio temporário após tentativas erradas
+    if (session.data.blockedUntil && session.data.blockedUntil > now) {
+      await slow(800);
+      return { ok: false as const };
+    }
+
     const pw = (data.password ?? "").trim();
     const master = matches(pw, process.env["MASTER_PASSWORD"]);
     const normal = matches(pw, process.env["SITE_PASSWORD"]);
+
     if (!master && !normal) {
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      const fails = (session.data.fails ?? 0) + 1;
+      await session.update({
+        ...session.data,
+        fails,
+        ...(fails >= 5 ? { blockedUntil: now + 10 * 60 * 1000, fails: 0, armed: false } : {}),
+      });
+      await slow(600);
       return { ok: false as const };
     }
+
     if (!master) {
       const db = await admin();
       const { data: st } = await db
@@ -60,8 +96,7 @@ export const unlock = createServerFn({ method: "POST" })
         .maybeSingle();
       if (st && st.chat_open === false) return { ok: false as const };
     }
-    const session = await useSession<GateSession>(sessionConfig());
-    await session.update({ unlocked: true, master });
+    await session.update({ unlocked: true, master, armed: true, fails: 0 });
     return { ok: true as const, master };
   });
 
