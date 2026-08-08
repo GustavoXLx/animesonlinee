@@ -489,7 +489,7 @@ export const THEMES: LeilaoTheme[] = [
     "Cura instantânea",
     "Falar com animais",
     "Viajar no tempo",
-    "控制 do clima",
+    "Controlar o clima",
     "Vida eterna",
     "Sorte absoluta",
   ]),
