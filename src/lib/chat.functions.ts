@@ -196,3 +196,102 @@ export const deleteMessage = createServerFn({ method: "POST" })
       .eq("id", data.id);
     return { ok: true as const };
   });
+
+type Judged = {
+  guScore: number;
+  liScore: number;
+  guComment: string;
+  liComment: string;
+  winner: "gu" | "li" | "empate";
+  summary: string;
+};
+
+/** Nota da IA para os esquadrões do jogo Leilão. */
+export const judgeAuction = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { theme: string; slots: string[]; gu: string[]; li: string[]; budget: number }) => d,
+  )
+  .handler(async ({ data }): Promise<Judged> => {
+    await gate();
+    const fmt = (arr: string[]) =>
+      data.slots.map((s, i) => `${s}: ${arr[i] ?? "vazio"}`).join(" | ");
+    const prompt = `Tema do leilão: ${data.theme}
+Orçamento de cada jogador: R$${data.budget}
+Esquadrão de "bb gu": ${fmt(data.gu)}
+Esquadrão de "bb li": ${fmt(data.li)}
+
+Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/habilidade, fama, sucesso e história real de cada escolha, e o encaixe no tema. Seja justo e concreto: escolhas mais icônicas e vitoriosas valem mais. Comente em português brasileiro, curto e divertido (máx 2 frases por time).`;
+
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Você é um juiz divertido de um jogo de leilão. Responda SEMPRE chamando a função julgar.",
+            },
+            { role: "user", content: prompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "julgar",
+                description: "Dá as notas dos dois esquadrões",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    guScore: { type: "number" },
+                    liScore: { type: "number" },
+                    guComment: { type: "string" },
+                    liComment: { type: "string" },
+                    winner: { type: "string", enum: ["gu", "li", "empate"] },
+                    summary: { type: "string" },
+                  },
+                  required: [
+                    "guScore",
+                    "liScore",
+                    "guComment",
+                    "liComment",
+                    "winner",
+                    "summary",
+                  ],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "julgar" } },
+        }),
+      });
+      if (!res.ok) throw new Error(`ai_${res.status}`);
+      const json = (await res.json()) as {
+        choices?: {
+          message?: { tool_calls?: { function?: { arguments?: string } }[] };
+        }[];
+      };
+      const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+      if (!args) throw new Error("no_args");
+      const parsed = JSON.parse(args) as Judged;
+      return parsed;
+    } catch {
+      const score = () => Math.round((5 + Math.random() * 4) * 10) / 10;
+      const g = score();
+      const l = score();
+      return {
+        guScore: g,
+        liScore: l,
+        guComment: "Time equilibrado!",
+        liComment: "Boas escolhas!",
+        winner: g === l ? "empate" : g > l ? "gu" : "li",
+        summary: "O juiz oficial cochilou, então valeu a nota rápida 😅",
+      };
+    }
+  });
