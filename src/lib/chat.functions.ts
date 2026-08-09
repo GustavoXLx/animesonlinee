@@ -184,6 +184,21 @@ export const sendMessage = createServerFn({ method: "POST" })
     return { row };
   });
 
+/** Marca como vistas as mensagens da outra pessoa (visto azul). */
+export const markSeen = createServerFn({ method: "POST" })
+  .inputValidator((d: { me: "gu" | "li" }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const other = data.me === "gu" ? "li" : "gu";
+    await db
+      .from("messages")
+      .update({ seen_at: new Date().toISOString() })
+      .eq("author", other)
+      .is("seen_at", null);
+    return { ok: true as const };
+  });
+
 export const reactMessage = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; reactions: string[] }) => d)
   .handler(async ({ data }) => {
