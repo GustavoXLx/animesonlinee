@@ -819,14 +819,15 @@ export function pickBudget(): number {
   return BUDGETS[Math.floor(Math.random() * BUDGETS.length)];
 }
 
-/** Sorteia 2 candidatos por slot (10 itens), sem repetir. */
-export function draftItems(theme: LeilaoTheme): string[][] {
+/** Sorteia 1 item por slot (5 lotes), sem repetir. */
+export function draftLots(theme: LeilaoTheme): string[] {
   const usedItems = new Set<string>();
   return theme.slots.map((_, slot) => {
     const pool = (theme.pools[slot] ?? theme.pools[0]).filter((i) => !usedItems.has(i));
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const pair = shuffled.slice(0, 2);
-    pair.forEach((i) => usedItems.add(i));
-    return pair;
+    const item = shuffled[0] ?? "?";
+    usedItems.add(item);
+    return item;
   });
 }
+
