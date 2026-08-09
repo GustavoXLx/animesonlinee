@@ -23,6 +23,7 @@ export type Database = {
           media_url: string | null
           reactions: string[]
           reply_to: string | null
+          seen_at: string | null
           text: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           media_url?: string | null
           reactions?: string[]
           reply_to?: string | null
+          seen_at?: string | null
           text: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           media_url?: string | null
           reactions?: string[]
           reply_to?: string | null
+          seen_at?: string | null
           text?: string
         }
         Relationships: [
