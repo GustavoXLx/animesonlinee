@@ -1,5 +1,6 @@
 import {
   listMessages,
+  markSeen,
   listMedia,
   sendMessage as sendMessageFn,
   reactMessage,
@@ -95,6 +96,7 @@ type Msg = {
   replyTo?: string | null;
   mediaUrl?: string | null;
   mediaType?: string | null;
+  seen?: boolean;
 };
 
 type Row = {
@@ -106,6 +108,7 @@ type Row = {
   created_at: string;
   media_url: string | null;
   media_type: string | null;
+  seen_at?: string | null;
 };
 
 const MAX_VISIBLE = 30;
@@ -127,6 +130,7 @@ function rowToMsg(r: Row): Msg {
     replyTo: r.reply_to,
     mediaUrl: r.media_url,
     mediaType: r.media_type,
+    seen: Boolean(r.seen_at),
   };
 }
 
@@ -156,6 +160,38 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+
+  const notifyRef = useRef<((rows: Msg[]) => void) | null>(null);
+
+  // Notificações apenas para bb gu
+  useEffect(() => {
+    if (me !== "gu" || typeof window === "undefined" || !("Notification" in window)) {
+      notifyRef.current = null;
+      return;
+    }
+    if (Notification.permission === "default") void Notification.requestPermission();
+    notifyRef.current = (rows) => {
+      if (Notification.permission !== "granted") return;
+      if (document.visibilityState === "visible") return;
+      const last = rows[rows.length - 1];
+      if (!last) return;
+      const body = last.text
+        ? last.text.slice(0, 120)
+        : last.mediaType === "sticker"
+          ? "figurinha"
+          : last.mediaType === "audio"
+            ? "áudio"
+            : "mídia";
+      try {
+        new Notification("Nova temporada disponível", { body, tag: "as-chat", silent: false });
+      } catch {
+        /* noop */
+      }
+    };
+    return () => {
+      notifyRef.current = null;
+    };
+  }, [me]);
 
   const escapeHome = useCallback(() => {
     onExit();
@@ -204,12 +240,17 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
       setMsgs((prev) => {
         const tmp = prev.filter((x) => x.id.startsWith("tmp_"));
         const known = new Set(prev.map((x) => x.id));
-        if (!atBottomRef.current) {
-          const fresh = rows.filter((r) => !known.has(r.id) && r.author !== me).length;
-          if (fresh > 0) setNewCount((c) => c + fresh);
+        const incoming = rows.filter((r) => !known.has(r.id) && r.author !== me);
+        if (!atBottomRef.current && incoming.length > 0) {
+          setNewCount((c) => c + incoming.length);
         }
+        if (prev.length > 0 && incoming.length > 0) notifyRef.current?.(incoming);
         return [...rows, ...tmp];
       });
+      if (document.visibilityState === "visible") {
+        const unseen = rows.some((r) => r.author !== me && !r.seen);
+        if (unseen) void markSeen({ data: { me } }).catch(() => {});
+      }
     };
 
     refetch();
@@ -1375,7 +1416,16 @@ const MessageRow = memo(function MessageRow({
           <span className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
             {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             {mine && (
-              <CheckCheck size={12} className={m.id.startsWith("tmp_") ? "opacity-50" : ""} />
+              <CheckCheck
+                size={12}
+                className={
+                  m.id.startsWith("tmp_")
+                    ? "opacity-50"
+                    : m.seen
+                      ? "text-sky-400 opacity-100"
+                      : ""
+                }
+              />
             )}
           </span>
           {m.reactions.length > 0 && (
