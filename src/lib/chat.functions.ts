@@ -111,6 +111,27 @@ export const lock = createServerFn({ method: "POST" }).handler(async () => {
   return { ok: true as const };
 });
 
+type DbClient = Awaited<ReturnType<typeof admin>>;
+type MediaRow = { media_path?: string | null; media_url: string | null };
+
+/** Regera os links assinados a partir do caminho salvo (mídia antiga nunca expira). */
+async function refreshMedia<T extends MediaRow>(db: DbClient, rows: T[]): Promise<T[]> {
+  const paths = Array.from(
+    new Set(rows.map((r) => r.media_path).filter((p): p is string => Boolean(p))),
+  );
+  if (!paths.length) return rows;
+  const { data: signed } = await db.storage
+    .from("chat-media")
+    .createSignedUrls(paths, SIGNED_TTL);
+  const map = new Map<string, string>();
+  (signed ?? []).forEach((s) => {
+    if (s.path && s.signedUrl) map.set(s.path, s.signedUrl);
+  });
+  return rows.map((r) =>
+    r.media_path && map.has(r.media_path) ? { ...r, media_url: map.get(r.media_path)! } : r,
+  );
+}
+
 export const listMessages = createServerFn({ method: "POST" })
   .inputValidator((d: { limit?: number }) => d ?? {})
   .handler(async ({ data }) => {
@@ -121,7 +142,8 @@ export const listMessages = createServerFn({ method: "POST" })
       .select("*")
       .order("created_at", { ascending: false })
       .limit(Math.min(data.limit ?? 250, 400));
-    return { rows: (rows ?? []).reverse() };
+    const fresh = await refreshMedia(db, rows ?? []);
+    return { rows: fresh.reverse() };
   });
 
 export const listMedia = createServerFn({ method: "POST" }).handler(async () => {
@@ -133,7 +155,8 @@ export const listMedia = createServerFn({ method: "POST" }).handler(async () => 
     .not("media_url", "is", null)
     .in("media_type", ["image", "video"])
     .order("created_at", { ascending: true });
-  return { rows: rows ?? [] };
+  const fresh = await refreshMedia(db, rows ?? []);
+  return { rows: fresh };
 });
 
 export const createUpload = createServerFn({ method: "POST" })
@@ -146,6 +169,39 @@ export const createUpload = createServerFn({ method: "POST" })
     const { data: signed, error } = await db.storage.from("chat-media").createSignedUploadUrl(path);
     if (error || !signed) throw new Error("upload_failed");
     return { path, token: signed.token };
+  });
+
+/** Fotos de perfil (guardadas por caminho, links renovados a cada leitura). */
+export const getProfiles = createServerFn({ method: "GET" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const { data: rows } = await db.from("chat_profiles").select("id, avatar_path");
+  const out: Record<string, string | null> = { gu: null, li: null };
+  const paths = (rows ?? [])
+    .map((r) => r.avatar_path)
+    .filter((p): p is string => Boolean(p));
+  if (paths.length) {
+    const { data: signed } = await db.storage
+      .from("chat-media")
+      .createSignedUrls(paths, SIGNED_TTL);
+    const map = new Map<string, string>();
+    (signed ?? []).forEach((s) => s.path && s.signedUrl && map.set(s.path, s.signedUrl));
+    (rows ?? []).forEach((r) => {
+      out[r.id] = r.avatar_path ? (map.get(r.avatar_path) ?? null) : null;
+    });
+  }
+  return out as { gu: string | null; li: string | null };
+});
+
+export const setProfileAvatar = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; path: string | null }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db
+      .from("chat_profiles")
+      .upsert({ id: data.who, avatar_path: data.path }, { onConflict: "id" });
+    return { ok: true as const };
   });
 
 export const sendMessage = createServerFn({ method: "POST" })
@@ -176,6 +232,7 @@ export const sendMessage = createServerFn({ method: "POST" })
         text: (data.text ?? "").slice(0, 4000),
         reply_to: data.replyTo ?? null,
         media_url: mediaUrl,
+        media_path: data.mediaPath ?? null,
         media_type: data.stickerUrl ? "sticker" : (data.mediaType ?? null),
       })
       .select()
