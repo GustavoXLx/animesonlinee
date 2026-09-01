@@ -311,6 +311,8 @@ type Judged = {
   liComment: string;
   winner: "gu" | "li" | "empate";
   summary: string;
+  guItems?: { item: string; note: number; why: string }[];
+  liItems?: { item: string; note: number; why: string }[];
 };
 
 /** Nota da IA para os esquadrões do jogo Leilão. */
