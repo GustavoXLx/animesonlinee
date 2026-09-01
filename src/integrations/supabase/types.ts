@@ -14,11 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_profiles: {
+        Row: {
+          avatar_path: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_path?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_path?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           author: string
           created_at: string
           id: string
+          media_path: string | null
           media_type: string | null
           media_url: string | null
           reactions: string[]
@@ -30,6 +52,7 @@ export type Database = {
           author: string
           created_at?: string
           id?: string
+          media_path?: string | null
           media_type?: string | null
           media_url?: string | null
           reactions?: string[]
@@ -41,6 +64,7 @@ export type Database = {
           author?: string
           created_at?: string
           id?: string
+          media_path?: string | null
           media_type?: string | null
           media_url?: string | null
           reactions?: string[]

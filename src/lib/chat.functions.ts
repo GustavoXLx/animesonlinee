@@ -111,6 +111,27 @@ export const lock = createServerFn({ method: "POST" }).handler(async () => {
   return { ok: true as const };
 });
 
+type DbClient = Awaited<ReturnType<typeof admin>>;
+type MediaRow = { media_path?: string | null; media_url: string | null };
+
+/** Regera os links assinados a partir do caminho salvo (mídia antiga nunca expira). */
+async function refreshMedia<T extends MediaRow>(db: DbClient, rows: T[]): Promise<T[]> {
+  const paths = Array.from(
+    new Set(rows.map((r) => r.media_path).filter((p): p is string => Boolean(p))),
+  );
+  if (!paths.length) return rows;
+  const { data: signed } = await db.storage
+    .from("chat-media")
+    .createSignedUrls(paths, SIGNED_TTL);
+  const map = new Map<string, string>();
+  (signed ?? []).forEach((s) => {
+    if (s.path && s.signedUrl) map.set(s.path, s.signedUrl);
+  });
+  return rows.map((r) =>
+    r.media_path && map.has(r.media_path) ? { ...r, media_url: map.get(r.media_path)! } : r,
+  );
+}
+
 export const listMessages = createServerFn({ method: "POST" })
   .inputValidator((d: { limit?: number }) => d ?? {})
   .handler(async ({ data }) => {
@@ -121,7 +142,8 @@ export const listMessages = createServerFn({ method: "POST" })
       .select("*")
       .order("created_at", { ascending: false })
       .limit(Math.min(data.limit ?? 250, 400));
-    return { rows: (rows ?? []).reverse() };
+    const fresh = await refreshMedia(db, rows ?? []);
+    return { rows: fresh.reverse() };
   });
 
 export const listMedia = createServerFn({ method: "POST" }).handler(async () => {
@@ -133,7 +155,8 @@ export const listMedia = createServerFn({ method: "POST" }).handler(async () => 
     .not("media_url", "is", null)
     .in("media_type", ["image", "video"])
     .order("created_at", { ascending: true });
-  return { rows: rows ?? [] };
+  const fresh = await refreshMedia(db, rows ?? []);
+  return { rows: fresh };
 });
 
 export const createUpload = createServerFn({ method: "POST" })
@@ -146,6 +169,39 @@ export const createUpload = createServerFn({ method: "POST" })
     const { data: signed, error } = await db.storage.from("chat-media").createSignedUploadUrl(path);
     if (error || !signed) throw new Error("upload_failed");
     return { path, token: signed.token };
+  });
+
+/** Fotos de perfil (guardadas por caminho, links renovados a cada leitura). */
+export const getProfiles = createServerFn({ method: "GET" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const { data: rows } = await db.from("chat_profiles").select("id, avatar_path");
+  const out: Record<string, string | null> = { gu: null, li: null };
+  const paths = (rows ?? [])
+    .map((r) => r.avatar_path)
+    .filter((p): p is string => Boolean(p));
+  if (paths.length) {
+    const { data: signed } = await db.storage
+      .from("chat-media")
+      .createSignedUrls(paths, SIGNED_TTL);
+    const map = new Map<string, string>();
+    (signed ?? []).forEach((s) => s.path && s.signedUrl && map.set(s.path, s.signedUrl));
+    (rows ?? []).forEach((r) => {
+      out[r.id] = r.avatar_path ? (map.get(r.avatar_path) ?? null) : null;
+    });
+  }
+  return out as { gu: string | null; li: string | null };
+});
+
+export const setProfileAvatar = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; path: string | null }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db
+      .from("chat_profiles")
+      .upsert({ id: data.who, avatar_path: data.path }, { onConflict: "id" });
+    return { ok: true as const };
   });
 
 export const sendMessage = createServerFn({ method: "POST" })
@@ -176,6 +232,7 @@ export const sendMessage = createServerFn({ method: "POST" })
         text: (data.text ?? "").slice(0, 4000),
         reply_to: data.replyTo ?? null,
         media_url: mediaUrl,
+        media_path: data.mediaPath ?? null,
         media_type: data.stickerUrl ? "sticker" : (data.mediaType ?? null),
       })
       .select()
@@ -254,23 +311,41 @@ type Judged = {
   liComment: string;
   winner: "gu" | "li" | "empate";
   summary: string;
+  guItems?: { item: string; note: number; why: string }[];
+  liItems?: { item: string; note: number; why: string }[];
 };
 
 /** Nota da IA para os esquadrões do jogo Leilão. */
 export const judgeAuction = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: { theme: string; slots: string[]; gu: string[]; li: string[]; budget: number }) => d,
+    (d: {
+      theme: string;
+      slots?: string[];
+      gu: string[];
+      li: string[];
+      budget: number;
+      football?: boolean;
+    }) => d,
   )
   .handler(async ({ data }): Promise<Judged> => {
     await gate();
-    const fmt = (arr: string[]) =>
-      data.slots.map((s, i) => `${s}: ${arr[i] ?? "vazio"}`).join(" | ");
+    const fmt = (arr: string[]) => (arr.length ? arr.join(" | ") : "vazio");
     const prompt = `Tema do leilão: ${data.theme}
-Orçamento de cada jogador: R$${data.budget}
-Esquadrão de "bb gu": ${fmt(data.gu)}
-Esquadrão de "bb li": ${fmt(data.li)}
+Orçamento inicial de cada jogador: R$${data.budget}
+Time de "bb gu": ${fmt(data.gu)}
+Time de "bb li": ${fmt(data.li)}
 
-Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/habilidade, fama, sucesso e história real de cada escolha, e o encaixe no tema. Seja justo e concreto: escolhas mais icônicas e vitoriosas valem mais. Comente em português brasileiro, curto e divertido (máx 2 frases por time).`;
+Julgue com CRITÉRIO RIGOROSO, item por item:
+1. Dê internamente uma nota de 0 a 10 para CADA item, baseada em fatos reais: qualidade/habilidade, conquistas, prestígio, impacto histórico e relevância atual. ${
+      data.football
+        ? "Em futebol, compare o jogador com os melhores da MESMA posição (goleiro com goleiro, defensor com defensor, etc.) e considere títulos, Bolas de Ouro, seleção e nível de clube."
+        : "Compare cada item com os melhores possíveis dentro do tema."
+    }
+2. A nota final de cada time = média das notas dos itens dele (arredonde em 1 decimal). NÃO invente empate: só use "empate" se a diferença for exatamente 0.
+3. O vencedor é obrigatoriamente quem tiver a maior nota final.
+4. Nos comentários (máx 2 frases, português brasileiro, divertido), cite o item mais forte e o mais fraco do time e justifique. No "summary" diga a diferença de nota e o motivo decisivo.
+Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
+
 
     try {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -285,7 +360,7 @@ Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/hab
             {
               role: "system",
               content:
-                "Você é um juiz divertido de um jogo de leilão. Responda SEMPRE chamando a função julgar.",
+                "Você é um juiz técnico e imparcial de um jogo de leilão. Baseie tudo em fatos reais, dê nota individual a cada item e some/faça a média com honestidade. Responda SEMPRE chamando a função julgar.",
             },
             { role: "user", content: prompt },
           ],
@@ -294,10 +369,36 @@ Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/hab
               type: "function",
               function: {
                 name: "julgar",
-                description: "Dá as notas dos dois esquadrões",
+                description: "Dá as notas item por item e a nota final dos dois times",
                 parameters: {
                   type: "object",
                   properties: {
+                    guItems: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          item: { type: "string" },
+                          note: { type: "number" },
+                          why: { type: "string" },
+                        },
+                        required: ["item", "note", "why"],
+                        additionalProperties: false,
+                      },
+                    },
+                    liItems: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          item: { type: "string" },
+                          note: { type: "number" },
+                          why: { type: "string" },
+                        },
+                        required: ["item", "note", "why"],
+                        additionalProperties: false,
+                      },
+                    },
                     guScore: { type: "number" },
                     liScore: { type: "number" },
                     guComment: { type: "string" },
@@ -306,6 +407,8 @@ Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/hab
                     summary: { type: "string" },
                   },
                   required: [
+                    "guItems",
+                    "liItems",
                     "guScore",
                     "liScore",
                     "guComment",
@@ -330,7 +433,19 @@ Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/hab
       const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
       if (!args) throw new Error("no_args");
       const parsed = JSON.parse(args) as Judged;
-      return parsed;
+      const avg = (items?: { note: number }[], fallback = 0) =>
+        items && items.length
+          ? Math.round((items.reduce((a, b) => a + (b.note ?? 0), 0) / items.length) * 10) / 10
+          : fallback;
+      const guScore = avg(parsed.guItems, parsed.guScore);
+      const liScore = avg(parsed.liItems, parsed.liScore);
+      return {
+        ...parsed,
+        guScore,
+        liScore,
+        winner: guScore === liScore ? "empate" : guScore > liScore ? "gu" : "li",
+      };
+
     } catch {
       const score = () => Math.round((5 + Math.random() * 4) * 10) / 10;
       const g = score();

@@ -1,7 +1,7 @@
 /**
  * Temas do jogo "Leilão".
- * Temas de futebol montam esquadrão por posição (1 GOL, 1 DEF, 2 MEI, 1 ATA).
- * Os outros temas sorteiam 5 itens livres do mesmo pool.
+ * Cada pessoa monta um time de 5 itens (5 vs 5).
+ * Temas de futebol: cada time precisa de 1 GOL, 1 DEF, 2 MEI, 1 ATA.
  */
 
 export type LeilaoTheme = {
@@ -9,12 +9,30 @@ export type LeilaoTheme = {
   name: string;
   emoji: string;
   slots: string[];
+  football?: boolean;
   /** pools[i] = candidatos do slot i (futebol) ou pool único (livre) */
   pools: string[][];
 };
 
+export type Lot = { item: string; pos: string };
+
 const FREE_SLOTS = ["Escolha 1", "Escolha 2", "Escolha 3", "Escolha 4", "Escolha 5"];
 const FUT_SLOTS = ["Goleiro", "Defensor", "Meio-campo", "Meio-campo", "Atacante"];
+
+/** Quantos itens de cada posição cada time precisa ter. */
+export const FUT_QUOTAS: Record<string, number> = {
+  Goleiro: 1,
+  Defensor: 1,
+  "Meio-campo": 2,
+  Atacante: 1,
+};
+export const TEAM_SIZE = 5;
+export const FREE_POS = "Item";
+
+export function quotaFor(theme: LeilaoTheme, pos: string): number {
+  if (!theme.football) return TEAM_SIZE;
+  return FUT_QUOTAS[pos] ?? 0;
+}
 
 function free(id: string, name: string, emoji: string, items: string[]): LeilaoTheme {
   return { id, name, emoji, slots: FREE_SLOTS, pools: [items] };
@@ -29,8 +47,9 @@ function fut(
   mid: string[],
   att: string[],
 ): LeilaoTheme {
-  return { id, name, emoji, slots: FUT_SLOTS, pools: [gk, def, mid, mid, att] };
+  return { id, name, emoji, slots: FUT_SLOTS, football: true, pools: [gk, def, mid, mid, att] };
 }
+
 
 export const THEMES: LeilaoTheme[] = [
   // ===== FUTEBOL (por posição) =====
@@ -819,15 +838,54 @@ export function pickBudget(): number {
   return BUDGETS[Math.floor(Math.random() * BUDGETS.length)];
 }
 
-/** Sorteia 1 item por slot (5 lotes), sem repetir. */
-export function draftLots(theme: LeilaoTheme): string[] {
-  const usedItems = new Set<string>();
-  return theme.slots.map((_, slot) => {
-    const pool = (theme.pools[slot] ?? theme.pools[0]).filter((i) => !usedItems.has(i));
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const item = shuffled[0] ?? "?";
-    usedItems.add(item);
-    return item;
-  });
+const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+/**
+ * Sorteia a fila do leilão com folga: dá pra montar os dois times (5 vs 5).
+ * Futebol: 3 goleiros, 3 defensores, 6 meias e 3 atacantes na fila.
+ * Livre: 12 itens do pool.
+ */
+export function draftLots(theme: LeilaoTheme): Lot[] {
+  const used = new Set<string>();
+  const take = (pool: string[], n: number): string[] => {
+    const out: string[] = [];
+    for (const item of shuffle(pool)) {
+      if (used.has(item)) continue;
+      used.add(item);
+      out.push(item);
+      if (out.length >= n) break;
+    }
+    return out;
+  };
+
+  if (!theme.football) {
+    return take(theme.pools[0], 12).map((item) => ({ item, pos: FREE_POS }));
+  }
+
+  const [gk, def, mid, , att] = theme.pools;
+  const groups: Lot[][] = [
+    take(gk, 3).map((item) => ({ item, pos: "Goleiro" })),
+    take(def, 3).map((item) => ({ item, pos: "Defensor" })),
+    take(mid, 6).map((item) => ({ item, pos: "Meio-campo" })),
+    take(att, 3).map((item) => ({ item, pos: "Atacante" })),
+  ];
+
+  // intercala as posições pra fila não vir toda agrupada
+  const order = shuffle(["Goleiro", "Defensor", "Meio-campo", "Atacante"]);
+  const lots: Lot[] = [];
+  let left = true;
+  while (left) {
+    left = false;
+    for (const pos of order) {
+      const g = groups.find((grp) => grp[0]?.pos === pos);
+      if (g && g.length) {
+        lots.push(g.shift()!);
+        // meio-campo entra em dobro (precisa de 2 por time)
+        if (pos === "Meio-campo" && g.length) lots.push(g.shift()!);
+      }
+      if (g && g.length) left = true;
+    }
+  }
+  return lots;
 }
 
