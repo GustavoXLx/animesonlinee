@@ -358,7 +358,7 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
             {
               role: "system",
               content:
-                "Você é um juiz divertido de um jogo de leilão. Responda SEMPRE chamando a função julgar.",
+                "Você é um juiz técnico e imparcial de um jogo de leilão. Baseie tudo em fatos reais, dê nota individual a cada item e some/faça a média com honestidade. Responda SEMPRE chamando a função julgar.",
             },
             { role: "user", content: prompt },
           ],
@@ -367,10 +367,36 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
               type: "function",
               function: {
                 name: "julgar",
-                description: "Dá as notas dos dois esquadrões",
+                description: "Dá as notas item por item e a nota final dos dois times",
                 parameters: {
                   type: "object",
                   properties: {
+                    guItems: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          item: { type: "string" },
+                          note: { type: "number" },
+                          why: { type: "string" },
+                        },
+                        required: ["item", "note", "why"],
+                        additionalProperties: false,
+                      },
+                    },
+                    liItems: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          item: { type: "string" },
+                          note: { type: "number" },
+                          why: { type: "string" },
+                        },
+                        required: ["item", "note", "why"],
+                        additionalProperties: false,
+                      },
+                    },
                     guScore: { type: "number" },
                     liScore: { type: "number" },
                     guComment: { type: "string" },
@@ -379,6 +405,8 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
                     summary: { type: "string" },
                   },
                   required: [
+                    "guItems",
+                    "liItems",
                     "guScore",
                     "liScore",
                     "guComment",
@@ -403,7 +431,19 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
       const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
       if (!args) throw new Error("no_args");
       const parsed = JSON.parse(args) as Judged;
-      return parsed;
+      const avg = (items?: { note: number }[], fallback = 0) =>
+        items && items.length
+          ? Math.round((items.reduce((a, b) => a + (b.note ?? 0), 0) / items.length) * 10) / 10
+          : fallback;
+      const guScore = avg(parsed.guItems, parsed.guScore);
+      const liScore = avg(parsed.liItems, parsed.liScore);
+      return {
+        ...parsed,
+        guScore,
+        liScore,
+        winner: guScore === liScore ? "empate" : guScore > liScore ? "gu" : "li",
+      };
+
     } catch {
       const score = () => Math.round((5 + Math.random() * 4) * 10) / 10;
       const g = score();
