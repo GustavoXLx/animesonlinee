@@ -316,18 +316,34 @@ type Judged = {
 /** Nota da IA para os esquadrões do jogo Leilão. */
 export const judgeAuction = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: { theme: string; slots: string[]; gu: string[]; li: string[]; budget: number }) => d,
+    (d: {
+      theme: string;
+      slots?: string[];
+      gu: string[];
+      li: string[];
+      budget: number;
+      football?: boolean;
+    }) => d,
   )
   .handler(async ({ data }): Promise<Judged> => {
     await gate();
-    const fmt = (arr: string[]) =>
-      data.slots.map((s, i) => `${s}: ${arr[i] ?? "vazio"}`).join(" | ");
+    const fmt = (arr: string[]) => (arr.length ? arr.join(" | ") : "vazio");
     const prompt = `Tema do leilão: ${data.theme}
-Orçamento de cada jogador: R$${data.budget}
-Esquadrão de "bb gu": ${fmt(data.gu)}
-Esquadrão de "bb li": ${fmt(data.li)}
+Orçamento inicial de cada jogador: R$${data.budget}
+Time de "bb gu": ${fmt(data.gu)}
+Time de "bb li": ${fmt(data.li)}
 
-Avalie cada esquadrão de 0 a 10 (pode usar decimais) considerando qualidade/habilidade, fama, sucesso e história real de cada escolha, e o encaixe no tema. Seja justo e concreto: escolhas mais icônicas e vitoriosas valem mais. Comente em português brasileiro, curto e divertido (máx 2 frases por time).`;
+Julgue com CRITÉRIO RIGOROSO, item por item:
+1. Dê internamente uma nota de 0 a 10 para CADA item, baseada em fatos reais: qualidade/habilidade, conquistas, prestígio, impacto histórico e relevância atual. ${
+      data.football
+        ? "Em futebol, compare o jogador com os melhores da MESMA posição (goleiro com goleiro, defensor com defensor, etc.) e considere títulos, Bolas de Ouro, seleção e nível de clube."
+        : "Compare cada item com os melhores possíveis dentro do tema."
+    }
+2. A nota final de cada time = média das notas dos itens dele (arredonde em 1 decimal). NÃO invente empate: só use "empate" se a diferença for exatamente 0.
+3. O vencedor é obrigatoriamente quem tiver a maior nota final.
+4. Nos comentários (máx 2 frases, português brasileiro, divertido), cite o item mais forte e o mais fraco do time e justifique. No "summary" diga a diferença de nota e o motivo decisivo.
+Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
+
 
     try {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
