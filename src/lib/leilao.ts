@@ -1,7 +1,7 @@
 /**
  * Temas do jogo "Leilão".
- * Temas de futebol montam esquadrão por posição (1 GOL, 1 DEF, 2 MEI, 1 ATA).
- * Os outros temas sorteiam 5 itens livres do mesmo pool.
+ * Cada pessoa monta um time de 5 itens (5 vs 5).
+ * Temas de futebol: cada time precisa de 1 GOL, 1 DEF, 2 MEI, 1 ATA.
  */
 
 export type LeilaoTheme = {
@@ -9,12 +9,30 @@ export type LeilaoTheme = {
   name: string;
   emoji: string;
   slots: string[];
+  football?: boolean;
   /** pools[i] = candidatos do slot i (futebol) ou pool único (livre) */
   pools: string[][];
 };
 
+export type Lot = { item: string; pos: string };
+
 const FREE_SLOTS = ["Escolha 1", "Escolha 2", "Escolha 3", "Escolha 4", "Escolha 5"];
 const FUT_SLOTS = ["Goleiro", "Defensor", "Meio-campo", "Meio-campo", "Atacante"];
+
+/** Quantos itens de cada posição cada time precisa ter. */
+export const FUT_QUOTAS: Record<string, number> = {
+  Goleiro: 1,
+  Defensor: 1,
+  "Meio-campo": 2,
+  Atacante: 1,
+};
+export const TEAM_SIZE = 5;
+export const FREE_POS = "Item";
+
+export function quotaFor(theme: LeilaoTheme, pos: string): number {
+  if (!theme.football) return TEAM_SIZE;
+  return FUT_QUOTAS[pos] ?? 0;
+}
 
 function free(id: string, name: string, emoji: string, items: string[]): LeilaoTheme {
   return { id, name, emoji, slots: FREE_SLOTS, pools: [items] };
@@ -29,8 +47,9 @@ function fut(
   mid: string[],
   att: string[],
 ): LeilaoTheme {
-  return { id, name, emoji, slots: FUT_SLOTS, pools: [gk, def, mid, mid, att] };
+  return { id, name, emoji, slots: FUT_SLOTS, football: true, pools: [gk, def, mid, mid, att] };
 }
+
 
 export const THEMES: LeilaoTheme[] = [
   // ===== FUTEBOL (por posição) =====
