@@ -160,8 +160,48 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+  const [avatars, setAvatars] = useState<{ gu: string | null; li: string | null }>({
+    gu: null,
+    li: null,
+  });
+  const [uploadingAvatar, setUploadingAvatar] = useState<"gu" | "li" | null>(null);
+
+  const loadAvatars = useCallback(async () => {
+    try {
+      const res = await getProfiles();
+      setAvatars({ gu: res.gu ?? null, li: res.li ?? null });
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAvatars();
+  }, [loadAvatars]);
+
+  const uploadAvatar = useCallback(
+    async (who: "gu" | "li", file: File) => {
+      setUploadingAvatar(who);
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const { path, token } = await createUpload({ data: { ext } });
+        const { error } = await supabase.storage
+          .from("chat-media")
+          .uploadToSignedUrl(path, token, file, { contentType: file.type });
+        if (error) throw error;
+        await setProfileAvatar({ data: { who, path } });
+        await loadAvatars();
+      } catch {
+        /* noop */
+      } finally {
+        setUploadingAvatar(null);
+      }
+    },
+    [loadAvatars],
+  );
 
   const notifyRef = useRef<((rows: Msg[]) => void) | null>(null);
+
 
   // Notificações apenas para bb gu
   useEffect(() => {
