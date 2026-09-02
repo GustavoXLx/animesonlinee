@@ -5,7 +5,10 @@ import {
   sendMessage as sendMessageFn,
   reactMessage,
   createUpload,
+  getProfiles,
+  setProfileAvatar,
   deleteMessage,
+
 } from "@/lib/chat.functions";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import {
@@ -160,8 +163,48 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+  const [avatars, setAvatars] = useState<{ gu: string | null; li: string | null }>({
+    gu: null,
+    li: null,
+  });
+  const [uploadingAvatar, setUploadingAvatar] = useState<"gu" | "li" | null>(null);
+
+  const loadAvatars = useCallback(async () => {
+    try {
+      const res = await getProfiles();
+      setAvatars({ gu: res.gu ?? null, li: res.li ?? null });
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAvatars();
+  }, [loadAvatars]);
+
+  const uploadAvatar = useCallback(
+    async (who: "gu" | "li", file: File) => {
+      setUploadingAvatar(who);
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const { path, token } = await createUpload({ data: { ext } });
+        const { error } = await supabase.storage
+          .from("chat-media")
+          .uploadToSignedUrl(path, token, file, { contentType: file.type });
+        if (error) throw error;
+        await setProfileAvatar({ data: { who, path } });
+        await loadAvatars();
+      } catch {
+        /* noop */
+      } finally {
+        setUploadingAvatar(null);
+      }
+    },
+    [loadAvatars],
+  );
 
   const notifyRef = useRef<((rows: Msg[]) => void) | null>(null);
+
 
   // Notificações apenas para bb gu
   useEffect(() => {
@@ -575,18 +618,37 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         <p className="text-white/50 text-sm mt-2 mb-8">escolhe seu perfil</p>
         <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
           {(["li", "gu"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => pickMe(k)}
-              className={`bg-gradient-to-br ${AVATARS[k].color} rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 font-bold text-lg shadow-xl active:scale-95 transition`}
-            >
-              <span className="w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-3xl font-black backdrop-blur">
-                {AVATARS[k].initial}
-              </span>
-              {AVATARS[k].name}
-            </button>
+            <div key={k} className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => pickMe(k)}
+                className={`w-full bg-gradient-to-br ${AVATARS[k].color} rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 font-bold text-lg shadow-xl active:scale-95 transition`}
+              >
+                <span className="w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-3xl font-black backdrop-blur overflow-hidden">
+                  {avatars[k] ? (
+                    <img src={avatars[k]!} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    AVATARS[k].initial
+                  )}
+                </span>
+                {AVATARS[k].name}
+              </button>
+              <label className="text-[11px] text-white/50 active:text-white cursor-pointer">
+                {uploadingAvatar === k ? "enviando..." : "trocar foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void uploadAvatar(k, f);
+                  }}
+                />
+              </label>
+            </div>
           ))}
         </div>
+
         <button onClick={onExit} className="mt-10 text-xs text-white/40">
           voltar
         </button>
@@ -619,9 +681,13 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           <Images size={16} />
         </button>
         <div
-          className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
+          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
         >
-          {otherInfo.initial}
+          {avatars[other] ? (
+            <img src={avatars[other]!} alt="" className="w-full h-full object-cover" />
+          ) : (
+            otherInfo.initial
+          )}
           {otherOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
@@ -634,6 +700,29 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
+        <label
+          className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
+          aria-label="Minha foto"
+        >
+          {avatars[me] ? (
+            <img src={avatars[me]!} alt="" className="w-full h-full object-cover" />
+          ) : uploadingAvatar === me ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            AVATARS[me].initial
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void uploadAvatar(me, f);
+            }}
+          />
+        </label>
+
         {me === "gu" && (
           <button
             onClick={async () => {
