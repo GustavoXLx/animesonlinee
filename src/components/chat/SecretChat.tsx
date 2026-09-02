@@ -5,7 +5,10 @@ import {
   sendMessage as sendMessageFn,
   reactMessage,
   createUpload,
+  getProfiles,
+  setProfileAvatar,
   deleteMessage,
+
 } from "@/lib/chat.functions";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import {
