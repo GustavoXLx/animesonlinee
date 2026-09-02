@@ -681,9 +681,13 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           <Images size={16} />
         </button>
         <div
-          className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
+          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
         >
-          {otherInfo.initial}
+          {avatars[other] ? (
+            <img src={avatars[other]!} alt="" className="w-full h-full object-cover" />
+          ) : (
+            otherInfo.initial
+          )}
           {otherOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
@@ -696,6 +700,29 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
+        <label
+          className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
+          aria-label="Minha foto"
+        >
+          {avatars[me] ? (
+            <img src={avatars[me]!} alt="" className="w-full h-full object-cover" />
+          ) : uploadingAvatar === me ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            AVATARS[me].initial
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void uploadAvatar(me, f);
+            }}
+          />
+        </label>
+
         {me === "gu" && (
           <button
             onClick={async () => {
