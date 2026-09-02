@@ -618,18 +618,37 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         <p className="text-white/50 text-sm mt-2 mb-8">escolhe seu perfil</p>
         <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
           {(["li", "gu"] as const).map((k) => (
-            <button
-              key={k}
-              onClick={() => pickMe(k)}
-              className={`bg-gradient-to-br ${AVATARS[k].color} rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 font-bold text-lg shadow-xl active:scale-95 transition`}
-            >
-              <span className="w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-3xl font-black backdrop-blur">
-                {AVATARS[k].initial}
-              </span>
-              {AVATARS[k].name}
-            </button>
+            <div key={k} className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => pickMe(k)}
+                className={`w-full bg-gradient-to-br ${AVATARS[k].color} rounded-3xl aspect-square flex flex-col items-center justify-center gap-3 font-bold text-lg shadow-xl active:scale-95 transition`}
+              >
+                <span className="w-16 h-16 rounded-full bg-white/25 flex items-center justify-center text-3xl font-black backdrop-blur overflow-hidden">
+                  {avatars[k] ? (
+                    <img src={avatars[k]!} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    AVATARS[k].initial
+                  )}
+                </span>
+                {AVATARS[k].name}
+              </button>
+              <label className="text-[11px] text-white/50 active:text-white cursor-pointer">
+                {uploadingAvatar === k ? "enviando..." : "trocar foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void uploadAvatar(k, f);
+                  }}
+                />
+              </label>
+            </div>
           ))}
         </div>
+
         <button onClick={onExit} className="mt-10 text-xs text-white/40">
           voltar
         </button>
