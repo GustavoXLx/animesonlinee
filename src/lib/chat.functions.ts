@@ -291,6 +291,30 @@ export const updateSiteState = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/** Edita o texto da mensagem (permitido só nos 30 minutos após o envio). */
+export const editMessage = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; author: "gu" | "li"; text: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const { data: row } = await db
+      .from("messages")
+      .select("created_at, author, media_type")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!row) return { ok: false as const, reason: "not_found" as const };
+    if (row.author !== data.author) return { ok: false as const, reason: "not_yours" as const };
+    if (row.media_type === "deleted") return { ok: false as const, reason: "deleted" as const };
+    const age = Date.now() - new Date(row.created_at).getTime();
+    if (age > 30 * 60 * 1000) return { ok: false as const, reason: "expired" as const };
+    const editedAt = new Date().toISOString();
+    await db
+      .from("messages")
+      .update({ text: data.text.slice(0, 4000), edited_at: editedAt })
+      .eq("id", data.id);
+    return { ok: true as const, editedAt };
+  });
+
 /** Apaga a mensagem para todos (estilo WhatsApp "apagar para todos"). */
 export const deleteMessage = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => d)
