@@ -39,6 +39,7 @@ export type Database = {
         Row: {
           author: string
           created_at: string
+          edited_at: string | null
           id: string
           media_path: string | null
           media_type: string | null
@@ -51,6 +52,7 @@ export type Database = {
         Insert: {
           author: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           media_path?: string | null
           media_type?: string | null
@@ -63,6 +65,7 @@ export type Database = {
         Update: {
           author?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           media_path?: string | null
           media_type?: string | null
