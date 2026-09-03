@@ -700,28 +700,6 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
-        <label
-          className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
-          aria-label="Minha foto"
-        >
-          {avatars[me] ? (
-            <img src={avatars[me]!} alt="" className="w-full h-full object-cover" />
-          ) : uploadingAvatar === me ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            AVATARS[me].initial
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (f) void uploadAvatar(me, f);
-            }}
-          />
-        </label>
 
         {me === "gu" && (
           <button
