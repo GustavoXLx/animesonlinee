@@ -1485,7 +1485,13 @@ const MessageRow = memo(function MessageRow({
           )}
         </span>
       )}
-      <div className="max-w-[78%]" {...swipe}>
+      <div
+        className={
+          m.mediaType === "video" || m.mediaType === "audio" ? "w-[80%] max-w-[300px]" : "max-w-[78%]"
+        }
+        {...swipe}
+      >
+
 
         <div
           onDoubleClick={onReact}
