@@ -814,7 +814,9 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             <MessageRow
               m={m}
               mine={m.author === me}
+              avatarUrl={avatars[m.author]}
               reply={m.replyTo ? msgById.get(m.replyTo) : undefined}
+
               onReact={() => setReactingId(m.id)}
               onReply={() => setReplyTo(m)}
               onQuickHeart={() => react(m.id, "❤️")}
@@ -1332,6 +1334,7 @@ type RowProps = {
   m: Msg;
   mine: boolean;
   reply: Msg | undefined;
+  avatarUrl?: string | null;
   onReact: () => void;
   onReply: () => void;
   onQuickHeart: () => void;
@@ -1343,12 +1346,14 @@ const MessageRow = memo(function MessageRow({
   m,
   mine,
   reply,
+  avatarUrl,
   onReact,
   onReply,
   onQuickHeart,
   onJump,
   onMenu,
 }: RowProps) {
+
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
   const isSticker = m.mediaType === "sticker";
   const [dx, setDx] = useState(0);
@@ -1465,9 +1470,21 @@ const MessageRow = memo(function MessageRow({
   return (
     <div
       id={`msg-${m.id}`}
-      className={`flex ${mine ? "justify-end" : "justify-start"} rounded-2xl`}
+      className={`flex items-end gap-1.5 ${mine ? "justify-end" : "justify-start"} rounded-2xl`}
     >
+      {!mine && (
+        <span
+          className={`w-6 h-6 shrink-0 rounded-full overflow-hidden bg-gradient-to-br ${AVATARS[m.author].color} flex items-center justify-center text-[10px] font-black`}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            AVATARS[m.author].initial
+          )}
+        </span>
+      )}
       <div className="max-w-[78%]" {...swipe}>
+
         <div
           onDoubleClick={onReact}
           className={`relative rounded-2xl px-3 py-2 ${
