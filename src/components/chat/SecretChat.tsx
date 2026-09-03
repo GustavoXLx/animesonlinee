@@ -1141,16 +1141,38 @@ const Composer = memo(function Composer({
   const startRec = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
+      // Escolhe um formato que o próprio aparelho consiga gravar E tocar
+      const candidates = [
+        "audio/mp4",
+        "audio/mpeg",
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+      ];
+      const supported = candidates.find(
+        (t) =>
+          typeof MediaRecorder !== "undefined" &&
+          typeof MediaRecorder.isTypeSupported === "function" &&
+          MediaRecorder.isTypeSupported(t),
+      );
+      const rec = supported ? new MediaRecorder(stream, { mimeType: supported }) : new MediaRecorder(stream);
       chunksRef.current = [];
       rec.ondataavailable = (e) => {
         if (e.data.size) chunksRef.current.push(e.data);
       };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        const mime = (rec.mimeType || supported || "audio/webm").split(";")[0];
+        const blob = new Blob(chunksRef.current, { type: mime });
         if (blob.size > 800) {
-          const file = new File([blob], `audio.webm`, { type: "audio/webm" });
+          const ext = mime.includes("mp4")
+            ? "m4a"
+            : mime.includes("mpeg")
+              ? "mp3"
+              : mime.includes("ogg")
+                ? "ogg"
+                : "webm";
+          const file = new File([blob], `audio.${ext}`, { type: mime });
           setUploading(true);
           try {
             await onSend({ file });
@@ -1159,7 +1181,8 @@ const Composer = memo(function Composer({
           }
         }
       };
-      rec.start();
+      // grava em pedaços pra não perder o final do áudio
+      rec.start(250);
       recRef.current = rec;
       setRecording(true);
       tickRef.current = setInterval(() => setSecs((v) => v + 1), 1000);
@@ -1167,6 +1190,7 @@ const Composer = memo(function Composer({
       /* microfone negado */
     }
   };
+
 
   const stopRec = (send: boolean) => {
     const rec = recRef.current;
