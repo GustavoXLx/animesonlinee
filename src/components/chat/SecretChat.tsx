@@ -1332,6 +1332,7 @@ type RowProps = {
   m: Msg;
   mine: boolean;
   reply: Msg | undefined;
+  avatarUrl?: string | null;
   onReact: () => void;
   onReply: () => void;
   onQuickHeart: () => void;
@@ -1343,12 +1344,14 @@ const MessageRow = memo(function MessageRow({
   m,
   mine,
   reply,
+  avatarUrl,
   onReact,
   onReply,
   onQuickHeart,
   onJump,
   onMenu,
 }: RowProps) {
+
   const uniqReactions = useMemo(() => [...new Set(m.reactions)], [m.reactions]);
   const isSticker = m.mediaType === "sticker";
   const [dx, setDx] = useState(0);
