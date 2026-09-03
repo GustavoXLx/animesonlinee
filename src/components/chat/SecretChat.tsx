@@ -700,28 +700,6 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
         </div>
-        <label
-          className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/10 flex items-center justify-center text-[11px] font-bold cursor-pointer"
-          aria-label="Minha foto"
-        >
-          {avatars[me] ? (
-            <img src={avatars[me]!} alt="" className="w-full h-full object-cover" />
-          ) : uploadingAvatar === me ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            AVATARS[me].initial
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (f) void uploadAvatar(me, f);
-            }}
-          />
-        </label>
 
         {me === "gu" && (
           <button
@@ -1163,16 +1141,38 @@ const Composer = memo(function Composer({
   const startRec = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
+      // Escolhe um formato que o próprio aparelho consiga gravar E tocar
+      const candidates = [
+        "audio/mp4",
+        "audio/mpeg",
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+      ];
+      const supported = candidates.find(
+        (t) =>
+          typeof MediaRecorder !== "undefined" &&
+          typeof MediaRecorder.isTypeSupported === "function" &&
+          MediaRecorder.isTypeSupported(t),
+      );
+      const rec = supported ? new MediaRecorder(stream, { mimeType: supported }) : new MediaRecorder(stream);
       chunksRef.current = [];
       rec.ondataavailable = (e) => {
         if (e.data.size) chunksRef.current.push(e.data);
       };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        const mime = (rec.mimeType || supported || "audio/webm").split(";")[0];
+        const blob = new Blob(chunksRef.current, { type: mime });
         if (blob.size > 800) {
-          const file = new File([blob], `audio.webm`, { type: "audio/webm" });
+          const ext = mime.includes("mp4")
+            ? "m4a"
+            : mime.includes("mpeg")
+              ? "mp3"
+              : mime.includes("ogg")
+                ? "ogg"
+                : "webm";
+          const file = new File([blob], `audio.${ext}`, { type: mime });
           setUploading(true);
           try {
             await onSend({ file });
@@ -1181,7 +1181,8 @@ const Composer = memo(function Composer({
           }
         }
       };
-      rec.start();
+      // grava em pedaços pra não perder o final do áudio
+      rec.start(250);
       recRef.current = rec;
       setRecording(true);
       tickRef.current = setInterval(() => setSecs((v) => v + 1), 1000);
@@ -1189,6 +1190,7 @@ const Composer = memo(function Composer({
       /* microfone negado */
     }
   };
+
 
   const stopRec = (send: boolean) => {
     const rec = recRef.current;
@@ -1483,7 +1485,13 @@ const MessageRow = memo(function MessageRow({
           )}
         </span>
       )}
-      <div className="max-w-[78%]" {...swipe}>
+      <div
+        className={
+          m.mediaType === "video" || m.mediaType === "audio" ? "w-[80%] max-w-[300px]" : "max-w-[78%]"
+        }
+        {...swipe}
+      >
+
 
         <div
           onDoubleClick={onReact}
@@ -1503,16 +1511,18 @@ const MessageRow = memo(function MessageRow({
             />
           )}
           {m.mediaUrl && m.mediaType === "video" && (
-            <video src={m.mediaUrl} controls playsInline className="rounded-xl max-h-72 mb-1" />
-          )}
-          {m.mediaUrl && m.mediaType === "audio" && (
-            <audio
+            <video
               src={m.mediaUrl}
               controls
+              playsInline
               preload="metadata"
-              className="mb-1 h-9 w-56 max-w-full"
+              className="rounded-xl w-full max-h-80 mb-1 bg-black"
             />
           )}
+          {m.mediaUrl && m.mediaType === "audio" && (
+            <audio src={m.mediaUrl} controls preload="metadata" className="mb-1 h-10 w-full block" />
+          )}
+
           {m.mediaType === "deleted" && (
             <p className="flex items-center gap-1 text-sm italic opacity-60">
               <Trash2 size={12} /> mensagem apagada
