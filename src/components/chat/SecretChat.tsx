@@ -1511,16 +1511,18 @@ const MessageRow = memo(function MessageRow({
             />
           )}
           {m.mediaUrl && m.mediaType === "video" && (
-            <video src={m.mediaUrl} controls playsInline className="rounded-xl max-h-72 mb-1" />
-          )}
-          {m.mediaUrl && m.mediaType === "audio" && (
-            <audio
+            <video
               src={m.mediaUrl}
               controls
+              playsInline
               preload="metadata"
-              className="mb-1 h-9 w-56 max-w-full"
+              className="rounded-xl w-full max-h-80 mb-1 bg-black"
             />
           )}
+          {m.mediaUrl && m.mediaType === "audio" && (
+            <audio src={m.mediaUrl} controls preload="metadata" className="mb-1 h-10 w-full block" />
+          )}
+
           {m.mediaType === "deleted" && (
             <p className="flex items-center gap-1 text-sm italic opacity-60">
               <Trash2 size={12} /> mensagem apagada
