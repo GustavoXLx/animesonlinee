@@ -814,7 +814,9 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             <MessageRow
               m={m}
               mine={m.author === me}
+              avatarUrl={avatars[m.author]}
               reply={m.replyTo ? msgById.get(m.replyTo) : undefined}
+
               onReact={() => setReactingId(m.id)}
               onReply={() => setReplyTo(m)}
               onQuickHeart={() => react(m.id, "❤️")}
