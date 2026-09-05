@@ -37,8 +37,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
-import { usePanicExit, useAutoLock, isSpecialDay } from "@/lib/panic";
+import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
 import { LiEffect } from "@/components/LiEffect";
+import { BirthdayEffect } from "@/components/BirthdayEffect";
 
 import sticker1 from "@/assets/stickers/sticker_110629.jpg.asset.json";
 import sticker2 from "@/assets/stickers/sticker_110652.jpg.asset.json";
@@ -160,6 +161,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [sys, setSys] = useState<string | null>(null);
   const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liEffect, setLiEffect] = useState(false);
+  const [bday, setBday] = useState(false);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
@@ -395,6 +397,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     const raw = localStorage.getItem(CLEAR_KEY(who));
     setClearCutoff(raw ? Number(raw) || 0 : 0);
     if (who === "li" && isSpecialDay()) setLiEffect(true);
+    if (who === "li" && isBirthdayDay()) setBday(true);
     setMe(who);
   }, []);
 
@@ -661,6 +664,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
 
   return (
     <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
+      {bday && <BirthdayEffect onClose={() => setBday(false)} />}
       {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
         <button onClick={onExit} className="p-1">
