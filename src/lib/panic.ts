@@ -115,3 +115,9 @@ export function isSpecialDay() {
   const d = new Date();
   return d.getFullYear() === 2026 && d.getMonth() === 7 && d.getDate() === 3;
 }
+
+/** Aniversário da bb li: válido somente em 05/09/2026 (horário local). */
+export function isBirthdayDay() {
+  const d = new Date();
+  return d.getFullYear() === 2026 && d.getMonth() === 8 && d.getDate() === 5;
+}
