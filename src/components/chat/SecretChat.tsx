@@ -138,6 +138,27 @@ function rowToMsg(r: Row): Msg {
   };
 }
 
+/**
+ * Links privados são renovados pelo servidor a cada consulta. Trocar o `src`
+ * de um player enquanto ele toca faz o navegador voltar para 0:00, então
+ * mantemos o link já carregado durante esta sessão para a mesma mensagem.
+ */
+function keepActiveMediaUrls(next: Msg[], previous: Msg[]) {
+  const oldById = new Map(previous.map((message) => [message.id, message]));
+  return next.map((message) => {
+    const old = oldById.get(message.id);
+    if (
+      old?.mediaUrl &&
+      message.mediaUrl &&
+      old.mediaType === message.mediaType &&
+      (message.mediaType === "audio" || message.mediaType === "video")
+    ) {
+      return { ...message, mediaUrl: old.mediaUrl };
+    }
+    return message;
+  });
+}
+
 export function SecretChat({ onExit, master = false }: { onExit: () => void; master?: boolean }) {
   const [me, setMe] = useState<"gu" | "li" | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -290,7 +311,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           setNewCount((c) => c + incoming.length);
         }
         if (prev.length > 0 && incoming.length > 0) notifyRef.current?.(incoming);
-        return [...rows, ...tmp];
+        return [...keepActiveMediaUrls(rows, prev), ...tmp];
       });
       if (document.visibilityState === "visible") {
         const unseen = rows.some((r) => r.author !== me && !r.seen);
