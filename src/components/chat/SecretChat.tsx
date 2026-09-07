@@ -8,6 +8,8 @@ import {
   getProfiles,
   setProfileAvatar,
   deleteMessage,
+  editMessage,
+
 
 } from "@/lib/chat.functions";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
@@ -30,6 +32,7 @@ import {
   Search,
   Copy,
   Trash2,
+  Pencil,
   Mic,
   Pause,
   CheckCheck,
@@ -101,6 +104,7 @@ type Msg = {
   mediaUrl?: string | null;
   mediaType?: string | null;
   seen?: boolean;
+  edited?: boolean;
 };
 
 type Row = {
@@ -113,6 +117,7 @@ type Row = {
   media_url: string | null;
   media_type: string | null;
   seen_at?: string | null;
+  edited_at?: string | null;
 };
 
 const MAX_VISIBLE = 30;
@@ -135,6 +140,7 @@ function rowToMsg(r: Row): Msg {
     mediaUrl: r.media_url,
     mediaType: r.media_type,
     seen: Boolean(r.seen_at),
+    edited: Boolean(r.edited_at),
   };
 }
 
@@ -186,6 +192,8 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+  const [editing, setEditing] = useState<Msg | null>(null);
+  const [avatarView, setAvatarView] = useState<string | null>(null);
   const [avatars, setAvatars] = useState<{ gu: string | null; li: string | null }>({
     gu: null,
     li: null,
@@ -599,6 +607,29 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     }
   }, []);
 
+  const saveEdit = useCallback(
+    async (m: Msg, text: string) => {
+      const clean = text.trim();
+      setEditing(null);
+      if (!clean || clean === m.text) return;
+      setMsgs((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, text: clean, edited: true } : x)),
+      );
+      try {
+        const res = await editMessage({ data: { id: m.id, author: m.author, text: clean } });
+        if (!res.ok) {
+          toast(res.reason === "expired" ? "passou de 30 minutos" : "não deu pra editar");
+          setMsgs((prev) => prev.map((x) => (x.id === m.id ? { ...x, text: m.text } : x)));
+          return;
+        }
+        channelRef.current?.send({ type: "broadcast", event: "ping", payload: {} });
+      } catch {
+        toast("não deu pra editar");
+      }
+    },
+    [toast],
+  );
+
   const filteredMsgs = useMemo(
     () => (clearCutoff ? msgs.filter((m) => m.ts > clearCutoff) : msgs),
     [msgs, clearCutoff],
@@ -705,8 +736,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         >
           <Images size={16} />
         </button>
-        <div
-          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
+        <button
+          onClick={() => avatars[other] && setAvatarView(avatars[other])}
+          aria-label="Ver foto de perfil"
+          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black shrink-0 ${avatars[other] ? "active:scale-95 transition" : "cursor-default"}`}
         >
           {avatars[other] ? (
             <img src={avatars[other]!} alt="" className="w-full h-full object-cover" />
@@ -716,7 +749,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           {otherOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
-        </div>
+        </button>
         <div className="flex-1">
           <p className="font-semibold text-sm">{otherInfo.name}</p>
           <p
@@ -921,6 +954,21 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
                 },
               },
               { icon: <Copy size={16} />, label: "Copiar texto", run: () => copyMsg(menuMsg) },
+              ...(menuMsg.author === me &&
+              menuMsg.text &&
+              !menuMsg.mediaType &&
+              Date.now() - menuMsg.ts < 30 * 60 * 1000
+                ? [
+                    {
+                      icon: <Pencil size={16} />,
+                      label: "Editar",
+                      run: () => {
+                        setEditing(menuMsg);
+                        setMenuMsg(null);
+                      },
+                    },
+                  ]
+                : []),
               {
                 icon: <Search size={16} />,
                 label: "Ver original",
@@ -981,7 +1029,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
-      {replyTo && (
+      {replyTo && !editing && (
         <div className="px-3 py-2 border-t border-white/10 bg-neutral-900 flex items-center gap-2">
           <div className="w-1 h-8 bg-pink-500 rounded" />
           <div className="flex-1 min-w-0">
@@ -998,11 +1046,44 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
+      {editing && (
+        <div className="px-3 py-2 border-t border-white/10 bg-neutral-900 flex items-center gap-2">
+          <div className="w-1 h-8 bg-amber-400 rounded" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-amber-300 font-semibold">editando mensagem</p>
+            <p className="text-xs text-white/60 truncate">{editing.text}</p>
+          </div>
+          <button onClick={() => setEditing(null)}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <Composer
+        editing={editing}
         onSend={sendMessage}
+        onEdit={saveEdit}
         onTyping={emitTyping}
         onOpenStickers={() => setShowStickers(true)}
       />
+
+      {avatarView && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/95 flex flex-col items-center justify-center p-6"
+          onClick={() => setAvatarView(null)}
+        >
+          <button onClick={() => setAvatarView(null)} className="absolute top-4 right-4 p-2">
+            <X size={26} />
+          </button>
+          <img
+            src={avatarView}
+            alt="foto de perfil"
+            className="max-w-full max-h-[70vh] rounded-3xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="mt-4 text-sm text-white/60">{otherInfo.name}</p>
+        </div>
+      )}
 
       {sys && (
         <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50 bg-neutral-800/95 border border-white/10 rounded-full px-4 py-2 text-[11px] shadow-xl animate-fade-in">
@@ -1141,10 +1222,14 @@ const Composer = memo(function Composer({
   onSend,
   onTyping,
   onOpenStickers,
+  editing,
+  onEdit,
 }: {
   onSend: (opts: { text?: string; file?: File }) => Promise<void>;
   onTyping: () => void;
   onOpenStickers: () => void;
+  editing?: Msg | null;
+  onEdit?: (m: Msg, text: string) => Promise<void>;
 }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -1235,9 +1320,14 @@ const Composer = memo(function Composer({
     [],
   );
 
+  useEffect(() => {
+    if (editing) setText(editing.text);
+  }, [editing]);
+
   const submit = () => {
     if (!text.trim()) return;
-    onSend({ text });
+    if (editing && onEdit) void onEdit(editing, text);
+    else onSend({ text });
     setText("");
   };
 
@@ -1555,6 +1645,7 @@ const MessageRow = memo(function MessageRow({
           )}
           {m.text && <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>}
           <span className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
+            {m.edited && <span className="italic">editado</span>}
             {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             {mine && (
               <CheckCheck
