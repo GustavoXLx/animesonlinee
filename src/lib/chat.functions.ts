@@ -484,3 +484,29 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
       };
     }
   });
+
+/** Consulta leve: mensagens novas da outra pessoa depois de um instante. */
+export const peekNew = createServerFn({ method: "POST" })
+  .inputValidator((d: { me: "gu" | "li"; since?: string | null }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const other = data.me === "gu" ? "li" : "gu";
+    let q = db
+      .from("messages")
+      .select("id, text, media_type, created_at")
+      .eq("author", other)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data.since) q = q.gt("created_at", data.since);
+    const { data: rows } = await q;
+    const list = rows ?? [];
+    const last = list[0];
+    return {
+      count: list.length,
+      now: new Date().toISOString(),
+      last: last
+        ? { id: last.id, text: last.text ?? "", mediaType: last.media_type ?? null, createdAt: last.created_at }
+        : null,
+    };
+  });
