@@ -192,6 +192,8 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
+  const [editing, setEditing] = useState<Msg | null>(null);
+  const [avatarView, setAvatarView] = useState<string | null>(null);
   const [avatars, setAvatars] = useState<{ gu: string | null; li: string | null }>({
     gu: null,
     li: null,
@@ -711,8 +713,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         >
           <Images size={16} />
         </button>
-        <div
-          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black`}
+        <button
+          onClick={() => avatars[other] && setAvatarView(avatars[other])}
+          aria-label="Ver foto de perfil"
+          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black shrink-0 ${avatars[other] ? "active:scale-95 transition" : "cursor-default"}`}
         >
           {avatars[other] ? (
             <img src={avatars[other]!} alt="" className="w-full h-full object-cover" />
