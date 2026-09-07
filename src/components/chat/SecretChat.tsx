@@ -1029,7 +1029,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
-      {replyTo && (
+      {replyTo && !editing && (
         <div className="px-3 py-2 border-t border-white/10 bg-neutral-900 flex items-center gap-2">
           <div className="w-1 h-8 bg-pink-500 rounded" />
           <div className="flex-1 min-w-0">
@@ -1046,11 +1046,44 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
+      {editing && (
+        <div className="px-3 py-2 border-t border-white/10 bg-neutral-900 flex items-center gap-2">
+          <div className="w-1 h-8 bg-amber-400 rounded" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-amber-300 font-semibold">editando mensagem</p>
+            <p className="text-xs text-white/60 truncate">{editing.text}</p>
+          </div>
+          <button onClick={() => setEditing(null)}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       <Composer
+        editing={editing}
         onSend={sendMessage}
+        onEdit={saveEdit}
         onTyping={emitTyping}
         onOpenStickers={() => setShowStickers(true)}
       />
+
+      {avatarView && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/95 flex flex-col items-center justify-center p-6"
+          onClick={() => setAvatarView(null)}
+        >
+          <button onClick={() => setAvatarView(null)} className="absolute top-4 right-4 p-2">
+            <X size={26} />
+          </button>
+          <img
+            src={avatarView}
+            alt="foto de perfil"
+            className="max-w-full max-h-[70vh] rounded-3xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="mt-4 text-sm text-white/60">{otherInfo.name}</p>
+        </div>
+      )}
 
       {sys && (
         <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50 bg-neutral-800/95 border border-white/10 rounded-full px-4 py-2 text-[11px] shadow-xl animate-fade-in">
