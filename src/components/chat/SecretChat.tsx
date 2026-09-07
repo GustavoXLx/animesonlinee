@@ -8,6 +8,8 @@ import {
   getProfiles,
   setProfileAvatar,
   deleteMessage,
+  editMessage,
+
 
 } from "@/lib/chat.functions";
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
@@ -30,6 +32,7 @@ import {
   Search,
   Copy,
   Trash2,
+  Pencil,
   Mic,
   Pause,
   CheckCheck,
@@ -101,6 +104,7 @@ type Msg = {
   mediaUrl?: string | null;
   mediaType?: string | null;
   seen?: boolean;
+  edited?: boolean;
 };
 
 type Row = {
@@ -113,6 +117,7 @@ type Row = {
   media_url: string | null;
   media_type: string | null;
   seen_at?: string | null;
+  edited_at?: string | null;
 };
 
 const MAX_VISIBLE = 30;
@@ -135,6 +140,7 @@ function rowToMsg(r: Row): Msg {
     mediaUrl: r.media_url,
     mediaType: r.media_type,
     seen: Boolean(r.seen_at),
+    edited: Boolean(r.edited_at),
   };
 }
 
