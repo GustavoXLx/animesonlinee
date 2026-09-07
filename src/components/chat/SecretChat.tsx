@@ -954,6 +954,21 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
                 },
               },
               { icon: <Copy size={16} />, label: "Copiar texto", run: () => copyMsg(menuMsg) },
+              ...(menuMsg.author === me &&
+              menuMsg.text &&
+              !menuMsg.mediaType &&
+              Date.now() - menuMsg.ts < 30 * 60 * 1000
+                ? [
+                    {
+                      icon: <Pencil size={16} />,
+                      label: "Editar",
+                      run: () => {
+                        setEditing(menuMsg);
+                        setMenuMsg(null);
+                      },
+                    },
+                  ]
+                : []),
               {
                 icon: <Search size={16} />,
                 label: "Ver original",
