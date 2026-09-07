@@ -607,6 +607,29 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     }
   }, []);
 
+  const saveEdit = useCallback(
+    async (m: Msg, text: string) => {
+      const clean = text.trim();
+      setEditing(null);
+      if (!clean || clean === m.text) return;
+      setMsgs((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, text: clean, edited: true } : x)),
+      );
+      try {
+        const res = await editMessage({ data: { id: m.id, author: m.author, text: clean } });
+        if (!res.ok) {
+          toast(res.reason === "expired" ? "passou de 30 minutos" : "não deu pra editar");
+          setMsgs((prev) => prev.map((x) => (x.id === m.id ? { ...x, text: m.text } : x)));
+          return;
+        }
+        channelRef.current?.send({ type: "broadcast", event: "ping", payload: {} });
+      } catch {
+        toast("não deu pra editar");
+      }
+    },
+    [toast],
+  );
+
   const filteredMsgs = useMemo(
     () => (clearCutoff ? msgs.filter((m) => m.ts > clearCutoff) : msgs),
     [msgs, clearCutoff],
