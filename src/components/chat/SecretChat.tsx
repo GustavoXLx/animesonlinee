@@ -1222,10 +1222,14 @@ const Composer = memo(function Composer({
   onSend,
   onTyping,
   onOpenStickers,
+  editing,
+  onEdit,
 }: {
   onSend: (opts: { text?: string; file?: File }) => Promise<void>;
   onTyping: () => void;
   onOpenStickers: () => void;
+  editing?: Msg | null;
+  onEdit?: (m: Msg, text: string) => Promise<void>;
 }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -1316,9 +1320,14 @@ const Composer = memo(function Composer({
     [],
   );
 
+  useEffect(() => {
+    if (editing) setText(editing.text);
+  }, [editing]);
+
   const submit = () => {
     if (!text.trim()) return;
-    onSend({ text });
+    if (editing && onEdit) void onEdit(editing, text);
+    else onSend({ text });
     setText("");
   };
 
@@ -1636,6 +1645,7 @@ const MessageRow = memo(function MessageRow({
           )}
           {m.text && <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>}
           <span className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-60">
+            {m.edited && <span className="italic">editado</span>}
             {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             {mine && (
               <CheckCheck
