@@ -726,7 +726,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           {otherOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
-        </div>
+        </button>
         <div className="flex-1">
           <p className="font-semibold text-sm">{otherInfo.name}</p>
           <p
