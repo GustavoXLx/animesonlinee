@@ -154,7 +154,9 @@ export const listMedia = createServerFn({ method: "POST" })
     const limit = Math.min(Math.max(data.limit ?? 45, 1), 120);
     let q = db
       .from("messages")
-      .select("id, author, text, media_url, media_path, media_type, created_at, reactions")
+      .select(
+        "id, author, text, media_url, media_path, media_type, created_at, reactions, reply_to, seen_at, edited_at",
+      )
       .not("media_path", "is", null)
       .in("media_type", ["image", "video"])
       .order("created_at", { ascending: false })
