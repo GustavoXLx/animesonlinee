@@ -1133,30 +1133,60 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   );
 }
 
+/** Cache em memória: reabrir a galeria mostra na hora o que já foi carregado. */
+let galleryCache: { items: Msg[]; hasMore: boolean } | null = null;
+
 function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void }) {
   const [viewing, setViewing] = useState<Msg | null>(null);
-  const [items, setItems] = useState<Msg[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Msg[]>(() => galleryCache?.items ?? []);
+  const [hasMore, setHasMore] = useState(() => galleryCache?.hasMore ?? false);
+  const [loading, setLoading] = useState(() => !galleryCache);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let rows: Row[] = [];
       try {
-        const res = await listMedia();
-        rows = (res.rows ?? []) as Row[];
+        const res = await listMedia({ data: { limit: 45 } });
+        if (cancelled) return;
+        const rows = (res.rows ?? []) as Row[];
+        const all = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
+        setItems(all);
+        setHasMore(Boolean(res.hasMore));
+        galleryCache = { items: all, hasMore: Boolean(res.hasMore) };
       } catch {
-        rows = [];
+        if (!cancelled && !galleryCache) setItems([]);
       }
-      if (cancelled) return;
-      const all = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
-      setItems(all);
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [cutoff]);
+
+  const loadMore = async () => {
+    const oldest = items[items.length - 1];
+    if (!oldest || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await listMedia({
+        data: { limit: 45, before: new Date(oldest.ts).toISOString() },
+      });
+      const rows = (res.rows ?? []) as Row[];
+      const more = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
+      setItems((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        const next = [...prev, ...more.filter((m) => !seen.has(m.id))];
+        galleryCache = { items: next, hasMore: Boolean(res.hasMore) };
+        return next;
+      });
+      setHasMore(Boolean(res.hasMore));
+    } catch {
+      /* mantém o que já tem */
+    }
+    setLoadingMore(false);
+  };
+
 
   return (
     <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
@@ -1185,42 +1215,55 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
             nenhuma foto ou vídeo por aqui ainda 💫
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-1.5">
-            {[...items].reverse().map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setViewing(m)}
-                className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
-              >
-                {m.mediaType === "video" ? (
-                  <>
-                    <video
+          <>
+            <div className="grid grid-cols-3 gap-1.5">
+              {items.map((m, i) => (
+                <button
+                  key={m.id}
+                  onClick={() => setViewing(m)}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
+                >
+                  {m.mediaType === "video" ? (
+                    <>
+                      <video
+                        src={m.mediaUrl!}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload={i < 9 ? "metadata" : "none"}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Play size={22} className="drop-shadow-lg" fill="white" />
+                      </div>
+                    </>
+                  ) : (
+                    <img
                       src={m.mediaUrl!}
+                      alt=""
+                      loading={i < 9 ? "eager" : "lazy"}
+                      decoding="async"
                       className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play size={22} className="drop-shadow-lg" fill="white" />
-                    </div>
-                  </>
-                ) : (
-                  <img
-                    src={m.mediaUrl!}
-                    alt=""
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
-                  {AVATARS[m.author].name} ·{" "}
-                  {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
-                </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
+                    {AVATARS[m.author].name} ·{" "}
+                    {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="mt-3 mb-2 w-full rounded-xl bg-white/10 py-2.5 text-sm text-white/80 active:scale-[0.99] transition"
+              >
+                {loadingMore ? "carregando..." : "ver mais antigas"}
               </button>
-            ))}
-          </div>
+            )}
+          </>
         )}
+
       </div>
       {viewing && (
         <div
