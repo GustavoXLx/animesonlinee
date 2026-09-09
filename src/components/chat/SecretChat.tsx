@@ -267,6 +267,23 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     };
   }, [me]);
 
+  // Dentro do chat: marca tudo como já avisado (nada de aviso duplicado depois)
+  useEffect(() => {
+    if (!me) return;
+    rememberWho(me);
+    const mark = () => {
+      if (document.visibilityState === "visible") markNotifiedNow();
+    };
+    mark();
+    const t = setInterval(mark, 2000);
+    return () => {
+      clearInterval(t);
+      mark();
+    };
+  }, [me]);
+
+
+
   const escapeHome = useCallback(() => {
     onExit();
   }, [onExit]);
