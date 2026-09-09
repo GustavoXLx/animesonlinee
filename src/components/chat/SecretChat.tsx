@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
+import { rememberWho, markNotifiedNow } from "@/lib/chatNotify";
 import { LiEffect } from "@/components/LiEffect";
 import { BirthdayEffect } from "@/components/BirthdayEffect";
 
@@ -266,6 +267,23 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
       notifyRef.current = null;
     };
   }, [me]);
+
+  // Dentro do chat: marca tudo como já avisado (nada de aviso duplicado depois)
+  useEffect(() => {
+    if (!me) return;
+    rememberWho(me);
+    const mark = () => {
+      if (document.visibilityState === "visible") markNotifiedNow();
+    };
+    mark();
+    const t = setInterval(mark, 2000);
+    return () => {
+      clearInterval(t);
+      mark();
+    };
+  }, [me]);
+
+
 
   const escapeHome = useCallback(() => {
     onExit();

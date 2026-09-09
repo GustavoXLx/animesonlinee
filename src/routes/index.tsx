@@ -23,6 +23,7 @@ import { animes, catalog, genres, schedule, type Anime } from "@/lib/animes";
 import { useSiteState } from "@/lib/siteState";
 import { checkTrigger } from "@/lib/chat.functions";
 import { SecretGate } from "@/components/chat/SecretGate";
+import { useChatNotifier } from "@/lib/chatNotify";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,6 +54,7 @@ function Home() {
   const [genre, setGenre] = useState<string | null>(null);
   const [secret, setSecret] = useState(false);
   const site = useSiteState();
+  useChatNotifier(!secret);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
