@@ -1215,42 +1215,55 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
             nenhuma foto ou vídeo por aqui ainda 💫
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-1.5">
-            {[...items].reverse().map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setViewing(m)}
-                className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
-              >
-                {m.mediaType === "video" ? (
-                  <>
-                    <video
+          <>
+            <div className="grid grid-cols-3 gap-1.5">
+              {items.map((m, i) => (
+                <button
+                  key={m.id}
+                  onClick={() => setViewing(m)}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-white/5 active:scale-95 transition"
+                >
+                  {m.mediaType === "video" ? (
+                    <>
+                      <video
+                        src={m.mediaUrl!}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload={i < 9 ? "metadata" : "none"}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Play size={22} className="drop-shadow-lg" fill="white" />
+                      </div>
+                    </>
+                  ) : (
+                    <img
                       src={m.mediaUrl!}
+                      alt=""
+                      loading={i < 9 ? "eager" : "lazy"}
+                      decoding="async"
                       className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play size={22} className="drop-shadow-lg" fill="white" />
-                    </div>
-                  </>
-                ) : (
-                  <img
-                    src={m.mediaUrl!}
-                    alt=""
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
-                  {AVATARS[m.author].name} ·{" "}
-                  {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
-                </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[9px] text-white/80">
+                    {AVATARS[m.author].name} ·{" "}
+                    {new Date(m.ts).toLocaleDateString([], { day: "2-digit", month: "2-digit" })}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="mt-3 mb-2 w-full rounded-xl bg-white/10 py-2.5 text-sm text-white/80 active:scale-[0.99] transition"
+              >
+                {loadingMore ? "carregando..." : "ver mais antigas"}
               </button>
-            ))}
-          </div>
+            )}
+          </>
         )}
+
       </div>
       {viewing && (
         <div
