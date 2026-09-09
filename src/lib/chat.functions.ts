@@ -146,18 +146,25 @@ export const listMessages = createServerFn({ method: "POST" })
     return { rows: fresh.reverse() };
   });
 
-export const listMedia = createServerFn({ method: "POST" }).handler(async () => {
-  await gate();
-  const db = await admin();
-  const { data: rows } = await db
-    .from("messages")
-    .select("*")
-    .not("media_url", "is", null)
-    .in("media_type", ["image", "video"])
-    .order("created_at", { ascending: true });
-  const fresh = await refreshMedia(db, rows ?? []);
-  return { rows: fresh };
-});
+export const listMedia = createServerFn({ method: "POST" })
+  .inputValidator((d?: { limit?: number; before?: string }) => d ?? {})
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const limit = Math.min(Math.max(data.limit ?? 45, 1), 120);
+    let q = db
+      .from("messages")
+      .select("id, author, text, media_url, media_path, media_type, created_at, reactions")
+      .not("media_path", "is", null)
+      .in("media_type", ["image", "video"])
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (data.before) q = q.lt("created_at", data.before);
+    const { data: rows } = await q;
+    const fresh = await refreshMedia(db, rows ?? []);
+    return { rows: fresh, hasMore: (rows ?? []).length === limit };
+  });
+
 
 export const createUpload = createServerFn({ method: "POST" })
   .inputValidator((d: { ext: string }) => d)
