@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
+import { rememberWho, markNotifiedNow } from "@/lib/chatNotify";
 import { LiEffect } from "@/components/LiEffect";
 import { BirthdayEffect } from "@/components/BirthdayEffect";
 
