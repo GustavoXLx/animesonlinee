@@ -26,6 +26,7 @@ import {
   ArrowDown,
   Gamepad2,
   Images,
+  Camera,
   Play,
   Lock,
   LockOpen,
