@@ -503,29 +503,14 @@ function Home() {
   );
 }
 
-const UPDATE_KEY = "as_update_seen_v250";
-
 function UpdatePopup() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    try {
-      if (!localStorage.getItem(UPDATE_KEY)) {
-        const t = setTimeout(() => setOpen(true), 700);
-        return () => clearTimeout(t);
-      }
-    } catch {
-      /* noop */
-    }
+    const t = setTimeout(() => setOpen(true), 700);
+    return () => clearTimeout(t);
   }, []);
   if (!open) return null;
-  const close = () => {
-    try {
-      localStorage.setItem(UPDATE_KEY, String(Date.now()));
-    } catch {
-      /* noop */
-    }
-    setOpen(false);
-  };
+  const close = () => setOpen(false);
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-neutral-900 p-5 shadow-2xl">
