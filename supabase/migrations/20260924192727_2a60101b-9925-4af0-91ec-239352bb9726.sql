@@ -1,0 +1,1 @@
+DELETE FROM public.messages WHERE text = 'teste automático de funcionamento' AND author = 'gu';
