@@ -791,6 +791,23 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             {site.chatOpen ? <LockOpen size={14} /> : <Lock size={14} />}
           </button>
         )}
+        <VoiceCall
+          me={me}
+          otherName={otherInfo.name}
+          otherAvatar={avatars[other] ?? null}
+          otherInitial={otherInfo.initial}
+        >
+          {(start, busy) => (
+            <button
+              onClick={start}
+              disabled={busy}
+              aria-label="Chamada de voz"
+              className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400 disabled:opacity-40"
+            >
+              <Phone size={14} />
+            </button>
+          )}
+        </VoiceCall>
         <button
           onClick={() => {
             setShowSearch((v) => !v);
