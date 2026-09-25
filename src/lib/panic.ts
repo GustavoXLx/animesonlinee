@@ -126,12 +126,22 @@ export function isBirthdayDay() {
  * Auto-lock: 60s sem interação ou aba escondida/minimizada = sai na hora.
  * Exceção: enquanto o seletor de arquivo (foto/vídeo) está aberto.
  */
+let callActive = false;
+/** Durante chamada de voz o timer de inatividade não derruba a sessão. */
+export function setCallActive(v: boolean) {
+  callActive = v;
+}
+
 export function useIdleLock(onExit: () => void, ms = 60_000) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let timer: ReturnType<typeof setTimeout>;
     let pickingUntil = 0;
     const fire = () => {
+      if (callActive) {
+        timer = setTimeout(fire, ms);
+        return;
+      }
       panicWipe();
       onExit();
     };
