@@ -97,7 +97,7 @@ export function VoiceCall({
     setCallActive(s !== "idle");
   };
 
-  const send = useCallback((m: Omit<Sig, "from" | "id"> & { id?: string }) => {
+  const send = useCallback((m: { t: Sig["t"]; id?: string; sdp?: RTCSessionDescriptionInit; c?: RTCIceCandidateInit }) => {
     void chan.current?.send({
       type: "broadcast",
       event: "sig",
