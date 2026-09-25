@@ -300,12 +300,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
     sysTimer.current = setTimeout(() => setSys(null), 2600);
   }, []);
 
-  // Bloqueio remoto: quando o acesso está fechado, só o perfil bb gu (ou senha mestre) continua
-  useEffect(() => {
-    if (typeof window === "undefined" || !site.loaded || site.chatOpen) return;
-    if (master || me === "gu") return;
-    onExit();
-  }, [site.loaded, site.chatOpen, me, master, onExit]);
+  // Bloqueio remoto agora só muda o indicador; a senha continua entrando normalmente.
 
   useEffect(() => {
     if (typeof window === "undefined") return;
