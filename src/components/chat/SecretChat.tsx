@@ -829,28 +829,12 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         >
           <Search size={14} />
         </button>
-        <label
-          aria-label="Trocar minha foto"
-          className={`p-1.5 rounded-full bg-white/10 cursor-pointer active:scale-95 transition ${uploadingAvatar === me ? "opacity-50 animate-pulse" : ""}`}
-        >
-          <Camera size={14} />
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (f) void uploadAvatar(me, f);
-            }}
-          />
-        </label>
         <button
           onClick={() => {
             sessionStorage.removeItem("chat-me");
             setMe(null);
           }}
-          className="text-[11px] text-white/40"
+          className="text-xs text-white/60 px-3 py-1.5 rounded-full bg-white/10 active:scale-95 transition shrink-0"
         >
           trocar
         </button>
