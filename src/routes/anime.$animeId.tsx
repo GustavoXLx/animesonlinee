@@ -12,6 +12,7 @@ import {
   Calendar,
   Check,
 } from "lucide-react";
+import { EpisodePlayer } from "@/components/EpisodePlayer";
 import { getAnime, animeDetail, episodes, similar } from "@/lib/animes";
 
 export const Route = createFileRoute("/anime/$animeId")({
@@ -55,6 +56,7 @@ function AnimePage() {
   const [saved, setSaved] = useState(false);
   const [dub, setDub] = useState<"leg" | "dub">("leg");
   const eps = useMemo(() => episodes(anime), [anime]);
+  const [playing, setPlaying] = useState<number | null>(null);
   const rec = useMemo(() => similar(anime), [anime]);
 
   return (
@@ -103,7 +105,7 @@ function AnimePage() {
 
       <div className="px-4">
         <div className="flex gap-2">
-          <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-black">
+          <button onClick={() => setPlaying(1)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-black">
             <Play size={16} className="fill-black" /> Assistir ep. 1
           </button>
           <button
@@ -174,7 +176,8 @@ function AnimePage() {
             {eps.map((e) => (
               <li
                 key={e.n}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2"
+                onClick={() => setPlaying(e.n)}
+                className="cursor-pointer flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2"
               >
                 <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-xl bg-neutral-900">
                   <img
@@ -271,6 +274,15 @@ function AnimePage() {
           </section>
         )}
       </div>
+      {playing !== null && (
+        <EpisodePlayer
+          title={anime.title}
+          ep={playing}
+          epTitle={eps[playing - 1]?.title ?? ""}
+          cover={anime.cover}
+          onClose={() => setPlaying(null)}
+        />
+      )}
     </div>
   );
 }
