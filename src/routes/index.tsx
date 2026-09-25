@@ -460,19 +460,97 @@ function Home() {
             </div>
           </section>
 
-          <footer className="px-4 pt-10">
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-white/50">
+          {/* Avaliações da comunidade */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Star size={16} className="text-yellow-400" /> O que a comunidade diz
+            </h2>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 mb-3">
+              <p className="text-3xl font-black">4.8</p>
+              <div>
+                <div className="flex text-yellow-400">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} size={14} fill="currentColor" />
+                  ))}
+                </div>
+                <p className="text-[11px] text-white/50">baseado em 18.420 avaliações</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {[
+                { n: "Mariana S.", t: "Melhor lugar pra acompanhar os lançamentos, as legendas saem rapidinho.", d: "há 2 dias" },
+                { n: "Rafael T.", t: "Uso todo dia no ônibus, carrega rápido até no 4G. O cronograma ajuda muito.", d: "há 5 dias" },
+                { n: "Júlia M.", t: "Minha lista fica organizada e nunca perco em que episódio parei.", d: "há 1 semana" },
+              ].map((r) => (
+                <div key={r.n} className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold">{r.n}</p>
+                    <span className="text-[10px] text-white/40">{r.d}</span>
+                  </div>
+                  <div className="flex text-yellow-400 mt-1">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Star key={i} size={10} fill="currentColor" />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-white/60 mt-1.5">{r.t}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Qualidade e dispositivos */}
+          <section className="px-4 pt-8">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Tv size={16} className="text-sky-400" /> Assista onde quiser
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { t: "Full HD 1080p", s: "qualidade ajustável" },
+                { t: "Legendado e dublado", s: "áudio original ou PT-BR" },
+                { t: "Celular e tablet", s: "Android e iPhone" },
+                { t: "Smart TV e PC", s: "direto no navegador" },
+              ].map((f) => (
+                <div key={f.t} className="rounded-2xl bg-white/5 border border-white/10 p-3">
+                  <p className="text-xs font-semibold">{f.t}</p>
+                  <p className="text-[10px] text-white/50">{f.s}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <footer className="px-4 pt-10 border-t border-white/5 mt-10">
+            <p className="font-black text-lg pt-6">
+              Ani<span className="text-fuchsia-500">Stream</span>
+            </p>
+            <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+              Sua plataforma para acompanhar animes da temporada, clássicos e lançamentos com
+              legendas em português.
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-white/50 mt-5">
               {[
                 "Sobre nós",
                 "Central de ajuda",
                 "Termos de uso",
                 "Privacidade",
+                "Política de cookies",
                 "Contato",
                 "Trabalhe conosco",
+                "Imprensa",
               ].map((l) => (
                 <span key={l}>{l}</span>
               ))}
             </div>
+            <div className="flex gap-2 mt-5 text-[10px] text-white/60">
+              {["Instagram", "TikTok", "X", "Discord"].map((s) => (
+                <span key={s} className="rounded-full border border-white/10 px-3 py-1">
+                  {s}
+                </span>
+              ))}
+            </div>
+            <p className="text-[10px] text-white/30 mt-5">
+              © 2026 AniStream. Todos os direitos reservados. Nomes e imagens pertencem aos
+              seus respectivos detentores.
+            </p>
           </footer>
         </>
       )}
