@@ -64,7 +64,9 @@ function Home() {
     if (!v) return;
     try {
       const res = await checkTrigger({ data: { code: v } });
-      if (res.ok && (res.master || site.chatOpen)) {
+      // mesmo bloqueado, a tela da senha abre (a senha de coação precisa funcionar sempre;
+      // a senha normal continua recusada no servidor enquanto estiver bloqueado)
+      if (res.ok) {
         setQ("");
         setShowSearch(false);
         setSecret(true);
