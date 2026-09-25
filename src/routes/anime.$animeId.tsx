@@ -12,6 +12,7 @@ import {
   Calendar,
   Check,
 } from "lucide-react";
+import { useMyList } from "@/lib/myList";
 import { EpisodePlayer } from "@/components/EpisodePlayer";
 import { getAnime, animeDetail, episodes, similar } from "@/lib/animes";
 
@@ -53,7 +54,8 @@ const REVIEWS = [
 function AnimePage() {
   const { anime, detail } = Route.useLoaderData();
   const [tab, setTab] = useState<"eps" | "sobre" | "coment">("eps");
-  const [saved, setSaved] = useState(false);
+  const list = useMyList();
+  const saved = list.has(anime.id);
   const [dub, setDub] = useState<"leg" | "dub">("leg");
   const eps = useMemo(() => episodes(anime), [anime]);
   const [playing, setPlaying] = useState<number | null>(null);
@@ -109,7 +111,7 @@ function AnimePage() {
             <Play size={16} className="fill-black" /> Assistir ep. 1
           </button>
           <button
-            onClick={() => setSaved((v) => !v)}
+            onClick={() => list.toggle(anime.id)}
             className="rounded-full bg-white/10 p-3"
             aria-label="Minha lista"
           >

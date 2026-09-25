@@ -24,6 +24,7 @@ import { useSiteState } from "@/lib/siteState";
 import { checkTrigger } from "@/lib/chat.functions";
 import { SecretGate } from "@/components/chat/SecretGate";
 import { useChatNotifier } from "@/lib/chatNotify";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -559,24 +560,7 @@ function Home() {
         AniStream v2.4.1 · catálogo atualizado diariamente{site.note ? ` · ${site.note}` : ""}
       </p>
 
-      <nav className="fixed bottom-0 inset-x-0 z-30 bg-neutral-950/95 backdrop-blur border-t border-white/5">
-        <div className="grid grid-cols-4 py-2">
-          {[
-            { i: HomeIcon, l: "Início" },
-            { i: Compass, l: "Explorar" },
-            { i: Bookmark, l: "Minha lista" },
-            { i: User, l: "Perfil" },
-          ].map(({ i: Icon, l }, idx) => (
-            <button
-              key={l}
-              className={`flex flex-col items-center gap-1 py-1 ${idx === 0 ? "text-white" : "text-white/50"}`}
-            >
-              <Icon size={20} />
-              <span className="text-[10px]">{l}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 }
