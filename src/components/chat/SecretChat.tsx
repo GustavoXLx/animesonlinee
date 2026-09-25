@@ -40,6 +40,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
+import { VoiceCall } from "./VoiceCall";
+import { Phone } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
 import { rememberWho, markNotifiedNow } from "@/lib/chatNotify";
