@@ -19,7 +19,8 @@ import {
   Newspaper,
   MessageSquare,
 } from "lucide-react";
-import { animes, catalog, genres, schedule, type Anime } from "@/lib/animes";
+import { catalog, genres, schedule, animeDetail, type Anime } from "@/lib/animes";
+import { useMyList } from "@/lib/myList";
 import { useSiteState } from "@/lib/siteState";
 import { checkTrigger } from "@/lib/chat.functions";
 import { SecretGate } from "@/components/chat/SecretGate";
@@ -141,46 +142,7 @@ function Home() {
         )}
       </header>
 
-      {!q && (
-        <section className="px-4 pt-4">
-          <div className="relative rounded-3xl overflow-hidden h-64 bg-neutral-900">
-            <img
-              src={featured.cover}
-              alt={`Capa de ${featured.title}`}
-              className="absolute inset-0 w-full h-full object-cover"
-              width={512}
-              height={768}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-            <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-fuchsia-600 px-2 py-1 rounded-full">
-              Simulcast
-            </span>
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <span className="text-[10px] uppercase tracking-widest text-white/80">
-                Em destaque
-              </span>
-              <h1 className="text-2xl font-black leading-tight mt-1">{featured.title}</h1>
-              <div className="flex items-center gap-2 text-xs text-white/80 mt-1">
-                <Star size={12} className="fill-yellow-400 text-yellow-400" /> {featured.rating}
-                <span>·</span>
-                <span>{featured.episodes} eps</span>
-                <span>·</span>
-                <span>{featured.genre}</span>
-                <span>·</span>
-                <span>Dub + Leg</span>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <button className="inline-flex items-center gap-2 bg-white text-black text-sm font-semibold px-4 py-2 rounded-full">
-                  <Play size={14} className="fill-black" /> Assistir agora
-                </button>
-                <button className="inline-flex items-center gap-2 bg-white/15 text-sm font-semibold px-4 py-2 rounded-full">
-                  <Bookmark size={14} /> Minha lista
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      {!q && <Hero />}
 
       {/* Gêneros */}
       <section className="pt-5">
@@ -223,23 +185,35 @@ function Home() {
         </section>
       ) : (
         <>
-          <section className="pt-6">
-            <h2 className="font-semibold mb-3 px-4 flex items-center gap-2">
-              <Clock size={16} className="text-fuchsia-400" /> Continuar assistindo
-            </h2>
+          <section className="pt-7">
+            <SectionTitle
+              icon={<Clock size={16} className="text-fuchsia-400" />}
+              title="Continuar assistindo"
+              more={false}
+            />
             <div className="flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar">
               {continueWatching.map((a, i) => (
-                <div key={a.id} className="shrink-0 w-40">
-                  <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-900">
+                <Link
+                  key={a.id}
+                  to="/anime/$animeId"
+                  params={{ animeId: String(a.id) }}
+                  className="shrink-0 w-44"
+                >
+                  <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-900 ring-1 ring-white/5">
                     <img
                       src={a.cover}
                       alt={`Capa de ${a.title}`}
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <Play size={22} fill="white" />
+                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                      <span className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center">
+                        <Play size={15} className="fill-black text-black ml-0.5" />
+                      </span>
                     </div>
+                    <span className="absolute bottom-2 right-1.5 text-[9px] bg-black/70 px-1 rounded">
+                      {8 + ((i * 5) % 14)} min restantes
+                    </span>
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
                       <div
                         className="h-full bg-fuchsia-500"
@@ -249,9 +223,9 @@ function Home() {
                   </div>
                   <p className="text-xs font-semibold mt-1.5 line-clamp-1">{a.title}</p>
                   <p className="text-[10px] text-white/50">
-                    Ep. {3 + i} de {a.episodes}
+                    T1 · Ep. {3 + i} de {a.episodes}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -263,14 +237,20 @@ function Home() {
           />
 
           {/* Top 10 */}
-          <section className="pt-6">
-            <h2 className="font-semibold mb-3 px-4 flex items-center gap-2">
-              <Sparkles size={16} className="text-yellow-400" /> Top 10 da semana
-            </h2>
-            <div className="flex gap-4 overflow-x-auto px-4 pb-1 no-scrollbar">
+          <section className="pt-7">
+            <SectionTitle
+              icon={<Sparkles size={16} className="text-yellow-400" />}
+              title="Top 10 da semana"
+            />
+            <div className="flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar">
               {top10.map((a, i) => (
-                <div key={a.id} className="shrink-0 flex items-end gap-1">
-                  <span className="text-5xl font-black leading-none text-white/15">{i + 1}</span>
+                <div key={a.id} className="shrink-0 flex items-end">
+                  <span
+                    className="text-7xl font-black leading-none -mr-3 z-10 text-neutral-950"
+                    style={{ WebkitTextStroke: "2px rgba(255,255,255,0.35)" }}
+                  >
+                    {i + 1}
+                  </span>
                   <div className="w-24">
                     <AnimeCard a={a} />
                   </div>
@@ -376,37 +356,6 @@ function Home() {
             </div>
           </section>
 
-          {/* Avaliações de usuários */}
-          <section className="px-4 pt-8">
-            <h2 className="font-semibold mb-3 flex items-center gap-2">
-              <MessageSquare size={16} className="text-emerald-400" /> O que dizem nossos usuários
-            </h2>
-            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-              {[
-                {
-                  u: "@larissa.k",
-                  t: "Melhor player pra assistir no celular, nunca travou pra mim.",
-                },
-                {
-                  u: "@dan_otaku",
-                  t: "Cronograma semanal salvou minha vida, nunca mais perdi episódio.",
-                },
-                {
-                  u: "@yuu.sc",
-                  t: "Legendas bem feitas e catálogo com clássicos. Recomendo demais.",
-                },
-              ].map((r) => (
-                <div
-                  key={r.u}
-                  className="shrink-0 w-64 rounded-2xl border border-white/10 bg-white/5 p-3"
-                >
-                  <p className="text-[10px] text-yellow-400">★★★★★</p>
-                  <p className="text-[11px] text-white/70 mt-1.5">{r.t}</p>
-                  <p className="text-[10px] text-white/40 mt-2">{r.u}</p>
-                </div>
-              ))}
-            </div>
-          </section>
 
           {/* Newsletter + apps */}
           <section className="px-4 pt-8">
@@ -610,16 +559,29 @@ function UpdatePopup() {
   );
 }
 
-function Row({ title, items, icon }: { title: string; items: Anime[]; icon?: React.ReactNode }) {
+function SectionTitle({ icon, title, more = true }: { icon?: React.ReactNode; title: string; more?: boolean }) {
   return (
-    <section className="pt-6">
-      <h2 className="font-semibold mb-3 px-4 flex items-center gap-2">
+    <div className="mb-3 px-4 flex items-center justify-between">
+      <h2 className="font-bold tracking-tight flex items-center gap-2">
         {icon}
         {title}
       </h2>
-      <div className="flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar">
+      {more && (
+        <Link to="/explorar" className="text-[11px] font-semibold text-white/50 flex items-center gap-0.5 hover:text-white">
+          Ver tudo <ChevronRight size={12} />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function Row({ title, items, icon }: { title: string; items: Anime[]; icon?: React.ReactNode }) {
+  return (
+    <section className="pt-7">
+      <SectionTitle icon={icon} title={title} />
+      <div className="flex gap-3 overflow-x-auto px-4 pb-1 no-scrollbar snap-x">
         {items.map((a) => (
-          <div key={a.id} className="shrink-0 w-32">
+          <div key={a.id} className="shrink-0 w-32 snap-start">
             <AnimeCard a={a} />
           </div>
         ))}
@@ -628,19 +590,112 @@ function Row({ title, items, icon }: { title: string; items: Anime[]; icon?: Rea
   );
 }
 
+function Hero() {
+  const slides = useMemo(
+    () => [...catalog].sort((a, b) => b.rating - a.rating).slice(0, 5),
+    [],
+  );
+  const [i, setI] = useState(0);
+  const { has, toggle } = useMyList();
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6000);
+    return () => clearInterval(t);
+  }, [slides.length]);
+  const a = slides[i];
+  const d = animeDetail(a);
+  return (
+    <section className="px-4 pt-4">
+      <div className="relative rounded-3xl overflow-hidden h-[26rem] bg-neutral-900 shadow-2xl shadow-black/60">
+        {slides.map((s, idx) => (
+          <img
+            key={s.id}
+            src={s.cover}
+            alt={`Capa de ${s.title}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+              idx === i ? "opacity-100" : "opacity-0"
+            }`}
+            width={512}
+            height={768}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/50 to-transparent" />
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-fuchsia-600 px-2 py-1 rounded-md">
+            {d.status === "Em exibição" ? "Simulcast" : "Destaque"}
+          </span>
+          <span className="text-[10px] font-bold bg-black/60 backdrop-blur px-2 py-1 rounded-md border border-white/10">
+            {d.age}
+          </span>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-fuchsia-300 font-semibold">
+            #{i + 1} em destaque hoje
+          </p>
+          <h1 className="text-3xl font-black leading-tight mt-1">{a.title}</h1>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-white/75 mt-1.5">
+            <span className="flex items-center gap-1 text-yellow-400 font-bold">
+              <Star size={11} className="fill-yellow-400" /> {a.rating}
+            </span>
+            <span>·</span>
+            <span>{a.year}</span>
+            <span>·</span>
+            <span>{a.episodes} episódios</span>
+            <span>·</span>
+            <span>{a.genre}</span>
+            <span className="border border-white/30 rounded px-1 text-[9px] font-bold">HD</span>
+          </div>
+          <p className="text-xs text-white/65 mt-2 line-clamp-2 leading-relaxed">{d.synopsis}</p>
+          <div className="flex gap-2 mt-4">
+            <Link
+              to="/anime/$animeId"
+              params={{ animeId: String(a.id) }}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black text-sm font-bold py-2.5 rounded-xl"
+            >
+              <Play size={15} className="fill-black" /> Assistir ep. 1
+            </Link>
+            <button
+              onClick={() => toggle(a.id)}
+              className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-sm font-semibold px-4 py-2.5 rounded-xl"
+            >
+              <Bookmark size={15} className={has(a.id) ? "fill-white" : ""} />
+              {has(a.id) ? "Na lista" : "Minha lista"}
+            </button>
+          </div>
+          <div className="flex justify-center gap-1.5 mt-4">
+            {slides.map((s, idx) => (
+              <button
+                key={s.id}
+                aria-label={`Destaque ${idx + 1}`}
+                onClick={() => setI(idx)}
+                className={`h-1 rounded-full transition-all ${idx === i ? "w-6 bg-white" : "w-2 bg-white/30"}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const AnimeCard = memo(function AnimeCard({ a }: { a: Anime }) {
   return (
     <Link to="/anime/$animeId" params={{ animeId: String(a.id) }} className="group block">
-      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-900 ring-1 ring-white/5">
         <img
           src={a.cover}
           alt={`Capa do anime ${a.title}`}
           loading="lazy"
           width={512}
           height={768}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute top-1.5 left-1.5 flex gap-1">
+          {a.year >= 2025 && (
+            <span className="text-[8px] font-black uppercase bg-fuchsia-600 px-1.5 py-0.5 rounded">Novo</span>
+          )}
+          <span className="text-[8px] font-bold uppercase bg-black/70 px-1.5 py-0.5 rounded">Dub</span>
+        </div>
         <div className="absolute bottom-1 right-1.5 flex items-center gap-1 text-[10px] bg-black/70 px-1.5 py-0.5 rounded">
           <Star size={10} className="fill-yellow-400 text-yellow-400" />
           {a.rating}
