@@ -75,6 +75,13 @@ export const unlock = createServerFn({ method: "POST" })
     const pw = (data.password ?? "").trim();
     const master = matches(pw, process.env["MASTER_PASSWORD"]);
     const normal = matches(pw, process.env["SITE_PASSWORD"]);
+    // senha de coação: abre só um perfil falso, nunca destrava nada
+    const duress = matches(pw, process.env["DURESS_PASSWORD"] || "naruto");
+    if (duress && !master && !normal) {
+      await session.clear();
+      await slow(300);
+      return { ok: true as const, decoy: true as const, master: false };
+    }
 
     if (!master && !normal) {
       const fails = (session.data.fails ?? 0) + 1;
