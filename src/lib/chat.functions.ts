@@ -94,15 +94,6 @@ export const unlock = createServerFn({ method: "POST" })
       return { ok: false as const };
     }
 
-    if (!master) {
-      const db = await admin();
-      const { data: st } = await db
-        .from("site_state")
-        .select("chat_open")
-        .eq("id", "main")
-        .maybeSingle();
-      if (st && st.chat_open === false) return { ok: false as const };
-    }
     await session.update({ unlocked: true, master, armed: true, fails: 0 });
     return { ok: true as const, master };
   });
