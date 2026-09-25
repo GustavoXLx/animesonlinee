@@ -93,7 +93,6 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24">
-      <UpdatePopup />
       <header className="sticky top-0 z-30 bg-neutral-950/90 backdrop-blur border-b border-white/5">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
