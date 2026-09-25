@@ -60,6 +60,13 @@ import sticker9 from "@/assets/stickers/sticker_b173528.jpg.asset.json";
 import sticker10 from "@/assets/stickers/sticker_b173540.jpg.asset.json";
 import sticker11 from "@/assets/stickers/sticker_b173556.jpg.asset.json";
 import sticker12 from "@/assets/stickers/sticker_b173622.jpg.asset.json";
+import sticker13 from "@/assets/stickers/sticker_c160809.jpg.asset.json";
+import sticker14 from "@/assets/stickers/sticker_c160834.jpg.asset.json";
+import sticker15 from "@/assets/stickers/sticker_c160857.jpg.asset.json";
+import sticker16 from "@/assets/stickers/sticker_c161045.jpg.asset.json";
+import sticker17 from "@/assets/stickers/sticker_c161158.jpg.asset.json";
+import sticker18 from "@/assets/stickers/sticker_c161259.jpg.asset.json";
+import sticker19 from "@/assets/stickers/sticker_c161314.jpg.asset.json";
 
 const STICKERS = [
   sticker1,
@@ -74,6 +81,13 @@ const STICKERS = [
   sticker10,
   sticker11,
   sticker12,
+  sticker13,
+  sticker14,
+  sticker15,
+  sticker16,
+  sticker17,
+  sticker18,
+  sticker19,
 ].map((s) => s.url);
 const EMOJIS =
   "❤️ 😂 🥺 😍 😘 🤭 😭 🔥 ✨ 🥰 😴 🙈 👀 🤝 💋 💐 🍀 🐶 🐱 🌙 ☕ 🎧 🍕 🎮 💍 🫂 😤 🙄 👏 🤡".split(
