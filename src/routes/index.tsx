@@ -83,7 +83,6 @@ function Home() {
     );
   }, [q, genre]);
 
-  const featured = animes[5];
   const trending = catalog.slice(18, 26);
   const newSeason = catalog.filter((a) => a.year >= 2025).slice(0, 10);
   const top10 = useMemo(() => [...catalog].sort((a, b) => b.rating - a.rating).slice(0, 10), []);
