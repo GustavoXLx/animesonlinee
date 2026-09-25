@@ -5,11 +5,23 @@ import { animes } from "@/lib/animes";
 export function DecoyProfile({ onExit }: { onExit: () => void }) {
   const list: { id: string | number; title: string; cover?: string; image?: string }[] = animes;
   const favs = list.slice(0, 6);
-  const history = list.slice(6, 12).map((a, i) => ({
+  // datas reais, calculadas a partir de hoje (dia/mês · hora)
+  const plan = [
+    [0, 21, 14, 80], [0, 20, 32, 100], [1, 22, 5, 100], [1, 19, 48, 45],
+    [2, 23, 10, 100], [3, 18, 27, 62], [5, 21, 40, 100], [6, 20, 3, 100],
+  ];
+  const fmt = (daysAgo: number, h: number, m: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    const day = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const hr = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    return `${daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "Ontem" : day} às ${hr}`;
+  };
+  const history = list.slice(6, 14).map((a, i) => ({
     a,
     ep: 3 + ((i * 7) % 20),
-    when: ["Hoje", "Hoje", "Ontem", "Ontem", "Há 3 dias", "Há 5 dias"][i],
-    pct: [80, 35, 100, 100, 62, 100][i],
+    when: fmt(plan[i][0], plan[i][1], plan[i][2]),
+    pct: plan[i][3],
   }));
   const img = (a: { cover?: string; image?: string }) => a.cover ?? a.image;
   const avatar = img(list[0] ?? {});
@@ -32,8 +44,8 @@ export function DecoyProfile({ onExit }: { onExit: () => void }) {
             {avatar && <img src={avatar} alt="Foto de perfil" className="w-full h-full object-cover" />}
           </div>
           <div>
-            <h1 className="text-xl font-bold">Meu Perfil</h1>
-            <p className="text-sm text-white/50">Membro desde mar/2025 · Plano Grátis</p>
+            <h1 className="text-xl font-bold">Alice</h1>
+            <p className="text-sm text-white/50">Meu Perfil · membro desde 14/03/2025 · Plano Grátis</p>
           </div>
         </section>
 
@@ -66,7 +78,7 @@ export function DecoyProfile({ onExit }: { onExit: () => void }) {
         </div>
 
         <h2 className="mt-8 mb-3 font-semibold flex items-center gap-2">
-          <Clock size={16} className="text-pink-500" /> Continuar assistindo
+          <Clock size={16} className="text-pink-500" /> Histórico de episódios
         </h2>
         <div className="space-y-3">
           {history.map(({ a, ep, when, pct }) => (
