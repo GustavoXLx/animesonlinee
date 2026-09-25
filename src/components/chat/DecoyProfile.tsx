@@ -3,7 +3,7 @@ import { animes } from "@/lib/animes";
 
 /** Perfil comum do AniStream (tela de fachada). */
 export function DecoyProfile({ onExit }: { onExit: () => void }) {
-  const list: { id: string; title: string; cover?: string; image?: string }[] = animes;
+  const list: { id: string | number; title: string; cover?: string; image?: string }[] = animes;
   const favs = list.slice(0, 6);
   const history = list.slice(6, 12).map((a, i) => ({
     a,
