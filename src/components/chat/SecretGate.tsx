@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { Lock } from "lucide-react";
 import { unlock, lock } from "@/lib/chat.functions";
-import { panicWipe, usePanicExit } from "@/lib/panic";
+import { panicWipe, usePanicExit, useIdleLock } from "@/lib/panic";
 import { SecretChat } from "./SecretChat";
+import { DecoyProfile } from "./DecoyProfile";
 
 /**
  * Portão + chat renderizados dentro da própria home (mesma URL, mesmo título),
@@ -10,6 +11,7 @@ import { SecretChat } from "./SecretChat";
  */
 export function SecretGate({ onExit }: { onExit: () => void }) {
   const [open, setOpen] = useState(false);
+  const [decoy, setDecoy] = useState(false);
   const [master, setMaster] = useState(false);
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
@@ -20,10 +22,13 @@ export function SecretGate({ onExit }: { onExit: () => void }) {
     void lock().catch(() => {});
     setPw("");
     setOpen(false);
+    setDecoy(false);
+    setMaster(false);
     onExit();
   }, [onExit]);
 
   usePanicExit(leave);
+  useIdleLock(leave);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +36,14 @@ export function SecretGate({ onExit }: { onExit: () => void }) {
     setBusy(true);
     try {
       const res = await unlock({ data: { password: pw.trim() } });
-      if (res.ok) {
-        setPw("");
+      setPw("");
+      if (res.ok && "decoy" in res && res.decoy) {
+        setDecoy(true);
+      } else if (res.ok) {
         setMaster(Boolean(res.master));
         setOpen(true);
       } else {
         setErr(true);
-        setPw("");
       }
     } catch {
       setErr(true);
@@ -46,6 +52,7 @@ export function SecretGate({ onExit }: { onExit: () => void }) {
     }
   };
 
+  if (decoy) return <DecoyProfile onExit={leave} />;
   if (open) return <SecretChat onExit={leave} master={master} />;
 
   return (
