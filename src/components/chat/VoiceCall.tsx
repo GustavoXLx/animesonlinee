@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Phone, PhoneOff, Mic, MicOff, Minimize2, Maximize2 } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Minimize2, Maximize2, Volume2, Volume1 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { setCallActive } from "@/lib/panic";
 
@@ -77,6 +77,8 @@ export function VoiceCall({
   const [status, setStatus] = useState<Status>("idle");
   const [muted, setMuted] = useState(false);
   const [mini, setMini] = useState(false);
+  const [speaker, setSpeaker] = useState(false);
+  const boost = useRef<{ ctx: AudioContext; gain: GainNode } | null>(null);
   const [secs, setSecs] = useState(0);
   const [note, setNote] = useState("");
   const statusRef = useRef<Status>("idle");
@@ -89,6 +91,7 @@ export function VoiceCall({
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCaller = useRef(false);
+  const speakerRef = useRef(false);
   const ringer = useRinger();
 
   const set = (s: Status) => {
@@ -120,6 +123,13 @@ export function VoiceCall({
       callId.current = "";
       setMuted(false);
       setMini(false);
+      speakerRef.current = false;
+      setSpeaker(false);
+      if (boost.current) {
+        void boost.current.ctx.close().catch(() => {});
+        boost.current = null;
+      }
+      if (audioEl.current) audioEl.current.muted = false;
       set("idle");
       if (msg) {
         setNote(msg);
@@ -145,6 +155,7 @@ export function VoiceCall({
     p.ontrack = (e) => {
       if (audioEl.current) {
         audioEl.current.srcObject = e.streams[0];
+        if (speakerRef.current) void applySpeaker(true);
         void audioEl.current.play().catch(() => {});
       }
     };
@@ -330,6 +341,52 @@ export function VoiceCall({
     setMuted(n);
   };
 
+  const applySpeaker = async (on: boolean) => {
+    const el = audioEl.current as (HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }) | null;
+    if (!el) return;
+    // 1) tenta trocar a saída de áudio (alto-falante x fone/auricular)
+    try {
+      if (el.setSinkId && navigator.mediaDevices?.enumerateDevices) {
+        const outs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audiooutput");
+        const want = outs.find((d) =>
+          on ? /speaker|alto|viva/i.test(d.label) : /earpiece|receiver|auricular|handset|fone/i.test(d.label),
+        );
+        if (want) await el.setSinkId(want.deviceId);
+        else if (!on) await el.setSinkId("default");
+      }
+    } catch {
+      /* ignora */
+    }
+    // 2) viva voz = volume bem mais alto (amplificado)
+    if (boost.current) {
+      void boost.current.ctx.close().catch(() => {});
+      boost.current = null;
+    }
+    const stream = el.srcObject as MediaStream | null;
+    if (on && stream) {
+      try {
+        const ctx = new AudioContext();
+        const gain = ctx.createGain();
+        gain.gain.value = 3;
+        ctx.createMediaStreamSource(stream).connect(gain).connect(ctx.destination);
+        await ctx.resume();
+        boost.current = { ctx, gain };
+        el.muted = true; // som sai pelo amplificador
+      } catch {
+        el.muted = false;
+      }
+    } else {
+      el.muted = false;
+    }
+    el.volume = 1;
+  };
+  const toggleSpeaker = () => {
+    const n = !speaker;
+    speakerRef.current = n;
+    setSpeaker(n);
+    void applySpeaker(n);
+  };
+
   const time = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
   const label =
     status === "calling"
@@ -365,6 +422,9 @@ export function VoiceCall({
           <span className="text-xs font-semibold tabular-nums px-1">{label}</span>
           <button onClick={toggleMute} className="p-1.5 rounded-full bg-white/20" aria-label="Mudo">
             {muted ? <MicOff size={14} /> : <Mic size={14} />}
+          </button>
+          <button onClick={toggleSpeaker} className={`p-1.5 rounded-full ${speaker ? "bg-white text-emerald-700" : "bg-white/20"}`} aria-label="Viva voz">
+            {speaker ? <Volume2 size={14} /> : <Volume1 size={14} />}
           </button>
           <button onClick={() => setMini(false)} className="p-1.5 rounded-full bg-white/20" aria-label="Expandir">
             <Maximize2 size={14} />
@@ -404,7 +464,10 @@ export function VoiceCall({
               </button>
             </div>
           ) : (
-            <div className="flex gap-10">
+            <div className="flex gap-8">
+              <button onClick={toggleSpeaker} className={`w-16 h-16 rounded-full flex items-center justify-center ${speaker ? "bg-white text-black" : "bg-white/15"}`} aria-label="Viva voz">
+                {speaker ? <Volume2 size={24} /> : <Volume1 size={24} />}
+              </button>
               <button onClick={toggleMute} className={`w-16 h-16 rounded-full flex items-center justify-center ${muted ? "bg-white text-black" : "bg-white/15"}`} aria-label="Mudo">
                 {muted ? <MicOff size={24} /> : <Mic size={24} />}
               </button>
