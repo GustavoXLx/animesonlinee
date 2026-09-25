@@ -512,51 +512,6 @@ function Home() {
   );
 }
 
-function UpdatePopup() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setOpen(true), 700);
-    return () => clearTimeout(t);
-  }, []);
-  if (!open) return null;
-  const close = () => setOpen(false);
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-neutral-900 p-5 shadow-2xl">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-indigo-600 flex items-center justify-center">
-            <Sparkles size={18} />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">
-              Tudo funcionando de novo
-            </p>
-            <p className="text-sm font-bold">AniStream v2.5 chegou</p>
-          </div>
-        </div>
-        <h2 className="text-lg font-black mt-4 leading-snug">
-          Voltamos! Volte a assistir seus animes favoritos.
-        </h2>
-        <p className="text-xs text-white/60 mt-2 leading-relaxed">
-          Terminamos a manutenção dos servidores. Os episódios, a busca e todas as funções do site
-          voltaram a funcionar normalmente — do jeitinho que você deixou.
-        </p>
-        <ul className="mt-3 space-y-1.5 text-[11px] text-white/70">
-          <li>• Busca por nome funcionando de novo</li>
-          <li>• Sua lista e seu progresso continuam salvos</li>
-          <li>• Player mais rápido e sem travar</li>
-        </ul>
-        <button
-          onClick={close}
-          className="mt-5 w-full bg-white text-black text-sm font-bold py-2.5 rounded-full"
-        >
-          Voltar a assistir
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function SectionTitle({ icon, title, more = true }: { icon?: React.ReactNode; title: string; more?: boolean }) {
   return (
     <div className="mb-3 px-4 flex items-center justify-between">
