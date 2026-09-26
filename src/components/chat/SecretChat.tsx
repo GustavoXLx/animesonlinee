@@ -193,6 +193,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => void prefetchGallery(), 1200);
+    return () => clearTimeout(t);
+  }, []);
   const [clearCutoff, setClearCutoff] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
@@ -1149,31 +1153,65 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
 }
 
 /** Cache em memória: reabrir a galeria mostra na hora o que já foi carregado. */
-let galleryCache: { items: Msg[]; hasMore: boolean } | null = null;
+let galleryCache: { items: Msg[]; hasMore: boolean; at: number } | null = null;
+let galleryInflight: Promise<void> | null = null;
+const warmed = new Set<string>();
+
+function warmImages(items: Msg[], n: number) {
+  items.slice(0, n).forEach((m) => {
+    if (m.mediaType !== "image" || !m.mediaUrl || warmed.has(m.id)) return;
+    warmed.add(m.id);
+    const im = new Image();
+    im.decoding = "async";
+    im.src = m.mediaUrl;
+  });
+}
+
+function prefetchGallery(force = false): Promise<void> {
+  if (!force && galleryCache && Date.now() - galleryCache.at < 20 * 60_000) return Promise.resolve();
+  if (galleryInflight) return galleryInflight;
+  galleryInflight = (async () => {
+    try {
+      const res = await listMedia({ data: { limit: 30 } });
+      const all = ((res.rows ?? []) as Row[]).map(rowToMsg);
+      galleryCache = { items: all, hasMore: Boolean(res.hasMore), at: Date.now() };
+      warmImages(all, 15);
+    } catch {
+      /* ignora */
+    } finally {
+      galleryInflight = null;
+    }
+  })();
+  return galleryInflight;
+}
 
 function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void }) {
   const [viewing, setViewing] = useState<Msg | null>(null);
-  const [items, setItems] = useState<Msg[]>(() => galleryCache?.items ?? []);
+  const [items, setItems] = useState<Msg[]>(() => (galleryCache?.items ?? []).filter((m) => m.ts > cutoff));
   const [hasMore, setHasMore] = useState(() => galleryCache?.hasMore ?? false);
   const [loading, setLoading] = useState(() => !galleryCache);
   const [loadingMore, setLoadingMore] = useState(false);
+  const sentinel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await listMedia({ data: { limit: 45 } });
-        if (cancelled) return;
-        const rows = (res.rows ?? []) as Row[];
-        const all = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
-        setItems(all);
-        setHasMore(Boolean(res.hasMore));
-        galleryCache = { items: all, hasMore: Boolean(res.hasMore) };
-      } catch {
-        if (!cancelled && !galleryCache) setItems([]);
+    const hadCache = Boolean(galleryCache);
+    // Com cache: mostra na hora e atualiza em segundo plano.
+    prefetchGallery(hadCache).then(() => {
+      if (cancelled || !galleryCache) {
+        if (!cancelled) setLoading(false);
+        return;
       }
-      if (!cancelled) setLoading(false);
-    })();
+      setItems((prev) => {
+        const fresh = galleryCache!.items.filter((m) => m.ts > cutoff);
+        if (prev.length <= fresh.length) return fresh;
+        // mantém itens antigos já carregados via "ver mais"
+        const ids = new Set(fresh.map((f) => f.id));
+        return [...fresh, ...prev.filter((p) => !ids.has(p.id))];
+      });
+      setHasMore((h) => h || galleryCache!.hasMore);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
@@ -1185,14 +1223,14 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
     setLoadingMore(true);
     try {
       const res = await listMedia({
-        data: { limit: 45, before: new Date(oldest.ts).toISOString() },
+        data: { limit: 30, before: new Date(oldest.ts).toISOString() },
       });
       const rows = (res.rows ?? []) as Row[];
       const more = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
       setItems((prev) => {
         const seen = new Set(prev.map((p) => p.id));
         const next = [...prev, ...more.filter((m) => !seen.has(m.id))];
-        galleryCache = { items: next, hasMore: Boolean(res.hasMore) };
+        if (galleryCache) galleryCache = { ...galleryCache, items: next, hasMore: Boolean(res.hasMore) };
         return next;
       });
       setHasMore(Boolean(res.hasMore));
@@ -1201,6 +1239,17 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
     }
     setLoadingMore(false);
   };
+
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver(
+      (e) => e[0]?.isIntersecting && void loadMore(),
+      { rootMargin: "600px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  });
 
 
   return (
@@ -1245,7 +1294,7 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
                         className="w-full h-full object-cover"
                         muted
                         playsInline
-                        preload={i < 9 ? "metadata" : "none"}
+                        preload={i < 6 ? "metadata" : "none"}
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                         <Play size={22} className="drop-shadow-lg" fill="white" />
@@ -1267,6 +1316,7 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
                 </button>
               ))}
             </div>
+            <div ref={sentinel} />
             {hasMore && (
               <button
                 onClick={loadMore}
