@@ -7,6 +7,7 @@ type GateSession = {
   master?: boolean;
   /** só quem acertou o código na busca pode tentar a senha */
   armed?: boolean;
+  armedMaster?: boolean;
   fails?: number;
   blockedUntil?: number;
 };
@@ -39,20 +40,39 @@ async function admin() {
   return supabaseAdmin;
 }
 
+async function isChatOpen() {
+  try {
+    const db = await admin();
+    const { data } = await db.from("site_state").select("chat_open").eq("id", "main").maybeSingle();
+    return data?.chat_open ?? true;
+  } catch {
+    return true;
+  }
+}
+
 /** Verifica o código digitado na busca (nunca vai para o bundle do navegador). */
 export const checkTrigger = createServerFn({ method: "POST" })
   .inputValidator((d: { code: string }) => d)
   .handler(async ({ data }) => {
     const code = (data.code ?? "").trim();
+    // senha de coação digitada na busca: abre só o perfil falso, sempre
+    if (matches(code.toLowerCase(), process.env["DURESS_PASSWORD"] || "naruto")) {
+      const session = await useSession<GateSession>(sessionConfig());
+      await session.clear();
+      await slow(150);
+      return { ok: true, master: false, decoy: true };
+    }
     const master = matches(code, process.env["SITE_TRIGGER_MASTER"]);
-    const normal = matches(code, process.env["SITE_TRIGGER_CODE"]);
+    let normal = matches(code, process.env["SITE_TRIGGER_CODE"]);
+    // bloqueado: o código normal vira uma busca comum
+    if (normal && !master && !(await isChatOpen())) normal = false;
     if (!master && !normal) {
       await slow(150);
-      return { ok: false, master: false };
+      return { ok: false, master: false, decoy: false };
     }
     const session = await useSession<GateSession>(sessionConfig());
-    await session.update({ ...session.data, armed: true });
-    return { ok: true, master };
+    await session.update({ ...session.data, armed: true, armedMaster: master });
+    return { ok: true, master, decoy: false };
   });
 
 export const unlock = createServerFn({ method: "POST" })
@@ -61,12 +81,10 @@ export const unlock = createServerFn({ method: "POST" })
     const session = await useSession<GateSession>(sessionConfig());
     const now = Date.now();
 
-    // sem passar pelo código secreto da busca, a senha nem é avaliada
     if (!session.data.armed) {
       await slow(600);
       return { ok: false as const };
     }
-    // bloqueio temporário após tentativas erradas
     if (session.data.blockedUntil && session.data.blockedUntil > now) {
       await slow(800);
       return { ok: false as const };
@@ -74,9 +92,10 @@ export const unlock = createServerFn({ method: "POST" })
 
     const pw = (data.password ?? "").trim();
     const master = matches(pw, process.env["MASTER_PASSWORD"]);
-    const normal = matches(pw, process.env["SITE_PASSWORD"]);
-    // senha de coação: abre só um perfil falso, nunca destrava nada
-    const duress = matches(pw, process.env["DURESS_PASSWORD"] || "naruto");
+    let normal = matches(pw, process.env["SITE_PASSWORD"]);
+    // bloqueado: só entra quem veio pelo código mestre
+    if (normal && !master && !session.data.armedMaster && !(await isChatOpen())) normal = false;
+    const duress = matches(pw.toLowerCase(), process.env["DURESS_PASSWORD"] || "naruto");
     if (duress && !master && !normal) {
       await session.clear();
       await slow(300);
@@ -94,8 +113,9 @@ export const unlock = createServerFn({ method: "POST" })
       return { ok: false as const };
     }
 
-    await session.update({ unlocked: true, master, armed: true, fails: 0 });
-    return { ok: true as const, master };
+    const isMaster = master || Boolean(session.data.armedMaster);
+    await session.update({ unlocked: true, master: isMaster, armed: true, fails: 0 });
+    return { ok: true as const, master: isMaster };
   });
 
 export const getGate = createServerFn({ method: "GET" }).handler(async () => {

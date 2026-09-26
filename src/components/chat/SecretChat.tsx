@@ -202,6 +202,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const atBottomRef = useRef(true);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const site = useSiteState();
+  // bloqueado: o chat some para quem não entrou pelo acesso mestre
+  useEffect(() => {
+    if (site.loaded && !site.chatOpen && !master && me !== "gu") onExit();
+  }, [site.loaded, site.chatOpen, master, me, onExit]);
   const [sys, setSys] = useState<string | null>(null);
   const sysTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [liEffect, setLiEffect] = useState(false);
