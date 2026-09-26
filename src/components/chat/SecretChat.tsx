@@ -1223,14 +1223,14 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
     setLoadingMore(true);
     try {
       const res = await listMedia({
-        data: { limit: 45, before: new Date(oldest.ts).toISOString() },
+        data: { limit: 30, before: new Date(oldest.ts).toISOString() },
       });
       const rows = (res.rows ?? []) as Row[];
       const more = rows.map(rowToMsg).filter((m) => m.ts > cutoff);
       setItems((prev) => {
         const seen = new Set(prev.map((p) => p.id));
         const next = [...prev, ...more.filter((m) => !seen.has(m.id))];
-        galleryCache = { items: next, hasMore: Boolean(res.hasMore) };
+        if (galleryCache) galleryCache = { ...galleryCache, items: next, hasMore: Boolean(res.hasMore) };
         return next;
       });
       setHasMore(Boolean(res.hasMore));
@@ -1239,6 +1239,17 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
     }
     setLoadingMore(false);
   };
+
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver(
+      (e) => e[0]?.isIntersecting && void loadMore(),
+      { rootMargin: "600px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  });
 
 
   return (
@@ -1283,7 +1294,7 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
                         className="w-full h-full object-cover"
                         muted
                         playsInline
-                        preload={i < 9 ? "metadata" : "none"}
+                        preload={i < 6 ? "metadata" : "none"}
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                         <Play size={22} className="drop-shadow-lg" fill="white" />
@@ -1305,6 +1316,7 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
                 </button>
               ))}
             </div>
+            <div ref={sentinel} />
             {hasMore && (
               <button
                 onClick={loadMore}
