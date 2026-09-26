@@ -54,7 +54,7 @@ function Home() {
   const [q, setQ] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [genre, setGenre] = useState<string | null>(null);
-  const [secret, setSecret] = useState(false);
+  const [secret, setSecret] = useState<false | "gate" | "decoy">(false);
   const site = useSiteState();
   useChatNotifier(!secret);
 
@@ -64,12 +64,10 @@ function Home() {
     if (!v) return;
     try {
       const res = await checkTrigger({ data: { code: v } });
-      // mesmo bloqueado, a tela da senha abre (a senha de coação precisa funcionar sempre;
-      // a senha normal continua recusada no servidor enquanto estiver bloqueado)
       if (res.ok) {
         setQ("");
         setShowSearch(false);
-        setSecret(true);
+        setSecret(res.decoy ? "decoy" : "gate");
       }
     } catch {
       /* silencioso */
@@ -91,7 +89,8 @@ function Home() {
   const continueWatching = catalog.slice(2, 8);
   const today = DAYS[new Date().getDay()];
 
-  if (secret) return <SecretGate onExit={() => setSecret(false)} />;
+  if (secret)
+    return <SecretGate startDecoy={secret === "decoy"} onExit={() => setSecret(false)} />;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24">

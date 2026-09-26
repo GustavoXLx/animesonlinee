@@ -9,9 +9,15 @@ import { DecoyProfile } from "./DecoyProfile";
  * Portão + chat renderizados dentro da própria home (mesma URL, mesmo título),
  * então nada aparece separado no histórico do navegador.
  */
-export function SecretGate({ onExit }: { onExit: () => void }) {
+export function SecretGate({
+  onExit,
+  startDecoy = false,
+}: {
+  onExit: () => void;
+  startDecoy?: boolean;
+}) {
   const [open, setOpen] = useState(false);
-  const [decoy, setDecoy] = useState(false);
+  const [decoy, setDecoy] = useState(startDecoy);
   const [master, setMaster] = useState(false);
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
