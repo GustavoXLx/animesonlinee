@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Gallery grids use Storage-rendered 360px image previews while fullscreen viewing keeps original signed media URLs, reducing transfer time without degrading originals.

@@ -132,6 +132,22 @@ export const lock = createServerFn({ method: "POST" }).handler(async () => {
 type DbClient = Awaited<ReturnType<typeof admin>>;
 type MediaRow = { media_path?: string | null; media_url: string | null };
 
+/** Usa o redimensionador do Storage para a grade, sem baixar a foto original inteira. */
+function galleryPreviewUrl(url: string | null, mediaType: string | null) {
+  if (!url || mediaType !== "image") return null;
+  try {
+    const preview = new URL(url);
+    preview.pathname = preview.pathname.replace("/object/sign/", "/render/image/sign/");
+    preview.searchParams.set("width", "360");
+    preview.searchParams.set("height", "360");
+    preview.searchParams.set("resize", "cover");
+    preview.searchParams.set("quality", "68");
+    return preview.toString();
+  } catch {
+    return url;
+  }
+}
+
 /** Regera os links assinados a partir do caminho salvo (mídia antiga nunca expira). */
 async function refreshMedia<T extends MediaRow>(db: DbClient, rows: T[]): Promise<T[]> {
   const paths = Array.from(
@@ -182,7 +198,11 @@ export const listMedia = createServerFn({ method: "POST" })
     if (data.before) q = q.lt("created_at", data.before);
     const { data: rows } = await q;
     const fresh = await refreshMedia(db, rows ?? []);
-    return { rows: fresh, hasMore: (rows ?? []).length === limit };
+    const galleryRows = fresh.map((row) => ({
+      ...row,
+      media_preview_url: galleryPreviewUrl(row.media_url, row.media_type),
+    }));
+    return { rows: galleryRows, hasMore: (rows ?? []).length === limit };
   });
 
 
