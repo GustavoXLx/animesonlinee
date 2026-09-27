@@ -119,6 +119,7 @@ type Msg = {
   reactions: string[];
   replyTo?: string | null;
   mediaUrl?: string | null;
+  mediaPreviewUrl?: string | null;
   mediaType?: string | null;
   seen?: boolean;
   edited?: boolean;
@@ -132,6 +133,7 @@ type Row = {
   reply_to: string | null;
   created_at: string;
   media_url: string | null;
+  media_preview_url?: string | null;
   media_type: string | null;
   seen_at?: string | null;
   edited_at?: string | null;
@@ -155,6 +157,7 @@ function rowToMsg(r: Row): Msg {
     reactions: r.reactions ?? [],
     replyTo: r.reply_to,
     mediaUrl: r.media_url,
+    mediaPreviewUrl: r.media_preview_url ?? null,
     mediaType: r.media_type,
     seen: Boolean(r.seen_at),
     edited: Boolean(r.edited_at),
@@ -1159,11 +1162,12 @@ const warmed = new Set<string>();
 
 function warmImages(items: Msg[], n: number) {
   items.slice(0, n).forEach((m) => {
-    if (m.mediaType !== "image" || !m.mediaUrl || warmed.has(m.id)) return;
+    const src = m.mediaPreviewUrl ?? m.mediaUrl;
+    if (m.mediaType !== "image" || !src || warmed.has(m.id)) return;
     warmed.add(m.id);
     const im = new Image();
     im.decoding = "async";
-    im.src = m.mediaUrl;
+    im.src = src;
   });
 }
 
@@ -1195,9 +1199,8 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
 
   useEffect(() => {
     let cancelled = false;
-    const hadCache = Boolean(galleryCache);
-    // Com cache: mostra na hora e atualiza em segundo plano.
-    prefetchGallery(hadCache).then(() => {
+    // Cache fresco mantém exatamente as mesmas URLs e aproveita o cache do navegador.
+    prefetchGallery().then(() => {
       if (cancelled || !galleryCache) {
         if (!cancelled) setLoading(false);
         return;
@@ -1302,7 +1305,7 @@ function GalleryModal({ cutoff, onClose }: { cutoff: number; onClose: () => void
                     </>
                   ) : (
                     <img
-                      src={m.mediaUrl!}
+                      src={m.mediaPreviewUrl ?? m.mediaUrl!}
                       alt=""
                       loading={i < 9 ? "eager" : "lazy"}
                       decoding="async"
