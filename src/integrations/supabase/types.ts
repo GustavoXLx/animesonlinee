@@ -38,6 +38,54 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_home: {
+        Row: {
+          data: Json
+          id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          data?: Json
+          id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          data?: Json
+          id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      home_presence: {
+        Row: {
+          seen_at: string
+          sit_at: string | null
+          sit_id: string | null
+          together_date: string
+          together_s: number
+          who: string
+        }
+        Insert: {
+          seen_at?: string
+          sit_at?: string | null
+          sit_id?: string | null
+          together_date?: string
+          together_s?: number
+          who: string
+        }
+        Update: {
+          seen_at?: string
+          sit_at?: string | null
+          sit_id?: string | null
+          together_date?: string
+          together_s?: number
+          who?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           author: string
