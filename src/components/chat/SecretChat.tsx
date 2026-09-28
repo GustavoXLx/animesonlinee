@@ -40,7 +40,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { VoiceCall } from "./VoiceCall";
-import { ChatMenu, useWallpaper } from "./ChatMenu";
+import { ChatMenu, useWallpaper, useBubble } from "./ChatMenu";
+import { useStories, StoryViewer, storyRing, uploadStory, type Story } from "./Stories";
+import { getBios, setBio } from "@/lib/chat.functions";
 import { Phone, Menu as MenuIcon } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
@@ -222,6 +224,14 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const wallpaper = useWallpaper();
+  const bubbleTheme = useBubble();
+  const { stories, reload: reloadStories } = useStories();
+  const [viewStories, setViewStories] = useState<Story[] | null>(null);
+  const [profileOf, setProfileOf] = useState<"gu" | "li" | null>(null);
+  const [bios, setBios] = useState({ gu: "", li: "" });
+  useEffect(() => {
+    getBios().then(setBios).catch(() => {});
+  }, []);
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
   const [editing, setEditing] = useState<Msg | null>(null);
   const [avatarView, setAvatarView] = useState<string | null>(null);
@@ -758,7 +768,40 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const otherInfo = AVATARS[other];
 
   return (
-    <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col" style={wallpaper.style}>
+    <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col" style={{ ...wallpaper.style, ...bubbleTheme.vars }}>
+      {viewStories && viewStories.length > 0 && (
+        <StoryViewer list={viewStories} me={me} onClose={() => setViewStories(null)} onChanged={() => void reloadStories()} />
+      )}
+      {profileOf && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-end sm:items-center justify-center" onClick={() => setProfileOf(null)}>
+          <div className="w-full max-w-sm bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            {(() => {
+              const ps = stories.filter((x) => x.author === profileOf);
+              return (
+                <button
+                  onClick={() => {
+                    if (ps.length) setViewStories(ps);
+                    else if (avatars[profileOf]) setAvatarView(avatars[profileOf]);
+                  }}
+                  className={`w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br ${AVATARS[profileOf].color} flex items-center justify-center text-4xl font-black ${storyRing(ps, me)}`}
+                >
+                  {avatars[profileOf] ? <img src={avatars[profileOf]!} alt="" className="w-full h-full object-cover" /> : AVATARS[profileOf].initial}
+                </button>
+              );
+            })()}
+            <p className="text-lg font-bold">{AVATARS[profileOf].name}</p>
+            <p className="text-sm text-white/70 text-center whitespace-pre-wrap break-words">
+              {bios[profileOf] || <span className="text-white/40">sem bio ainda</span>}
+            </p>
+            {stories.some((x) => x.author === profileOf) && (
+              <button onClick={() => setViewStories(stories.filter((x) => x.author === profileOf))} className="mt-1 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-2 text-sm font-medium">
+                ver story
+              </button>
+            )}
+            <button onClick={() => setProfileOf(null)} className="text-xs text-white/50 mt-2">fechar</button>
+          </div>
+        </div>
+      )}
       <ChatMenu
         open={showMenu}
         onClose={() => setShowMenu(false)}
@@ -776,6 +819,26 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           setShowSearch(true);
           setSearch("");
         }}
+        bubble={bubbleTheme.bubble}
+        setBubble={bubbleTheme.setBubble}
+        bio={bios[me]}
+        onSaveBio={async (b) => {
+          await setBio({ data: { who: me, bio: b } });
+          setBios((x) => ({ ...x, [me]: b }));
+        }}
+        onPostStory={async (f) => {
+          await uploadStory(me, f);
+          await reloadStories();
+          toast("story postado ✨");
+        }}
+        onViewMyStories={
+          stories.some((x) => x.author === me)
+            ? () => {
+                setShowMenu(false);
+                setViewStories(stories.filter((x) => x.author === me));
+              }
+            : null
+        }
       />
       {bday && <BirthdayEffect onClose={() => setBday(false)} />}
       {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
@@ -798,12 +861,16 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           <Images size={16} />
         </button>
         <button
-          onClick={() => avatars[other] && setAvatarView(avatars[other])}
+          onClick={() => {
+            const os = stories.filter((x) => x.author === other);
+            if (os.length) setViewStories(os);
+            else if (avatars[other]) setAvatarView(avatars[other]);
+          }}
           aria-label="Ver foto de perfil"
-          className={`relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black shrink-0 ${avatars[other] ? "active:scale-95 transition" : "cursor-default"}`}
+          className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${otherInfo.color} flex items-center justify-center font-black shrink-0 active:scale-95 transition ${storyRing(stories.filter((x) => x.author === other), me)}`}
         >
           {avatars[other] ? (
-            <img src={avatars[other]!} alt="" className="w-full h-full object-cover" />
+            <img src={avatars[other]!} alt="" className="w-full h-full object-cover rounded-full" />
           ) : (
             otherInfo.initial
           )}
@@ -811,14 +878,14 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
         </button>
-        <div className="flex-1">
+        <button className="flex-1 text-left min-w-0" onClick={() => setProfileOf(other)} aria-label="Abrir perfil">
           <p className="font-semibold text-sm">{otherInfo.name}</p>
           <p
             className={`text-[11px] ${otherTyping ? "text-pink-400" : otherOnline ? "text-emerald-400" : "text-white/40"}`}
           >
             {otherTyping ? "digitando..." : otherOnline ? "online" : "offline"}
           </p>
-        </div>
+        </button>
 
         {me === "gu" && (
           <button
@@ -1767,13 +1834,24 @@ const MessageRow = memo(function MessageRow({
 
         <div
           onDoubleClick={onReact}
-          className={`relative rounded-2xl px-3 py-2 ${
-            mine
-              ? "bg-gradient-to-br from-pink-500 to-rose-600 rounded-br-sm"
-              : "bg-white/10 rounded-bl-sm"
-          }`}
+          className={`relative rounded-2xl px-3 py-2 ${mine ? "rounded-br-sm" : "rounded-bl-sm"}`}
+          style={{ background: mine ? "var(--bub-mine, linear-gradient(135deg,#ec4899,#e11d48))" : "var(--bub-other, rgba(255,255,255,.1))" }}
         >
           {quote}
+          {(m.mediaType === "story_reply" || m.mediaType === "story_like") && (
+            <div className="mb-1.5">
+              <p className="text-[10px] opacity-70 mb-1">
+                {m.mediaType === "story_reply"
+                  ? mine
+                    ? "você respondeu ao story"
+                    : "respondeu ao seu story"
+                  : "curtiu um story ❤️"}
+              </p>
+              {m.mediaUrl && (
+                <img src={m.mediaUrl} alt="" className="w-24 h-40 object-cover rounded-lg border-l-2 border-white/50" loading="lazy" />
+              )}
+            </div>
+          )}
           {m.mediaUrl && m.mediaType === "image" && (
             <img
               src={m.mediaUrl}
