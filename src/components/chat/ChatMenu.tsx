@@ -17,7 +17,10 @@ import {
   Check,
   PlusSquare,
   StickyNote,
+  Home,
+  ListMusic,
 } from "lucide-react";
+import { MusicPicker } from "./Notes";
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, listSongs, addSong, deleteSong } from "@/lib/chat.functions";
 
@@ -134,7 +137,7 @@ function resizeToDataUrl(file: File): Promise<string> {
   });
 }
 
-type Song = { id: string; title: string; url: string | null; added_by: string };
+type Song = { id: string; title: string; url: string | null; added_by: string; cover?: string };
 type View = "root" | "profile" | "wallpaper" | "music" | "post";
 
 export function ChatMenu({
@@ -158,6 +161,7 @@ export function ChatMenu({
   onPostStory,
   onViewMyStories,
   onNote,
+  onHouse,
 }: {
   open: boolean;
   onClose: () => void;
@@ -179,6 +183,7 @@ export function ChatMenu({
   onPostStory: (f: File) => Promise<void>;
   onViewMyStories: (() => void) | null;
   onNote: () => void;
+  onHouse: () => void;
 }) {
   const [view, setView] = useState<View>("root");
   const [songs, setSongs] = useState<Song[]>([]);
@@ -188,6 +193,28 @@ export function ChatMenu({
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [queue, setQueue] = useState<Song[]>([]);
+  const [picking, setPicking] = useState(false);
+  const [nowSong, setNowSong] = useState<Song | null>(null);
+  const queueRef = useRef<Song[]>([]);
+  queueRef.current = queue;
+  const playSong = (s: Song) => {
+    const a = audioRef.current;
+    if (!a || !s.url) return;
+    a.src = s.url;
+    setNowSong(s);
+    void a.play();
+  };
+  const advance = () => {
+    const q = queueRef.current;
+    if (q.length) {
+      setQueue(q.slice(1));
+      setCurrent(-1);
+      return playSong(q[0]);
+    }
+    if (current >= 0) next(1);
+    else setNowSong(null);
+  };
   const [bioDraft, setBioDraft] = useState(bio);
   const [bioSaved, setBioSaved] = useState(false);
   const [postingStory, setPostingStory] = useState(false);
@@ -217,9 +244,10 @@ export function ChatMenu({
     const s = songs[i];
     const a = audioRef.current;
     if (!s?.url || !a) return;
-    if (current !== i) {
+    if (current !== i || nowSong?.id !== s.id) {
       a.src = s.url;
       setCurrent(i);
+      setNowSong(s);
     }
     void a.play();
   };
@@ -261,7 +289,7 @@ export function ChatMenu({
   );
 
   const titles: Record<View, string> = { root: "Menu", profile: "Editar perfil", wallpaper: "Personalizar", music: "Músicas", post: "Postar" };
-  const song = songs[current];
+  const song = nowSong ?? songs[current];
 
   return (
     <>
@@ -269,7 +297,7 @@ export function ChatMenu({
         ref={audioRef}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => next(1)}
+        onEnded={advance}
         onTimeUpdate={(e) => {
           const a = e.currentTarget;
           setProgress(a.duration ? a.currentTime / a.duration : 0);
@@ -297,6 +325,7 @@ export function ChatMenu({
               <Item icon={<PlusSquare size={16} />} label="Postar" onClick={() => setView("post")} />
               <Item icon={<User size={16} />} label="Editar perfil" onClick={() => setView("profile")} />
               <Item icon={<ImageIcon size={16} />} label="Personalizar" onClick={() => setView("wallpaper")} />
+              <Item icon={<Home size={16} />} label="Nossa Casa" onClick={() => { onClose(); onHouse(); }} />
               <Item icon={<Gamepad2 size={16} />} label="Jogos" onClick={() => { onClose(); onGames(); }} />
               <Item icon={<Search size={16} />} label="Buscar mensagens" onClick={() => { onClose(); onSearch(); }} />
               <Item icon={<Music size={16} />} label="Músicas" onClick={() => setView("music")} />
@@ -453,10 +482,25 @@ export function ChatMenu({
                   <button onClick={toggle} aria-label={playing ? "Pausar" : "Tocar"} className="w-11 h-11 rounded-full bg-white text-neutral-900 flex items-center justify-center">
                     {playing ? <Pause size={20} /> : <Play size={20} />}
                   </button>
-                  <button onClick={() => next(1)} aria-label="Próxima"><SkipForward size={20} /></button>
+                  <button onClick={advance} aria-label="Próxima"><SkipForward size={20} /></button>
                 </div>
               </div>
 
+              <button onClick={() => setPicking(true)} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-pink-600 text-sm font-medium">
+                <Search size={16} /> Pesquisar música
+              </button>
+              {!!queue.length && (
+                <div className="rounded-xl bg-white/5 p-2 space-y-1">
+                  <p className="text-xs text-white/50 flex items-center gap-1 px-1"><ListMusic size={13} /> Na fila ({queue.length})</p>
+                  {queue.map((q, i) => (
+                    <div key={q.id + i} className="flex items-center gap-2 px-1 py-1">
+                      {q.cover && <img src={q.cover} alt="" className="w-8 h-8 rounded" />}
+                      <span className="text-xs flex-1 truncate">{q.title}</span>
+                      <button aria-label="Tirar da fila" onClick={() => setQueue((x) => x.filter((_, j) => j !== i))} className="p-1 text-white/40"><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/10 text-sm cursor-pointer active:bg-white/20">
                 {uploadingSong ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 {uploadingSong ? "enviando..." : "Adicionar música"}
@@ -503,6 +547,20 @@ export function ChatMenu({
           )}
         </div>
       </aside>
+      {picking && (
+        <MusicPicker
+          title="Adicionar à fila"
+          onClose={() => setPicking(false)}
+          onPick={(m) => {
+            setPicking(false);
+            if (!m) return;
+            const s: Song = { id: "it_" + Date.now(), title: `${m.title} — ${m.artist}`, url: m.preview, added_by: me, cover: m.cover };
+            const a = audioRef.current;
+            if (!a || a.paused || !song) playSong(s);
+            else setQueue((q) => [...q, s]);
+          }}
+        />
+      )}
     </>
   );
 }
