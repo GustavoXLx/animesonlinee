@@ -200,3 +200,9 @@
 .animate-title-in { animation: title-in 1s ease-out 0.35s both; }
 .animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
 .animate-sway { animation: sway 5s ease-in-out infinite; }
+
+#lovable-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
