@@ -724,8 +724,19 @@ export const searchMusic = createServerFn({ method: "POST" })
     await gate();
     if (!data.q.trim()) return { rows: [] as Music[] };
     const url = `https://itunes.apple.com/search?media=music&entity=song&limit=20&country=BR&term=${encodeURIComponent(data.q)}`;
-    const r = await fetch(url);
-    if (!r.ok) return { rows: [] as Music[] };
+    let r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } }).catch(() => null);
+    if (!r || !r.ok) {
+      // fallback: Deezer
+      const d = await fetch(`https://api.deezer.com/search?limit=20&q=${encodeURIComponent(data.q)}`).catch(() => null);
+      if (!d || !d.ok) return { rows: [] as Music[] };
+      const dj = (await d.json()) as { data?: { title: string; preview: string; artist?: { name: string }; album?: { cover_medium: string } }[] };
+      return {
+        rows: (dj.data ?? []).filter((x) => x.preview).map((x) => ({
+          title: x.title, artist: x.artist?.name ?? "", cover: x.album?.cover_medium ?? "", preview: x.preview,
+        })),
+      };
+    }
+    void r;
     const j = (await r.json()) as { results?: Record<string, string>[] };
     const rows = (j.results ?? [])
       .filter((x) => x.previewUrl)
@@ -739,14 +750,14 @@ export const searchMusic = createServerFn({ method: "POST" })
   });
 
 export const setStoryMusic = createServerFn({ method: "POST" })
-  .inputValidator((d: { who: "gu" | "li"; path: string; music: Music | null }) => d)
+  .inputValidator((d: { who: "gu" | "li"; path: string; music: Music | null; type?: string }) => d)
   .handler(async ({ data }) => {
     await gate();
     const db = await admin();
     await db.from("stories").insert({
       author: data.who === "li" ? "li" : "gu",
       media_path: data.path,
-      media_type: "image",
+      media_type: data.type === "video" ? "video" : "image",
       music: cleanMusic(data.music),
     });
     return { ok: true as const };
