@@ -42,6 +42,7 @@ import { GamesPanel } from "@/components/games/GamesPanel";
 import { VoiceCall } from "./VoiceCall";
 import { ChatMenu, useWallpaper, useBubble } from "./ChatMenu";
 import { useStories, StoryViewer, storyRing, uploadStory, type Story } from "./Stories";
+import { NotesBar, MusicPicker } from "./Notes";
 import { getBios, setBio } from "@/lib/chat.functions";
 import { Phone, Menu as MenuIcon } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
@@ -239,6 +240,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const bubbleTheme = useBubble();
   const { stories, reload: reloadStories } = useStories();
   const [viewStories, setViewStories] = useState<Story[] | null>(null);
+  const [pendingStory, setPendingStory] = useState<File | null>(null);
   const [profileOf, setProfileOf] = useState<"gu" | "li" | null>(null);
   const [bios, setBios] = useState({ gu: "", li: "" });
   useEffect(() => {
@@ -839,9 +841,8 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           setBios((x) => ({ ...x, [me]: b }));
         }}
         onPostStory={async (f) => {
-          await uploadStory(me, f);
-          await reloadStories();
-          toast("story postado ✨");
+          setShowMenu(false);
+          setPendingStory(f);
         }}
         onViewMyStories={
           stories.some((x) => x.author === me)
@@ -852,6 +853,25 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             : null
         }
       />
+      {pendingStory && (
+        <MusicPicker
+          title="Música no story?"
+          skipLabel="postar sem música"
+          onClose={() => setPendingStory(null)}
+          onPick={async (m) => {
+            const f = pendingStory;
+            setPendingStory(null);
+            toast("postando story...");
+            try {
+              await uploadStory(me, f, m);
+              await reloadStories();
+              toast("story postado ✨");
+            } catch {
+              toast("não deu pra postar");
+            }
+          }}
+        />
+      )}
       {bday && <BirthdayEffect onClose={() => setBday(false)} />}
       {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
@@ -939,6 +959,12 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           trocar
         </button>
       </header>
+      <NotesBar
+        me={me}
+        avatars={{ gu: avatars.gu ?? null, li: avatars.li ?? null }}
+        colors={{ gu: AVATARS.gu.color, li: AVATARS.li.color }}
+        initials={{ gu: AVATARS.gu.initial, li: AVATARS.li.initial }}
+      />
 
       {showSearch && (
         <div className="px-3 py-2 border-b border-white/10 bg-neutral-900 flex items-center gap-2">

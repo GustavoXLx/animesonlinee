@@ -8,6 +8,8 @@ import {
   postStory,
   createUpload,
   sendMessage,
+  setStoryMusic,
+  type Music,
 } from "@/lib/chat.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,6 +21,7 @@ export type Story = {
   liked_by: string[];
   seen_by: string[];
   created_at: string;
+  music?: Music | null;
 };
 
 const NAME = { gu: "bb gu", li: "bb li" } as const;
@@ -41,14 +44,15 @@ export function useStories() {
   return { stories, reload };
 }
 
-export async function uploadStory(who: "gu" | "li", file: File) {
+export async function uploadStory(who: "gu" | "li", file: File, music: Music | null = null) {
   const ext = file.name.split(".").pop() || "jpg";
   const { path, token } = await createUpload({ data: { ext } });
   const { error } = await supabase.storage
     .from("chat-media")
     .uploadToSignedUrl(path, token, file, { contentType: file.type });
   if (error) throw error;
-  await postStory({ data: { who, path, type: "image" } });
+  if (music) await setStoryMusic({ data: { who, path, music } });
+  else await postStory({ data: { who, path, type: "image" } });
 }
 
 /** Borda colorida em volta da foto quando há story. */
@@ -85,7 +89,14 @@ export function StoryViewer({
   const s = list[i];
   const mineStory = s?.author === me;
   const startRef = useRef(Date.now());
-  const DURATION = 6000;
+  const DURATION = s?.music ? 15000 : 6000;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (paused) a.pause();
+    else void a.play().catch(() => {});
+  }, [paused, s?.id]);
 
   useEffect(() => {
     if (!s) return;
@@ -171,6 +182,18 @@ export function StoryViewer({
           }
         }}
       >
+        {s.music && (
+          <>
+            <audio key={s.id} ref={audioRef} src={s.music.preview} autoPlay />
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-xl bg-black/55 backdrop-blur px-2.5 py-1.5 max-w-[80%]">
+              {s.music.cover && <img src={s.music.cover} alt="" className="w-9 h-9 rounded-md" />}
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate">♪ {s.music.title}</p>
+                <p className="text-[10px] text-white/70 truncate">{s.music.artist}</p>
+              </div>
+            </div>
+          </>
+        )}
         {s.url && <img src={s.url} alt="" className="max-h-full max-w-full object-contain select-none" draggable={false} />}
         {sent && (
           <div className="absolute bottom-6 bg-white/15 backdrop-blur rounded-full px-4 py-2 text-xs">resposta enviada</div>
