@@ -14,7 +14,9 @@ import {
   Type,
   Flame,
   Gavel,
+  Hand as HandStop,
 } from "lucide-react";
+import { Stop } from "./Stop";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
@@ -32,7 +34,8 @@ type GameKey =
   | "memoria"
   | "forca"
   | "verdade"
-  | "leilao";
+  | "leilao"
+  | "stop";
 
 const GAMES: {
   key: GameKey;
@@ -111,6 +114,13 @@ const GAMES: {
     icon: Flame,
     gradient: "from-rose-500 to-red-600",
   },
+  {
+    key: "stop",
+    name: "Stop",
+    desc: "vocês escolhem os temas",
+    icon: HandStop,
+    gradient: "from-emerald-500 to-teal-600",
+  },
 ];
 
 export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
@@ -152,6 +162,7 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
           {active === "forca" && <Forca me={me} />}
           {active === "verdade" && <VerdadeDesafio me={me} />}
           {active === "leilao" && <Leilao me={me} />}
+          {active === "stop" && <Stop me={me} />}
         </div>
         <GameChat gameKey={active} me={me} />
       </div>
