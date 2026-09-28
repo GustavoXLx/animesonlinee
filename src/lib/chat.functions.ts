@@ -821,34 +821,3 @@ export const reactNote = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-// ===================== Nossa Casa =====================
-export const getHouse = createServerFn({ method: "POST" }).handler(async () => {
-  await gate();
-  const { normalize } = await import("./house");
-  const sb = await admin();
-  const { data } = await sb.from("house_state").select("data").eq("id", "main").maybeSingle();
-  return { house: normalize(data?.data as never) };
-});
-
-export const houseAct = createServerFn({ method: "POST" })
-  .inputValidator((d: { who: "gu" | "li"; action: unknown }) => {
-    if (d.who !== "gu" && d.who !== "li") throw new Error("who");
-    if (!d.action || typeof d.action !== "object") throw new Error("action");
-    return d;
-  })
-  .handler(async ({ data }) => {
-    await gate();
-    const { normalize, applyHouse } = await import("./house");
-    const sb = await admin();
-    const { data: row } = await sb.from("house_state").select("data").eq("id", "main").maybeSingle();
-    const h = normalize(row?.data as never);
-    let msg = "";
-    let error: string | null = null;
-    try {
-      msg = applyHouse(h, data.who, data.action as never);
-    } catch (e) {
-      error = e instanceof Error ? e.message : "erro";
-    }
-    if (!error) await sb.from("house_state").upsert({ id: "main", data: h as never });
-    return { house: h, msg, error };
-  });
