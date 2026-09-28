@@ -17,18 +17,21 @@ export type Database = {
       chat_profiles: {
         Row: {
           avatar_path: string | null
+          bio: string
           created_at: string
           id: string
           updated_at: string
         }
         Insert: {
           avatar_path?: string | null
+          bio?: string
           created_at?: string
           id: string
           updated_at?: string
         }
         Update: {
           avatar_path?: string | null
+          bio?: string
           created_at?: string
           id?: string
           updated_at?: string
@@ -127,6 +130,36 @@ export type Database = {
           id?: string
           note?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          author: string
+          created_at: string
+          id: string
+          liked_by: string[]
+          media_path: string
+          media_type: string
+          seen_by: string[]
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          id?: string
+          liked_by?: string[]
+          media_path: string
+          media_type?: string
+          seen_by?: string[]
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          id?: string
+          liked_by?: string[]
+          media_path?: string
+          media_type?: string
+          seen_by?: string[]
         }
         Relationships: []
       }
