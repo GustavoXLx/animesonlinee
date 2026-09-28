@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RotateCcw, Send } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
+import { VERDADES, DESAFIOS } from "./vdPrompts";
 
 function Waiting({ peerOnline, children }: { peerOnline: boolean; children: React.ReactNode }) {
   if (!peerOnline) {
@@ -499,33 +500,13 @@ export function Forca({ me }: { me: Me }) {
 }
 
 // ============ VERDADE OU DESAFIO ============
-const VERDADES = [
-  "Qual foi a primeira coisa que você pensou de mim?",
-  "Qual foi a mentirinha mais boba que você já me contou?",
-  "O que mais te dá ciúme?",
-  "Qual momento nosso você repetiria hoje?",
-  "O que você mais sente falta quando estamos longe?",
-  "Qual foi a vez que você mais riu comigo?",
-  "Tem algo que você quis me dizer e não disse?",
-  "Qual é o seu plano secreto pra gente?",
-];
-const DESAFIOS = [
-  "Manda um áudio cantando nossa música.",
-  "Manda uma selfie fazendo a cara mais feia possível.",
-  "Escreva uma declaração em 5 palavras.",
-  "Manda uma foto do que você está fazendo agora.",
-  "Imite eu falando por 10 segundos em áudio.",
-  "Diga 3 coisas que ama em mim, sem pensar.",
-  "Escolha um apelido novo pra mim agora.",
-  "Manda um poema tosco de 2 linhas.",
-];
-
 type VDState = {
   turn: Me;
   kind: "verdade" | "desafio" | null;
   prompt: string;
   answered: boolean;
   count: { gu: number; li: number };
+  used?: string[];
 };
 const vdInitial: VDState = {
   turn: "gu",
@@ -540,13 +521,27 @@ export function VerdadeDesafio({ me }: { me: Me }) {
 
   const pick = useCallback(
     (kind: "verdade" | "desafio") => {
-      const pool = kind === "verdade" ? VERDADES : DESAFIOS;
-      setState({
-        ...state,
-        kind,
-        prompt: pool[Math.floor(Math.random() * pool.length)],
-        answered: false,
-      });
+      const all = kind === "verdade" ? VERDADES : DESAFIOS;
+      // nunca repete: guarda as já usadas (também neste aparelho)
+      let seen: string[] = state.used ?? [];
+      try {
+        seen = Array.from(new Set([...seen, ...(JSON.parse(localStorage.getItem("vd_used_v2") ?? "[]") as string[])]));
+      } catch {
+        /* noop */
+      }
+      let pool = all.filter((p) => !seen.includes(p));
+      if (!pool.length) {
+        seen = seen.filter((p) => !all.includes(p));
+        pool = all;
+      }
+      const prompt = pool[Math.floor(Math.random() * pool.length)];
+      const used = [...seen, prompt];
+      try {
+        localStorage.setItem("vd_used_v2", JSON.stringify(used));
+      } catch {
+        /* noop */
+      }
+      setState({ ...state, kind, prompt, answered: false, used });
     },
     [state, setState],
   );
@@ -579,7 +574,7 @@ export function VerdadeDesafio({ me }: { me: Me }) {
               <span className="text-rose-400">{state.count.li}</span>
             </>
           }
-          onReset={() => setState({ ...vdInitial })}
+          onReset={() => setState({ ...vdInitial, used: state.used })}
         />
         <p className="text-center text-sm text-white/60">
           vez de <b>{state.turn === "gu" ? "bb gu" : "bb li"}</b>
