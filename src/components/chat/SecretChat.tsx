@@ -69,6 +69,12 @@ import sticker16 from "@/assets/stickers/sticker_c161045.jpg.asset.json";
 import sticker17 from "@/assets/stickers/sticker_c161158.jpg.asset.json";
 import sticker18 from "@/assets/stickers/sticker_c161259.jpg.asset.json";
 import sticker19 from "@/assets/stickers/sticker_c161314.jpg.asset.json";
+import sticker20 from "@/assets/stickers/Screenshot_20260928_112252_WhatsApp.jpg.asset.json";
+import sticker21 from "@/assets/stickers/Screenshot_20260928_112219_WhatsApp.jpg.asset.json";
+import sticker22 from "@/assets/stickers/Screenshot_20260928_112111_WhatsApp.jpg.asset.json";
+import sticker23 from "@/assets/stickers/Screenshot_20260928_111909_WhatsApp.jpg.asset.json";
+import sticker24 from "@/assets/stickers/Screenshot_20260928_111830_WhatsApp.jpg.asset.json";
+import sticker25 from "@/assets/stickers/Screenshot_20260928_111737_WhatsApp.jpg.asset.json";
 
 const STICKERS = [
   sticker1,
@@ -90,6 +96,12 @@ const STICKERS = [
   sticker17,
   sticker18,
   sticker19,
+  sticker20,
+  sticker21,
+  sticker22,
+  sticker23,
+  sticker24,
+  sticker25,
 ].map((s) => s.url);
 const EMOJIS =
   "❤️ 😂 🥺 😍 😘 🤭 😭 🔥 ✨ 🥰 😴 🙈 👀 🤝 💋 💐 🍀 🐶 🐱 🌙 ☕ 🎧 🍕 🎮 💍 🫂 😤 🙄 👏 🤡".split(
