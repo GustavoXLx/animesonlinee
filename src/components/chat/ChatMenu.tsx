@@ -41,7 +41,54 @@ export const WALLPAPERS: { id: string; name: string; css: string }[] = [
     name: "Listras",
     css: "repeating-linear-gradient(135deg,#171717 0 14px,#1f1a20 14px 28px)",
   },
+  { id: "aurora", name: "Aurora", css: "linear-gradient(160deg,#052e2b 0%,#1e1b4b 50%,#3b0a2a 100%)" },
+  { id: "lavanda", name: "Lavanda", css: "linear-gradient(180deg,#2e1a47 0%,#1a1030 60%,#0b0714 100%)" },
+  { id: "vinho", name: "Vinho", css: "linear-gradient(180deg,#3a0a14 0%,#1c0509 70%,#0a0204 100%)" },
+  { id: "cafe", name: "Café", css: "linear-gradient(180deg,#2b1a10 0%,#1a0f08 70%,#0a0604 100%)" },
+  { id: "grafite", name: "Grafite", css: "linear-gradient(180deg,#262626 0%,#171717 100%)" },
+  { id: "neon", name: "Neon", css: "radial-gradient(circle at 20% 10%,rgba(236,72,153,.35),transparent 45%),radial-gradient(circle at 80% 90%,rgba(56,189,248,.3),transparent 45%),linear-gradient(#0a0a12,#0a0a12)" },
+  { id: "lua", name: "Lua", css: "radial-gradient(circle at 75% 15%,rgba(255,255,230,.35) 0 40px,rgba(255,255,230,.08) 41px,transparent 120px),linear-gradient(180deg,#0b1026,#05060d)" },
+  { id: "sakura", name: "Sakura", css: "radial-gradient(circle at 15% 25%,rgba(251,207,232,.25) 0 5px,transparent 6px),radial-gradient(circle at 65% 70%,rgba(251,207,232,.2) 0 4px,transparent 5px),linear-gradient(180deg,#2a1320,#120910)" },
+  { id: "bolinhas", name: "Bolinhas", css: "radial-gradient(rgba(255,255,255,.08) 2px,transparent 2.5px),linear-gradient(#141414,#141414)" },
+  { id: "xadrez", name: "Xadrez", css: "conic-gradient(#1a1a1a 25%,#222 0 50%,#1a1a1a 0 75%,#222 0)" },
+  { id: "ondas", name: "Ondas", css: "repeating-radial-gradient(circle at 50% 120%,#0f172a 0 18px,#111c33 18px 36px)" },
+  { id: "doce", name: "Algodão doce", css: "linear-gradient(160deg,#3b1a3a 0%,#1d2a4a 100%)" },
+  { id: "fogo", name: "Fogo", css: "linear-gradient(0deg,#3b0d02 0%,#1a0a05 50%,#0a0a0a 100%)" },
+  { id: "menta", name: "Menta", css: "linear-gradient(180deg,#0f2e28 0%,#0a1a17 70%,#050c0b 100%)" },
 ];
+
+const PATTERN_SIZE: Record<string, string> = { coracoes: "120px 120px", estrelas: "120px 120px", sakura: "140px 140px", bolinhas: "22px 22px", xadrez: "40px 40px" };
+
+export const BUBBLES: { id: string; name: string; mine: string; other: string }[] = [
+  { id: "rosa", name: "Rosa", mine: "linear-gradient(135deg,#ec4899,#e11d48)", other: "rgba(255,255,255,.1)" },
+  { id: "azul", name: "Azul", mine: "linear-gradient(135deg,#38bdf8,#4f46e5)", other: "rgba(255,255,255,.1)" },
+  { id: "roxo", name: "Roxo", mine: "linear-gradient(135deg,#a855f7,#6d28d9)", other: "rgba(168,85,247,.18)" },
+  { id: "verde", name: "WhatsApp", mine: "#005c4b", other: "#202c33" },
+  { id: "telegram", name: "Telegram", mine: "#2b5278", other: "#182533" },
+  { id: "imessage", name: "iMessage", mine: "#0a84ff", other: "#3a3a3c" },
+  { id: "laranja", name: "Pôr do sol", mine: "linear-gradient(135deg,#f97316,#db2777)", other: "rgba(249,115,22,.15)" },
+  { id: "menta", name: "Menta", mine: "linear-gradient(135deg,#10b981,#0d9488)", other: "rgba(16,185,129,.15)" },
+  { id: "vinho", name: "Vinho", mine: "linear-gradient(135deg,#9f1239,#4c0519)", other: "rgba(159,18,57,.2)" },
+  { id: "grafite", name: "Grafite", mine: "#404040", other: "#262626" },
+  { id: "ouro", name: "Dourado", mine: "linear-gradient(135deg,#ca8a04,#a16207)", other: "rgba(202,138,4,.15)" },
+  { id: "vidro", name: "Vidro", mine: "rgba(255,255,255,.22)", other: "rgba(255,255,255,.08)" },
+];
+
+const BUB_KEY = "chat-bubble";
+
+export function useBubble() {
+  const [id, setId] = useState("rosa");
+  useEffect(() => {
+    setId(localStorage.getItem(BUB_KEY) || "rosa");
+  }, []);
+  const set = useCallback((v: string) => {
+    localStorage.setItem(BUB_KEY, v);
+    setId(v);
+  }, []);
+  const b = BUBBLES.find((x) => x.id === id) ?? BUBBLES[0];
+  const vars = { "--bub-mine": b.mine, "--bub-other": b.other } as React.CSSProperties;
+  return { bubble: id, setBubble: set, vars };
+}
 
 const WP_KEY = "chat-wallpaper";
 
@@ -63,7 +110,7 @@ export function useWallpaper() {
       ? {}
       : wp.startsWith("data:")
         ? { backgroundImage: `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)),url(${wp})`, backgroundSize: "cover", backgroundPosition: "center" }
-        : { background: WALLPAPERS.find((w) => w.id === wp)?.css, backgroundSize: wp === "coracoes" || wp === "estrelas" ? "120px 120px" : undefined };
+        : { background: WALLPAPERS.find((w) => w.id === wp)?.css, backgroundSize: PATTERN_SIZE[wp] };
   return { wp, setWp: set, style };
 }
 
@@ -102,6 +149,12 @@ export function ChatMenu({
   setWp,
   onGames,
   onSearch,
+  bubble,
+  setBubble,
+  bio,
+  onSaveBio,
+  onPostStory,
+  onViewMyStories,
 }: {
   open: boolean;
   onClose: () => void;
@@ -116,6 +169,12 @@ export function ChatMenu({
   setWp: (v: string) => void;
   onGames: () => void;
   onSearch: () => void;
+  bubble: string;
+  setBubble: (v: string) => void;
+  bio: string;
+  onSaveBio: (b: string) => Promise<void>;
+  onPostStory: (f: File) => Promise<void>;
+  onViewMyStories: (() => void) | null;
 }) {
   const [view, setView] = useState<View>("root");
   const [songs, setSongs] = useState<Song[]>([]);
@@ -125,6 +184,10 @@ export function ChatMenu({
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [bioDraft, setBioDraft] = useState(bio);
+  const [bioSaved, setBioSaved] = useState(false);
+  const [postingStory, setPostingStory] = useState(false);
+  useEffect(() => setBioDraft(bio), [bio]);
 
   useEffect(() => {
     if (!open) setView("root");
@@ -193,7 +256,7 @@ export function ChatMenu({
     </button>
   );
 
-  const titles: Record<View, string> = { root: "Menu", profile: "Editar perfil", wallpaper: "Papel de parede", music: "Músicas" };
+  const titles: Record<View, string> = { root: "Menu", profile: "Editar perfil", wallpaper: "Personalizar", music: "Músicas" };
   const song = songs[current];
 
   return (
@@ -228,7 +291,7 @@ export function ChatMenu({
           {view === "root" && (
             <>
               <Item icon={<User size={16} />} label="Editar perfil" onClick={() => setView("profile")} />
-              <Item icon={<ImageIcon size={16} />} label="Papel de parede" onClick={() => setView("wallpaper")} />
+              <Item icon={<ImageIcon size={16} />} label="Personalizar" onClick={() => setView("wallpaper")} />
               <Item icon={<Gamepad2 size={16} />} label="Jogos" onClick={() => { onClose(); onGames(); }} />
               <Item icon={<Search size={16} />} label="Buscar mensagens" onClick={() => { onClose(); onSearch(); }} />
               <Item icon={<Music size={16} />} label="Músicas" onClick={() => setView("music")} />
@@ -254,13 +317,62 @@ export function ChatMenu({
                   }}
                 />
               </label>
+              <div className="w-full px-2">
+                <p className="text-xs text-white/50 mb-1">Bio</p>
+                <textarea
+                  value={bioDraft}
+                  maxLength={300}
+                  onChange={(e) => setBioDraft(e.target.value)}
+                  rows={3}
+                  placeholder="escreva algo sobre você..."
+                  className="w-full rounded-xl bg-white/10 p-3 text-sm outline-none resize-none"
+                />
+                <button
+                  onClick={async () => {
+                    await onSaveBio(bioDraft);
+                    setBioSaved(true);
+                    setTimeout(() => setBioSaved(false), 1500);
+                  }}
+                  className="mt-2 w-full rounded-full bg-white/15 py-2 text-sm"
+                >
+                  {bioSaved ? "salvo!" : "Salvar bio"}
+                </button>
+              </div>
+              <div className="w-full px-2 space-y-2">
+                <p className="text-xs text-white/50">Story (some depois de 24h)</p>
+                <label className="block text-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 py-2 text-sm font-medium cursor-pointer">
+                  {postingStory ? "postando..." : "Postar story"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={postingStory}
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      setPostingStory(true);
+                      try {
+                        await onPostStory(f);
+                      } finally {
+                        setPostingStory(false);
+                      }
+                    }}
+                  />
+                </label>
+                {onViewMyStories && (
+                  <button onClick={onViewMyStories} className="w-full rounded-full bg-white/10 py-2 text-sm">
+                    Ver meus stories
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
           {view === "wallpaper" && (
             <div className="p-2">
               <label className="flex items-center justify-center gap-2 w-full py-3 mb-3 rounded-xl bg-white/10 text-sm cursor-pointer active:bg-white/20">
-                <Plus size={16} /> Escolher da galeria
+                <Plus size={16} /> Papel de parede da galeria
                 <input
                   type="file"
                   accept="image/*"
@@ -272,6 +384,7 @@ export function ChatMenu({
                   }}
                 />
               </label>
+              <p className="text-sm font-semibold mb-2">Papel de parede</p>
               <div className="grid grid-cols-3 gap-2">
                 {wp.startsWith("data:") && (
                   <button className="relative aspect-[9/16] rounded-lg overflow-hidden ring-2 ring-pink-500">
@@ -284,10 +397,28 @@ export function ChatMenu({
                     key={w.id}
                     onClick={() => setWp(w.id)}
                     className={`relative aspect-[9/16] rounded-lg overflow-hidden border border-white/10 ${wp === w.id ? "ring-2 ring-pink-500" : ""}`}
-                    style={{ background: w.css === "none" ? "#0a0a0a" : w.css, backgroundSize: w.id === "coracoes" || w.id === "estrelas" ? "60px 60px" : undefined }}
+                    style={{ background: w.css === "none" ? "#0a0a0a" : w.css, backgroundSize: PATTERN_SIZE[w.id] }}
                   >
                     {wp === w.id && <Check size={14} className="absolute top-1 right-1" />}
                     <span className="absolute bottom-1 inset-x-0 text-[10px] text-white/80">{w.name}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm font-semibold mt-5 mb-2">Balões de mensagem</p>
+              <div className="grid grid-cols-2 gap-2">
+                {BUBBLES.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setBubble(b.id)}
+                    className={`rounded-xl bg-neutral-950 p-2 space-y-1.5 border ${bubble === b.id ? "border-pink-500" : "border-white/10"}`}
+                  >
+                    <div className="flex justify-start">
+                      <span className="rounded-xl rounded-bl-sm px-2 py-1 text-[10px]" style={{ background: b.other }}>oii</span>
+                    </div>
+                    <div className="flex justify-end">
+                      <span className="rounded-xl rounded-br-sm px-2 py-1 text-[10px]" style={{ background: b.mine }}>oi amor</span>
+                    </div>
+                    <p className="text-[10px] text-white/60">{b.name}</p>
                   </button>
                 ))}
               </div>
