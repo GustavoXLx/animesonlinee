@@ -41,8 +41,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { VoiceCall } from "./VoiceCall";
 import { ChatMenu, useWallpaper, useBubble } from "./ChatMenu";
-import { useStories, StoryViewer, storyRing, uploadStory, type Story } from "./Stories";
-import { NotesBar, MusicPicker } from "./Notes";
+import { useStories, StoryViewer, storyRing, uploadStory, StoryComposer, type Story } from "./Stories";
+import { MusicPicker, useNotes, NoteBubble, NoteEditor, NoteView } from "./Notes";
+import type { Music as StoryMusic, NoteRow } from "@/lib/chat.functions";
 import { getBios, setBio } from "@/lib/chat.functions";
 import { Phone, Menu as MenuIcon } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
@@ -241,6 +242,11 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const { stories, reload: reloadStories } = useStories();
   const [viewStories, setViewStories] = useState<Story[] | null>(null);
   const [pendingStory, setPendingStory] = useState<File | null>(null);
+  const [storyMusic, setStoryMusicSel] = useState<StoryMusic | null>(null);
+  const [pickingMusic, setPickingMusic] = useState(false);
+  const { notes, reload: reloadNotes } = useNotes();
+  const [noteEdit, setNoteEdit] = useState(false);
+  const [noteOpen, setNoteOpen] = useState<NoteRow | null>(null);
   const [profileOf, setProfileOf] = useState<"gu" | "li" | null>(null);
   const [bios, setBios] = useState({ gu: "", li: "" });
   useEffect(() => {
@@ -842,8 +848,10 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         }}
         onPostStory={async (f) => {
           setShowMenu(false);
+          setStoryMusicSel(null);
           setPendingStory(f);
         }}
+        onNote={() => setNoteEdit(true)}
         onViewMyStories={
           stories.some((x) => x.author === me)
             ? () => {
@@ -854,22 +862,55 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         }
       />
       {pendingStory && (
-        <MusicPicker
-          title="Música no story?"
-          skipLabel="postar sem música"
+        <StoryComposer
+          file={pendingStory}
+          music={storyMusic}
+          clearMusic={() => setStoryMusicSel(null)}
+          onPickMusic={() => setPickingMusic(true)}
           onClose={() => setPendingStory(null)}
-          onPick={async (m) => {
-            const f = pendingStory;
-            setPendingStory(null);
-            toast("postando story...");
+          onPost={async () => {
             try {
-              await uploadStory(me, f, m);
+              await uploadStory(me, pendingStory, storyMusic);
               await reloadStories();
+              setPendingStory(null);
               toast("story postado ✨");
             } catch {
               toast("não deu pra postar");
             }
           }}
+        />
+      )}
+      {pickingMusic && (
+        <MusicPicker
+          title="Música no story"
+          onClose={() => setPickingMusic(false)}
+          onPick={(m) => {
+            setStoryMusicSel(m);
+            setPickingMusic(false);
+          }}
+        />
+      )}
+      {noteEdit && (
+        <NoteEditor
+          me={me}
+          current={notes[me]}
+          onClose={() => setNoteEdit(false)}
+          onDone={() => {
+            setNoteEdit(false);
+            void reloadNotes();
+          }}
+        />
+      )}
+      {noteOpen && (
+        <NoteView
+          note={noteOpen}
+          me={me}
+          onClose={() => setNoteOpen(null)}
+          onEdit={() => {
+            setNoteOpen(null);
+            setNoteEdit(true);
+          }}
+          onChanged={() => void reloadNotes()}
         />
       )}
       {bday && <BirthdayEffect onClose={() => setBday(false)} />}
@@ -909,6 +950,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           {otherOnline && (
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-neutral-950" />
           )}
+          {notes[other] && <NoteBubble note={notes[other]!} onClick={() => setNoteOpen(notes[other])} />}
         </button>
         <button className="flex-1 text-left min-w-0" onClick={() => setProfileOf(other)} aria-label="Abrir perfil">
           <p className="font-semibold text-sm">{otherInfo.name}</p>
@@ -959,12 +1001,6 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           trocar
         </button>
       </header>
-      <NotesBar
-        me={me}
-        avatars={{ gu: avatars.gu ?? null, li: avatars.li ?? null }}
-        colors={{ gu: AVATARS.gu.color, li: AVATARS.li.color }}
-        initials={{ gu: AVATARS.gu.initial, li: AVATARS.li.initial }}
-      />
 
       {showSearch && (
         <div className="px-3 py-2 border-b border-white/10 bg-neutral-900 flex items-center gap-2">

@@ -13,6 +13,30 @@ import {
 type Who = "gu" | "li";
 const NAME = { gu: "bb gu", li: "bb li" } as const;
 
+/** Busca direto do navegador (iTunes libera CORS); cai para o servidor se falhar. */
+async function findMusic(q: string): Promise<Music[]> {
+  try {
+    const r = await fetch(
+      `https://itunes.apple.com/search?media=music&entity=song&limit=25&country=BR&term=${encodeURIComponent(q)}`,
+    );
+    if (r.ok) {
+      const j = (await r.json()) as { results?: Record<string, string>[] };
+      const rows = (j.results ?? [])
+        .filter((x) => x.previewUrl)
+        .map((x) => ({
+          title: x.trackName ?? "",
+          artist: x.artistName ?? "",
+          cover: (x.artworkUrl100 ?? "").replace("100x100", "300x300"),
+          preview: x.previewUrl,
+        }));
+      if (rows.length) return rows;
+    }
+  } catch {
+    /* tenta servidor */
+  }
+  return (await searchMusic({ data: { q } })).rows;
+}
+
 /** Busca de músicas (iTunes) com prévia. */
 export function MusicPicker({
   title,
@@ -37,7 +61,7 @@ export function MusicPicker({
     const h = setTimeout(async () => {
       setLoading(true);
       try {
-        setRows((await searchMusic({ data: { q: t } })).rows);
+        setRows(await findMusic(t));
       } catch {
         setRows([]);
       }
@@ -127,21 +151,8 @@ function MusicChip({ m }: { m: Music }) {
   );
 }
 
-/** Barra de notas estilo Instagram no topo do chat. */
-export function NotesBar({
-  me,
-  avatars,
-  colors,
-  initials,
-}: {
-  me: Who;
-  avatars: Record<Who, string | null>;
-  colors: Record<Who, string>;
-  initials: Record<Who, string>;
-}) {
+export function useNotes() {
   const [notes, setNotes] = useState<{ gu: NoteRow | null; li: NoteRow | null }>({ gu: null, li: null });
-  const [editing, setEditing] = useState(false);
-  const [open, setOpen] = useState<NoteRow | null>(null);
   const reload = useCallback(async () => {
     try {
       setNotes(await listNotes());
@@ -154,75 +165,32 @@ export function NotesBar({
     const t = setInterval(() => document.visibilityState === "visible" && void reload(), 15000);
     return () => clearInterval(t);
   }, [reload]);
+  return { notes, reload };
+}
 
-  const other: Who = me === "gu" ? "li" : "gu";
-  const cell = (who: Who) => {
-    const n = notes[who];
-    const mine = who === me;
-    return (
-      <button
-        key={who}
-        onClick={() => (n ? setOpen(n) : mine ? setEditing(true) : undefined)}
-        className="flex flex-col items-center gap-1 w-24 shrink-0 pt-7 relative"
-      >
-        {(n || mine) && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 max-w-[120px] rounded-2xl bg-neutral-800 border border-white/10 px-2.5 py-1 text-[11px] leading-tight shadow">
-            {n ? (
-              <>
-                {n.text && <p className="truncate">{n.text}</p>}
-                {n.music && <MusicChip m={n.music} />}
-              </>
-            ) : (
-              <span className="text-white/50 flex items-center gap-0.5"><Plus size={10} /> nota</span>
-            )}
-          </div>
-        )}
-        <span className={`w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br ${colors[who]} flex items-center justify-center font-black`}>
-          {avatars[who] ? <img src={avatars[who]!} alt="" className="w-full h-full object-cover" /> : initials[who]}
-        </span>
-        <span className="text-[10px] text-white/50">{mine ? "sua nota" : NAME[who]}</span>
-      </button>
-    );
-  };
-
-  if (!notes.gu && !notes.li && !editing) {
-    // mostra só o espaço pra criar a sua
-  }
-
+/** Balãozinho pequeno sobre a foto de perfil (estilo Instagram). */
+export function NoteBubble({ note, onClick }: { note: NoteRow; onClick: () => void }) {
   return (
-    <>
-      <div className="flex gap-2 px-3 pt-1 pb-2 border-b border-white/10 bg-neutral-950 overflow-x-auto">
-        {cell(me)}
-        {notes[other] && cell(other)}
-      </div>
-      {editing && (
-        <NoteEditor
-          me={me}
-          current={notes[me]}
-          onClose={() => setEditing(false)}
-          onDone={() => {
-            setEditing(false);
-            void reload();
-          }}
-        />
+    <span
+      role="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="absolute -top-2.5 left-6 z-10 max-w-[92px] rounded-xl rounded-bl-sm bg-neutral-800 border border-white/15 px-1.5 py-0.5 text-[9px] leading-tight font-normal text-white shadow-lg text-left"
+    >
+      {note.text ? <span className="block truncate">{note.text}</span> : null}
+      {note.music && (
+        <span className="flex items-center gap-0.5 text-white/70 truncate">
+          <Music2 size={8} className="shrink-0" />
+          <span className="truncate">{note.music.title}</span>
+        </span>
       )}
-      {open && (
-        <NoteView
-          note={open}
-          me={me}
-          onClose={() => setOpen(null)}
-          onEdit={() => {
-            setOpen(null);
-            setEditing(true);
-          }}
-          onChanged={() => void reload()}
-        />
-      )}
-    </>
+    </span>
   );
 }
 
-function NoteEditor({ me, current, onClose, onDone }: { me: Who; current: NoteRow | null; onClose: () => void; onDone: () => void }) {
+export function NoteEditor({ me, current, onClose, onDone }: { me: Who; current: NoteRow | null; onClose: () => void; onDone: () => void }) {
   const [text, setText] = useState(current?.text ?? "");
   const [music, setMusic] = useState<Music | null>(current?.music ?? null);
   const [picking, setPicking] = useState(false);
@@ -297,7 +265,7 @@ function NoteEditor({ me, current, onClose, onDone }: { me: Who; current: NoteRo
   );
 }
 
-function NoteView({ note, me, onClose, onEdit, onChanged }: { note: NoteRow; me: Who; onClose: () => void; onEdit: () => void; onChanged: () => void }) {
+export function NoteView({ note, me, onClose, onEdit, onChanged }: { note: NoteRow; me: Who; onClose: () => void; onEdit: () => void; onChanged: () => void }) {
   const mine = note.author === me;
   const [reply, setReply] = useState("");
   const [liked, setLiked] = useState(note.liked_by.includes(me));

@@ -15,6 +15,8 @@ import {
   Trash2,
   Loader2,
   Check,
+  PlusSquare,
+  StickyNote,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, listSongs, addSong, deleteSong } from "@/lib/chat.functions";
@@ -133,7 +135,7 @@ function resizeToDataUrl(file: File): Promise<string> {
 }
 
 type Song = { id: string; title: string; url: string | null; added_by: string };
-type View = "root" | "profile" | "wallpaper" | "music";
+type View = "root" | "profile" | "wallpaper" | "music" | "post";
 
 export function ChatMenu({
   open,
@@ -155,6 +157,7 @@ export function ChatMenu({
   onSaveBio,
   onPostStory,
   onViewMyStories,
+  onNote,
 }: {
   open: boolean;
   onClose: () => void;
@@ -175,6 +178,7 @@ export function ChatMenu({
   onSaveBio: (b: string) => Promise<void>;
   onPostStory: (f: File) => Promise<void>;
   onViewMyStories: (() => void) | null;
+  onNote: () => void;
 }) {
   const [view, setView] = useState<View>("root");
   const [songs, setSongs] = useState<Song[]>([]);
@@ -256,7 +260,7 @@ export function ChatMenu({
     </button>
   );
 
-  const titles: Record<View, string> = { root: "Menu", profile: "Editar perfil", wallpaper: "Personalizar", music: "Músicas" };
+  const titles: Record<View, string> = { root: "Menu", profile: "Editar perfil", wallpaper: "Personalizar", music: "Músicas", post: "Postar" };
   const song = songs[current];
 
   return (
@@ -290,6 +294,7 @@ export function ChatMenu({
         <div className="flex-1 overflow-y-auto p-2">
           {view === "root" && (
             <>
+              <Item icon={<PlusSquare size={16} />} label="Postar" onClick={() => setView("post")} />
               <Item icon={<User size={16} />} label="Editar perfil" onClick={() => setView("profile")} />
               <Item icon={<ImageIcon size={16} />} label="Personalizar" onClick={() => setView("wallpaper")} />
               <Item icon={<Gamepad2 size={16} />} label="Jogos" onClick={() => { onClose(); onGames(); }} />
@@ -338,13 +343,18 @@ export function ChatMenu({
                   {bioSaved ? "salvo!" : "Salvar bio"}
                 </button>
               </div>
+            </div>
+          )}
+
+          {view === "post" && (
+            <div className="space-y-3 py-2">
               <div className="w-full px-2 space-y-2">
                 <p className="text-xs text-white/50">Story (some depois de 24h)</p>
                 <label className="block text-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 py-2 text-sm font-medium cursor-pointer">
-                  {postingStory ? "postando..." : "Postar story"}
+                  {postingStory ? "abrindo..." : "Postar story (foto ou vídeo)"}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     className="hidden"
                     disabled={postingStory}
                     onChange={async (e) => {
@@ -366,9 +376,14 @@ export function ChatMenu({
                   </button>
                 )}
               </div>
+              <div className="w-full px-2 space-y-2">
+                <p className="text-xs text-white/50">Nota (some depois de 24h)</p>
+                <button onClick={() => { onClose(); onNote(); }} className="w-full flex items-center justify-center gap-2 rounded-full bg-white/10 py-2 text-sm">
+                  <StickyNote size={15} /> Postar / editar nota
+                </button>
+              </div>
             </div>
           )}
-
           {view === "wallpaper" && (
             <div className="p-2">
               <label className="flex items-center justify-center gap-2 w-full py-3 mb-3 rounded-xl bg-white/10 text-sm cursor-pointer active:bg-white/20">

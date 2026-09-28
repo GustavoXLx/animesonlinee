@@ -17,6 +17,7 @@ export type Story = {
   id: string;
   author: "gu" | "li";
   media_path: string;
+  media_type?: string;
   url: string | null;
   liked_by: string[];
   seen_by: string[];
@@ -45,14 +46,15 @@ export function useStories() {
 }
 
 export async function uploadStory(who: "gu" | "li", file: File, music: Music | null = null) {
-  const ext = file.name.split(".").pop() || "jpg";
+  const type = file.type.startsWith("video") ? "video" : "image";
+  const ext = file.name.split(".").pop() || (type === "video" ? "mp4" : "jpg");
   const { path, token } = await createUpload({ data: { ext } });
   const { error } = await supabase.storage
     .from("chat-media")
     .uploadToSignedUrl(path, token, file, { contentType: file.type });
   if (error) throw error;
-  if (music) await setStoryMusic({ data: { who, path, music } });
-  else await postStory({ data: { who, path, type: "image" } });
+  if (music) await setStoryMusic({ data: { who, path, music, type } });
+  else await postStory({ data: { who, path, type } });
 }
 
 /** Borda colorida em volta da foto quando há story. */
@@ -89,13 +91,18 @@ export function StoryViewer({
   const s = list[i];
   const mineStory = s?.author === me;
   const startRef = useRef(Date.now());
-  const DURATION = s?.music ? 15000 : 6000;
+  const [vidDur, setVidDur] = useState(0);
+  const isVid = s?.media_type === "video";
+  const DURATION = isVid && vidDur && isFinite(vidDur) ? Math.min(60000, vidDur * 1000) : s?.music ? 15000 : 6000;
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => setVidDur(0), [s?.id]);
   useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (paused) a.pause();
-    else void a.play().catch(() => {});
+    for (const a of [audioRef.current, videoRef.current]) {
+      if (!a) continue;
+      if (paused) a.pause();
+      else void a.play().catch(() => {});
+    }
   }, [paused, s?.id]);
 
   useEffect(() => {
@@ -194,7 +201,21 @@ export function StoryViewer({
             </div>
           </>
         )}
-        {s.url && <img src={s.url} alt="" className="max-h-full max-w-full object-contain select-none" draggable={false} />}
+        {s.url &&
+          (s.media_type === "video" ? (
+            <video
+              key={s.id}
+              ref={videoRef}
+              src={s.url}
+              autoPlay
+              playsInline
+              muted={!!s.music}
+              onLoadedMetadata={(e) => setVidDur(e.currentTarget.duration)}
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <img src={s.url} alt="" className="max-h-full max-w-full object-contain select-none" draggable={false} />
+          ))}
         {sent && (
           <div className="absolute bottom-6 bg-white/15 backdrop-blur rounded-full px-4 py-2 text-xs">resposta enviada</div>
         )}
@@ -242,6 +263,79 @@ export function StoryViewer({
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Tela de criação do story: prévia + música opcional + botão postar. */
+export function StoryComposer({
+  file,
+  onClose,
+  onPickMusic,
+  music,
+  clearMusic,
+  onPost,
+}: {
+  file: File;
+  onClose: () => void;
+  onPickMusic: () => void;
+  music: Music | null;
+  clearMusic: () => void;
+  onPost: () => Promise<void>;
+}) {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const isVid = file.type.startsWith("video");
+  useEffect(() => {
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  return (
+    <div className="fixed inset-0 z-[72] bg-black text-white flex flex-col">
+      <div className="flex items-center gap-2 p-3">
+        <button onClick={onClose} aria-label="Cancelar" className="p-1"><X size={22} /></button>
+        <p className="flex-1 text-sm font-semibold">Novo story</p>
+      </div>
+      <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+        {url && (isVid ? (
+          <video src={url} autoPlay loop playsInline muted={!!music} className="max-h-full max-w-full object-contain" />
+        ) : (
+          <img src={url} alt="" className="max-h-full max-w-full object-contain" />
+        ))}
+        {music && (
+          <>
+            <audio src={music.preview} autoPlay loop />
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-xl bg-black/60 backdrop-blur px-2.5 py-1.5 max-w-[80%]">
+              {music.cover && <img src={music.cover} alt="" className="w-9 h-9 rounded-md" />}
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate">♪ {music.title}</p>
+                <p className="text-[10px] text-white/70 truncate">{music.artist}</p>
+              </div>
+              <button onClick={clearMusic} aria-label="Remover música" className="p-1"><X size={14} /></button>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="p-4 pb-6 flex gap-3">
+        <button onClick={onPickMusic} className="flex-1 rounded-full bg-white/15 py-3 text-sm font-medium">
+          {music ? "trocar música" : "♪ pesquisar música"}
+        </button>
+        <button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await onPost();
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="flex-1 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          {busy ? "postando..." : "Postar"}
+        </button>
       </div>
     </div>
   );
