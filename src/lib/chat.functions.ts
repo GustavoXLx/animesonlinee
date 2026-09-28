@@ -557,3 +557,47 @@ export const peekNew = createServerFn({ method: "POST" })
         : null,
     };
   });
+
+/** Playlist compartilhada do chat. */
+export const listSongs = createServerFn({ method: "POST" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const { data: rows } = await db
+    .from("playlist")
+    .select("id, title, media_path, added_by, created_at")
+    .order("created_at", { ascending: true });
+  const list = rows ?? [];
+  if (!list.length) return { rows: [] as { id: string; title: string; url: string | null; added_by: string }[] };
+  const { data: signed } = await db.storage
+    .from("chat-media")
+    .createSignedUrls(list.map((r) => r.media_path), SIGNED_TTL);
+  const map = new Map<string, string>();
+  (signed ?? []).forEach((s) => s.path && s.signedUrl && map.set(s.path, s.signedUrl));
+  return {
+    rows: list.map((r) => ({ id: r.id, title: r.title, url: map.get(r.media_path) ?? null, added_by: r.added_by })),
+  };
+});
+
+export const addSong = createServerFn({ method: "POST" })
+  .inputValidator((d: { title: string; path: string; who: "gu" | "li" }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db.from("playlist").insert({
+      title: (data.title || "música").slice(0, 120),
+      media_path: data.path,
+      added_by: data.who === "li" ? "li" : "gu",
+    });
+    return { ok: true as const };
+  });
+
+export const deleteSong = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const { data: row } = await db.from("playlist").select("media_path").eq("id", data.id).maybeSingle();
+    if (row?.media_path) await db.storage.from("chat-media").remove([row.media_path]);
+    await db.from("playlist").delete().eq("id", data.id);
+    return { ok: true as const };
+  });
