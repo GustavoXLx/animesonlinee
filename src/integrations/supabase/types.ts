@@ -85,6 +85,30 @@ export type Database = {
           },
         ]
       }
+      playlist: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          media_path: string
+          title: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          media_path: string
+          title: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          media_path?: string
+          title?: string
+        }
+        Relationships: []
+      }
       site_state: {
         Row: {
           chat_open: boolean

@@ -40,7 +40,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { VoiceCall } from "./VoiceCall";
-import { Phone } from "lucide-react";
+import { ChatMenu, useWallpaper } from "./ChatMenu";
+import { Phone, Menu as MenuIcon } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
 import { rememberWho, markNotifiedNow } from "@/lib/chatNotify";
@@ -219,6 +220,8 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [bday, setBday] = useState(false);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const wallpaper = useWallpaper();
   const [menuMsg, setMenuMsg] = useState<Msg | null>(null);
   const [editing, setEditing] = useState<Msg | null>(null);
   const [avatarView, setAvatarView] = useState<string | null>(null);
@@ -755,7 +758,25 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const otherInfo = AVATARS[other];
 
   return (
-    <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col">
+    <div className="fixed inset-0 bg-neutral-950 text-white flex flex-col" style={wallpaper.style}>
+      <ChatMenu
+        open={showMenu}
+        onClose={() => setShowMenu(false)}
+        me={me}
+        myAvatar={avatars[me] ?? null}
+        myName={AVATARS[me].name}
+        myInitial={AVATARS[me].initial}
+        myColor={AVATARS[me].color}
+        uploadingAvatar={uploadingAvatar === me}
+        onUploadAvatar={(f) => void uploadAvatar(me, f)}
+        wp={wallpaper.wp}
+        setWp={wallpaper.setWp}
+        onGames={() => setShowGames(true)}
+        onSearch={() => {
+          setShowSearch(true);
+          setSearch("");
+        }}
+      />
       {bday && <BirthdayEffect onClose={() => setBday(false)} />}
       {liEffect && <LiEffect onClose={() => setLiEffect(false)} />}
       <header className="flex items-center gap-3 px-3 py-3 border-b border-white/10 bg-neutral-950">
@@ -763,11 +784,11 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           <ArrowLeft size={22} />
         </button>
         <button
-          onClick={() => setShowGames(true)}
-          className="p-1.5 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600"
-          aria-label="Jogos"
+          onClick={() => setShowMenu(true)}
+          className="p-1.5 rounded-full bg-white/10 active:bg-white/20"
+          aria-label="Menu"
         >
-          <Gamepad2 size={16} />
+          <MenuIcon size={18} />
         </button>
         <button
           onClick={() => setShowGallery(true)}
@@ -829,16 +850,6 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
             </button>
           )}
         </VoiceCall>
-        <button
-          onClick={() => {
-            setShowSearch((v) => !v);
-            setSearch("");
-          }}
-          aria-label="Buscar na conversa"
-          className={`p-1.5 rounded-full ${showSearch ? "bg-white/20" : "bg-white/10"}`}
-        >
-          <Search size={14} />
-        </button>
         <button
           onClick={() => {
             sessionStorage.removeItem("chat-me");
