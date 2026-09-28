@@ -38,6 +38,24 @@ export type Database = {
         }
         Relationships: []
       }
+      house_state: {
+        Row: {
+          data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           author: string
