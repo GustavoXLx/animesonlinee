@@ -88,6 +88,33 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          author: string
+          created_at: string
+          id: string
+          liked_by: string[]
+          music: Json | null
+          text: string
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          id?: string
+          liked_by?: string[]
+          music?: Json | null
+          text?: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          id?: string
+          liked_by?: string[]
+          music?: Json | null
+          text?: string
+        }
+        Relationships: []
+      }
       playlist: {
         Row: {
           added_by: string
@@ -141,6 +168,7 @@ export type Database = {
           liked_by: string[]
           media_path: string
           media_type: string
+          music: Json | null
           seen_by: string[]
         }
         Insert: {
@@ -150,6 +178,7 @@ export type Database = {
           liked_by?: string[]
           media_path: string
           media_type?: string
+          music?: Json | null
           seen_by?: string[]
         }
         Update: {
@@ -159,6 +188,7 @@ export type Database = {
           liked_by?: string[]
           media_path?: string
           media_type?: string
+          music?: Json | null
           seen_by?: string[]
         }
         Relationships: []
