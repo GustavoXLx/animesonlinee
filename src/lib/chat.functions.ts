@@ -821,3 +821,107 @@ export const reactNote = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+// ===================== Nossa Casa =====================
+const HOME_FRESH = 15_000;
+type Presence = { who: string; seen_at: string; together_date: string; together_s: number; sit_id: string | null; sit_at: string | null };
+
+async function readPresence(sb: Awaited<ReturnType<typeof admin>>) {
+  const { data } = await sb.from("home_presence").select("*");
+  const rows = (data ?? []) as Presence[];
+  const get = (w: string) => rows.find((r) => r.who === w);
+  return { gu: get("gu"), li: get("li") };
+}
+
+function presenceCtx(p: { gu?: Presence; li?: Presence }, day: string) {
+  const now = Date.now();
+  const fresh = (r?: Presence) => !!r && now - new Date(r.seen_at).getTime() < HOME_FRESH;
+  const both = fresh(p.gu) && fresh(p.li);
+  const tog = (r?: Presence) => (r && r.together_date === day ? r.together_s : 0);
+  const sitting = (r?: Presence) => fresh(r) && !!r!.sit_id;
+  return {
+    online: { gu: fresh(p.gu), li: fresh(p.li) },
+    sits: { gu: sitting(p.gu) ? p.gu!.sit_id : null, li: sitting(p.li) ? p.li!.sit_id : null },
+    ctx: { bothOnline: both, togetherS: Math.min(tog(p.gu), tog(p.li)), bothSitting: both && sitting(p.gu) && sitting(p.li) },
+  };
+}
+
+/** Lê, altera e grava a casa com controle de versão (evita um sobrescrever o outro). */
+async function mutateHome<T>(fn: (h: import("./home").Home) => T): Promise<{ home: import("./home").Home; out: T }> {
+  const { normalize } = await import("./home");
+  const sb = await admin();
+  for (let i = 0; i < 4; i++) {
+    const { data: row } = await sb.from("couple_home").select("data,version").eq("id", "main").maybeSingle();
+    const h = normalize(row?.data as never);
+    const out = fn(h);
+    if (!row) {
+      const { error } = await sb.from("couple_home").insert({ id: "main", data: h as never, version: 1 });
+      if (!error) return { home: h, out };
+      continue;
+    }
+    const { data: upd } = await sb
+      .from("couple_home")
+      .update({ data: h as never, version: row.version + 1, updated_at: new Date().toISOString() })
+      .eq("id", "main")
+      .eq("version", row.version)
+      .select("id");
+    if (upd && upd.length) return { home: h, out };
+  }
+  throw new Error("Tente de novo");
+}
+
+const whoOk = (w: unknown): "gu" | "li" => {
+  if (w !== "gu" && w !== "li") throw new Error("who");
+  return w;
+};
+
+export const homePing = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; sit?: string | null }) => ({ who: whoOk(d.who), sit: d.sit === undefined ? undefined : d.sit ? String(d.sit).slice(0, 40) : null }))
+  .handler(async ({ data }) => {
+    await gate();
+    const { today, checkMissions } = await import("./home");
+    const sb = await admin();
+    const day = today();
+    const now = Date.now();
+    let p = await readPresence(sb);
+    const mine = p[data.who];
+    const other = p[data.who === "gu" ? "li" : "gu"];
+    const otherFresh = !!other && now - new Date(other.seen_at).getTime() < HOME_FRESH;
+    const prevSeen = mine ? new Date(mine.seen_at).getTime() : 0;
+    let tog = mine && mine.together_date === day ? mine.together_s : 0;
+    if (otherFresh && now - prevSeen < HOME_FRESH) tog += Math.round((now - prevSeen) / 1000);
+    const row: Record<string, unknown> = { who: data.who, seen_at: new Date(now).toISOString(), together_date: day, together_s: tog };
+    if (data.sit !== undefined) {
+      row.sit_id = data.sit;
+      row.sit_at = data.sit ? new Date(now).toISOString() : null;
+    }
+    await sb.from("home_presence").upsert(row as never);
+    p = await readPresence(sb);
+    const pc = presenceCtx(p, day);
+    const { home } = await mutateHome((h) => checkMissions(h, pc.ctx));
+    return { home, online: pc.online, sits: pc.sits, together: pc.ctx.togetherS };
+  });
+
+export const homeAct = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; action: unknown }) => {
+    whoOk(d.who);
+    if (!d.action || typeof d.action !== "object") throw new Error("action");
+    return d as { who: "gu" | "li"; action: import("./home").HomeAction };
+  })
+  .handler(async ({ data }) => {
+    await gate();
+    const { applyHome, checkMissions, today } = await import("./home");
+    const sb = await admin();
+    const pc = presenceCtx(await readPresence(sb), today());
+    const otherOnline = pc.online[data.who === "gu" ? "li" : "gu"];
+    try {
+      const { home, out } = await mutateHome((h) => {
+        const msg = applyHome(h, data.who, data.action, otherOnline);
+        checkMissions(h, pc.ctx);
+        return msg;
+      });
+      return { home, msg: out, error: null as string | null };
+    } catch (e) {
+      return { home: null, msg: "", error: e instanceof Error ? e.message : "erro" };
+    }
+  });
