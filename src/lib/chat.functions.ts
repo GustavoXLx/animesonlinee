@@ -631,7 +631,7 @@ export const listStories = createServerFn({ method: "POST" }).handler(async () =
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data: rows } = await db
     .from("stories")
-    .select("id, author, media_path, media_type, liked_by, seen_by, created_at")
+    .select("id, author, media_path, media_type, liked_by, seen_by, created_at, music")
     .gt("created_at", since)
     .order("created_at", { ascending: true });
   const list = rows ?? [];
@@ -705,4 +705,107 @@ export const likeStory = createServerFn({ method: "POST" })
       media_url: signed?.signedUrl ?? null,
     });
     return { ok: true as const, liked: true };
+  });
+
+export type Music = { title: string; artist: string; cover: string; preview: string };
+const cleanMusic = (m: unknown): Music | null => {
+  if (!m || typeof m !== "object") return null;
+  const x = m as Record<string, unknown>;
+  const s = (v: unknown, n = 300) => (typeof v === "string" ? v.slice(0, n) : "");
+  const preview = s(x.preview, 600);
+  if (!/^https:\/\//.test(preview)) return null;
+  return { title: s(x.title, 120), artist: s(x.artist, 120), cover: s(x.cover, 600), preview };
+};
+
+/** Busca faixas na iTunes Search API (prévia de 30s). */
+export const searchMusic = createServerFn({ method: "POST" })
+  .inputValidator((d: { q: string }) => ({ q: String(d?.q ?? "").slice(0, 80) }))
+  .handler(async ({ data }) => {
+    await gate();
+    if (!data.q.trim()) return { rows: [] as Music[] };
+    const url = `https://itunes.apple.com/search?media=music&entity=song&limit=20&country=BR&term=${encodeURIComponent(data.q)}`;
+    const r = await fetch(url);
+    if (!r.ok) return { rows: [] as Music[] };
+    const j = (await r.json()) as { results?: Record<string, string>[] };
+    const rows = (j.results ?? [])
+      .filter((x) => x.previewUrl)
+      .map((x) => ({
+        title: x.trackName ?? "",
+        artist: x.artistName ?? "",
+        cover: (x.artworkUrl100 ?? "").replace("100x100", "300x300"),
+        preview: x.previewUrl,
+      }));
+    return { rows };
+  });
+
+export const setStoryMusic = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; path: string; music: Music | null }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db.from("stories").insert({
+      author: data.who === "li" ? "li" : "gu",
+      media_path: data.path,
+      media_type: "image",
+      music: cleanMusic(data.music),
+    });
+    return { ok: true as const };
+  });
+
+export const listNotes = createServerFn({ method: "POST" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: rows } = await db
+    .from("notes")
+    .select("id, author, text, music, liked_by, created_at")
+    .gt("created_at", since)
+    .order("created_at", { ascending: false });
+  const out: { gu: null | Record<string, unknown>; li: null | Record<string, unknown> } = { gu: null, li: null };
+  for (const r of rows ?? []) if ((r.author === "gu" || r.author === "li") && !out[r.author]) out[r.author] = r;
+  return out as unknown as { gu: NoteRow | null; li: NoteRow | null };
+});
+export type NoteRow = { id: string; author: "gu" | "li"; text: string; music: Music | null; liked_by: string[]; created_at: string };
+
+export const postNote = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; text: string; music: Music | null }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const who = data.who === "li" ? "li" : "gu";
+    await db.from("notes").delete().eq("author", who);
+    await db.from("notes").insert({ author: who, text: (data.text ?? "").slice(0, 60), music: cleanMusic(data.music) });
+    return { ok: true as const };
+  });
+
+export const deleteNote = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li" }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db.from("notes").delete().eq("author", data.who === "li" ? "li" : "gu");
+    return { ok: true as const };
+  });
+
+/** Curte ou responde uma nota (vira mensagem no chat). */
+export const reactNote = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; me: "gu" | "li"; reply?: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const { data: n } = await db.from("notes").select("author, text, music, liked_by").eq("id", data.id).maybeSingle();
+    if (!n) return { ok: false as const };
+    const name = (w: string) => (w === "gu" ? "bb gu" : "bb li");
+    const m = n.music as Music | null;
+    const quote = `“${n.text}”${m ? ` ♪ ${m.title} – ${m.artist}` : ""}`;
+    const reply = (data.reply ?? "").trim().slice(0, 1000);
+    if (!reply) {
+      if (n.liked_by.includes(data.me)) return { ok: true as const };
+      await db.from("notes").update({ liked_by: [...n.liked_by, data.me] }).eq("id", data.id);
+    }
+    await db.from("messages").insert({
+      author: data.me,
+      text: reply ? `↪ nota de ${name(n.author)}: ${quote}\n${reply}` : `${name(data.me)} curtiu a nota de ${name(n.author)}: ${quote}`,
+    });
+    return { ok: true as const };
   });
