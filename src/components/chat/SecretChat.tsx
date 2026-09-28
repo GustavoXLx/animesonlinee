@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GamesPanel } from "@/components/games/GamesPanel";
 import { VoiceCall } from "./VoiceCall";
 import { ChatMenu, useWallpaper, useBubble } from "./ChatMenu";
+import { NossaCasa } from "@/components/house/NossaCasa";
 import { useStories, StoryViewer, storyRing, uploadStory, StoryComposer, type Story } from "./Stories";
 import { MusicPicker, useNotes, NoteBubble, NoteEditor, NoteView } from "./Notes";
 import type { Music as StoryMusic, NoteRow } from "@/lib/chat.functions";
@@ -212,6 +213,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
+  const [showHouse, setShowHouse] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => void prefetchGallery(), 1200);
@@ -835,6 +837,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         wp={wallpaper.wp}
         setWp={wallpaper.setWp}
         onGames={() => setShowGames(true)}
+        onHouse={() => setShowHouse(true)}
         onSearch={() => {
           setShowSearch(true);
           setSearch("");
@@ -1300,6 +1303,9 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
 
+      {showHouse && (
+        <NossaCasa me={me} avatars={avatars} onClose={() => setShowHouse(false)} onGames={() => { setShowHouse(false); setShowGames(true); }} />
+      )}
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
 
       {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
