@@ -1,3 +1,4 @@
+import { FREE_EXTRAS, FUT_EXTRAS } from "./leilaoExtras";
 /**
  * Temas do jogo "Leilão".
  * Cada pessoa monta um time de 5 itens (5 vs 5).
@@ -806,6 +807,23 @@ export const THEMES: LeilaoTheme[] = [
   ]),
 ];
 
+// soma as opções extras (sem repetir) para a fila ter bastante folga
+for (const t of THEMES) {
+  const add = (pool: string[], extra: string[] = []) => {
+    for (const x of extra) if (!pool.includes(x)) pool.push(x);
+  };
+  if (t.football) {
+    const e = FUT_EXTRAS[t.id];
+    if (e) {
+      add(t.pools[0], e[0]);
+      add(t.pools[1], e[1]);
+      add(t.pools[2], e[2]);
+      if (t.pools[3] !== t.pools[2]) add(t.pools[3], e[2]);
+      add(t.pools[4], e[3]);
+    }
+  } else add(t.pools[0], FREE_EXTRAS[t.id]);
+}
+
 const USED_KEY = "lel_used_v1";
 const BUDGETS = [50, 60, 80, 100, 120, 150, 200, 250];
 
@@ -843,7 +861,7 @@ const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 /**
  * Sorteia a fila do leilão com folga: dá pra montar os dois times (5 vs 5).
  * Futebol: 3 goleiros, 3 defensores, 6 meias e 3 atacantes na fila.
- * Livre: 12 itens do pool.
+ * Livre: 22 itens do pool.
  */
 export function draftLots(theme: LeilaoTheme): Lot[] {
   const used = new Set<string>();
@@ -859,15 +877,15 @@ export function draftLots(theme: LeilaoTheme): Lot[] {
   };
 
   if (!theme.football) {
-    return take(theme.pools[0], 12).map((item) => ({ item, pos: FREE_POS }));
+    return take(theme.pools[0], 22).map((item) => ({ item, pos: FREE_POS }));
   }
 
   const [gk, def, mid, , att] = theme.pools;
   const groups: Lot[][] = [
-    take(gk, 3).map((item) => ({ item, pos: "Goleiro" })),
-    take(def, 3).map((item) => ({ item, pos: "Defensor" })),
-    take(mid, 6).map((item) => ({ item, pos: "Meio-campo" })),
-    take(att, 3).map((item) => ({ item, pos: "Atacante" })),
+    take(gk, 5).map((item) => ({ item, pos: "Goleiro" })),
+    take(def, 5).map((item) => ({ item, pos: "Defensor" })),
+    take(mid, 10).map((item) => ({ item, pos: "Meio-campo" })),
+    take(att, 5).map((item) => ({ item, pos: "Atacante" })),
   ];
 
   // intercala as posições pra fila não vir toda agrupada
