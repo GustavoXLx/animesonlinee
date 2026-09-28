@@ -601,3 +601,108 @@ export const deleteSong = createServerFn({ method: "POST" })
     await db.from("playlist").delete().eq("id", data.id);
     return { ok: true as const };
   });
+
+/** Bios dos perfis. */
+export const getBios = createServerFn({ method: "GET" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const { data: rows } = await db.from("chat_profiles").select("id, bio");
+  const out = { gu: "", li: "" };
+  (rows ?? []).forEach((r) => {
+    if (r.id === "gu" || r.id === "li") out[r.id] = r.bio ?? "";
+  });
+  return out;
+});
+
+export const setBio = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; bio: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const who = data.who === "li" ? "li" : "gu";
+    await db.from("chat_profiles").upsert({ id: who, bio: (data.bio ?? "").slice(0, 300) }, { onConflict: "id" });
+    return { ok: true as const };
+  });
+
+/** Stories das últimas 24h. */
+export const listStories = createServerFn({ method: "POST" }).handler(async () => {
+  await gate();
+  const db = await admin();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: rows } = await db
+    .from("stories")
+    .select("id, author, media_path, media_type, liked_by, seen_by, created_at")
+    .gt("created_at", since)
+    .order("created_at", { ascending: true });
+  const list = rows ?? [];
+  if (!list.length) return { rows: [] };
+  const { data: signed } = await db.storage
+    .from("chat-media")
+    .createSignedUrls(list.map((r) => r.media_path), SIGNED_TTL);
+  const map = new Map<string, string>();
+  (signed ?? []).forEach((s) => s.path && s.signedUrl && map.set(s.path, s.signedUrl));
+  return { rows: list.map((r) => ({ ...r, url: map.get(r.media_path) ?? null })) };
+});
+
+export const postStory = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li"; path: string; type: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db.from("stories").insert({
+      author: data.who === "li" ? "li" : "gu",
+      media_path: data.path,
+      media_type: data.type === "video" ? "video" : "image",
+    });
+    return { ok: true as const };
+  });
+
+export const deleteStory = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    await db.from("stories").delete().eq("id", data.id);
+    return { ok: true as const };
+  });
+
+export const seeStory = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; me: "gu" | "li" }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const { data: row } = await db.from("stories").select("seen_by").eq("id", data.id).maybeSingle();
+    if (row && !row.seen_by.includes(data.me)) {
+      await db.from("stories").update({ seen_by: [...row.seen_by, data.me] }).eq("id", data.id);
+    }
+    return { ok: true as const };
+  });
+
+/** Curte o story e avisa no chat. */
+export const likeStory = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; me: "gu" | "li" }) => d)
+  .handler(async ({ data }) => {
+    await gate();
+    const db = await admin();
+    const { data: row } = await db
+      .from("stories")
+      .select("author, media_path, liked_by")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!row) return { ok: false as const };
+    if (row.liked_by.includes(data.me)) {
+      await db.from("stories").update({ liked_by: row.liked_by.filter((x) => x !== data.me) }).eq("id", data.id);
+      return { ok: true as const, liked: false };
+    }
+    await db.from("stories").update({ liked_by: [...row.liked_by, data.me] }).eq("id", data.id);
+    const name = (w: string) => (w === "gu" ? "bb gu" : "bb li");
+    const { data: signed } = await db.storage.from("chat-media").createSignedUrl(row.media_path, SIGNED_TTL);
+    await db.from("messages").insert({
+      author: data.me,
+      text: `${name(data.me)} curtiu um story de ${name(row.author)}`,
+      media_type: "story_like",
+      media_path: row.media_path,
+      media_url: signed?.signedUrl ?? null,
+    });
+    return { ok: true as const, liked: true };
+  });
