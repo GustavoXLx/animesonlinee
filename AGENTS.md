@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Gallery grids use Storage-rendered 360px image previews while fullscreen viewing keeps original signed media URLs, reducing transfer time without degrading originals.
+- Nossa Casa is a React Three Fiber isometric scene using bundled CC0 Kenney GLBs in public/house; hearts are awarded only by server-checked duo missions (home_presence heartbeat) so nobody earns alone.

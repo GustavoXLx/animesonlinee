@@ -158,8 +158,8 @@ function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: nu
           <boxGeometry args={[ROOM, 0.12, 0.02]} />
           <meshStandardMaterial color="#f7f1e8" />
         </mesh>
-        <Window x={1.4} night={night} />
-        <Window x={4.6} night={night} />
+        <Window x={1.1} night={night} />
+        <Window x={3.4} night={night} />
       </group>
       {/* parede esquerda (x=0) */}
       <mesh position={[-0.08, WALL_H / 2, ROOM / 2]} receiveShadow castShadow>
@@ -170,8 +170,8 @@ function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: nu
         <boxGeometry args={[0.02, 0.12, ROOM]} />
         <meshStandardMaterial color="#f7f1e8" />
       </mesh>
-      <Frame z={2} />
-      <Frame z={3.6} small />
+      <Frame z={1.5} />
+      <Frame z={2.8} small />
     </group>
   );
 }
@@ -371,7 +371,7 @@ function CameraRig() {
     const cam = camera as THREE.OrthographicCamera;
     cam.position.set(ROOM / 2 + 10, 9.5, ROOM / 2 + 10);
     cam.lookAt(ROOM / 2, 0.5, ROOM / 2);
-    cam.zoom = Math.min(size.width, size.height * 1.25) / (ROOM * 1.75);
+    cam.zoom = Math.min(size.width, size.height * 1.25) / (ROOM * 1.6);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
   return null;
