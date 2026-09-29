@@ -28,12 +28,6 @@ function useFurn(k: string) {
   const { scene } = useGLTF(furnUrl(k));
   return { scene, size: measure(scene) };
 }
-export function footprint(k: string, r: number) {
-  const g = useGLTF.cache?.get?.(furnUrl(k));
-  void g;
-  return null;
-}
-
 /** item "de cima" (TV, abajur...) apoia na superfície embaixo dele */
 function BaseHeight({ item, items, children }: { item: PlacedItem; items: PlacedItem[]; children: (y: number) => React.ReactNode }) {
   const base = TOP_ITEMS.has(item.k)
