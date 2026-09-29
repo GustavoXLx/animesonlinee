@@ -94,7 +94,7 @@ export const PETS = [
   { kind: "penguin", name: "Pinguim" },
 ];
 
-export const ROOM = 6; // metros (unidades) de cada lado
+export const ROOM = 4.5; // metros (unidades) de cada lado
 
 export type PlacedItem = { uid: string; k: string; x: number; z: number; r: number };
 export type MissionId = "juntos" | "tempo" | "sentar" | "pet" | "decor";
@@ -136,13 +136,13 @@ export function starter(): Home {
   return {
     coins: 60,
     items: [
-      { uid: "s1", k: "rugRectangle", x: 3, z: 3.4, r: 0 },
-      { uid: "s2", k: "loungeSofa", x: 3, z: 4.6, r: 2 },
-      { uid: "s3", k: "tableCoffee", x: 3, z: 3.4, r: 0 },
-      { uid: "s4", k: "pottedPlant", x: 0.5, z: 0.5, r: 0 },
-      { uid: "s5", k: "lampRoundFloor", x: 4.4, z: 4.8, r: 0 },
-      { uid: "s6", k: "cabinetTelevision", x: 3, z: 0.4, r: 0 },
-      { uid: "s7", k: "televisionModern", x: 3, z: 0.4, r: 0 },
+      { uid: "s1", k: "rugRectangle", x: 2.25, z: 2.6, r: 0 },
+      { uid: "s2", k: "loungeSofa", x: 2.25, z: 3.6, r: 2 },
+      { uid: "s3", k: "tableCoffee", x: 2.25, z: 2.6, r: 0 },
+      { uid: "s4", k: "pottedPlant", x: 0.4, z: 0.4, r: 0 },
+      { uid: "s5", k: "lampRoundFloor", x: 3.5, z: 3.8, r: 0 },
+      { uid: "s6", k: "cabinetTelevision", x: 2.25, z: 0.35, r: 0 },
+      { uid: "s7", k: "televisionModern", x: 2.25, z: 0.35, r: 0 },
     ],
     inv: [],
     wall: "creme",
