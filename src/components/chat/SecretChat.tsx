@@ -1,4 +1,5 @@
 import {
+import { NossaCasa } from "@/components/house/NossaCasa";
   listMessages,
   markSeen,
   listMedia,
@@ -212,6 +213,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
+  const [showHouse, setShowHouse] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => void prefetchGallery(), 1200);
@@ -835,6 +837,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         wp={wallpaper.wp}
         setWp={wallpaper.setWp}
         onGames={() => setShowGames(true)}
+        onHouse={() => setShowHouse(true)}
         onSearch={() => {
           setShowSearch(true);
           setSearch("");
@@ -1300,6 +1303,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
+      {showHouse && <NossaCasa me={me} onClose={() => setShowHouse(false)} onGames={() => { setShowHouse(false); setShowGames(true); }} />}
 
       {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
     </div>

@@ -153,6 +153,7 @@ export function ChatMenu({
   wp,
   setWp,
   onGames,
+  onHouse,
   onSearch,
   bubble,
   setBubble,
@@ -174,6 +175,7 @@ export function ChatMenu({
   wp: string;
   setWp: (v: string) => void;
   onGames: () => void;
+  onHouse: () => void;
   onSearch: () => void;
   bubble: string;
   setBubble: (v: string) => void;
@@ -324,6 +326,7 @@ export function ChatMenu({
               <Item icon={<User size={16} />} label="Editar perfil" onClick={() => setView("profile")} />
               <Item icon={<ImageIcon size={16} />} label="Personalizar" onClick={() => setView("wallpaper")} />
               <Item icon={<Gamepad2 size={16} />} label="Jogos" onClick={() => { onClose(); onGames(); }} />
+              <Item icon={<Home size={16} />} label="Nossa Casa" onClick={() => { onClose(); onHouse(); }} />
               <Item icon={<Search size={16} />} label="Buscar mensagens" onClick={() => { onClose(); onSearch(); }} />
               <Item icon={<Music size={16} />} label="Músicas" onClick={() => setView("music")} />
             </>
