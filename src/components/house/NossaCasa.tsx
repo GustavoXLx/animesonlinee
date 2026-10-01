@@ -627,7 +627,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   );
 }
 
-function PetPanel({ home, busy, onFeed, onPat }: { home: Home; busy: boolean; onFeed: () => void; onPat: () => void }) {
+function PetPanel({ pet, busy, onFeed, onPat }: { pet: Pet; busy: boolean; onFeed: () => void; onPat: () => void }) {
   const [, force] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => force((n) => n + 1), 30_000);
