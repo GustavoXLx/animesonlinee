@@ -134,121 +134,126 @@ function wallTexture(color: string) {
 }
 
 const WALL_H = 2.2;
-const FRAMES: { pos: [number, number, number]; rot: number; small?: boolean }[] = [
-  { pos: [0.02, 1.35, 1.5], rot: Math.PI / 2 },
-  { pos: [0.02, 1.35, 2.8], rot: Math.PI / 2, small: true },
-  { pos: [0.02, 1.35, 6.0], rot: Math.PI / 2 },
-  { pos: [0.02, 1.35, 7.3], rot: Math.PI / 2, small: true },
-  { pos: [2.25, 1.4, 0.02], rot: 0, small: true },
-  { pos: [6.75, 1.4, 0.02], rot: 0, small: true },
+const FRAMES: { room: number; pos: [number, number, number]; rot: number; small?: boolean }[] = [
+  { room: 0, pos: [0.02, 1.35, 1.5], rot: Math.PI / 2 },
+  { room: 0, pos: [0.02, 1.35, 3.0], rot: Math.PI / 2, small: true },
+  { room: 2, pos: [0.02, 1.35, 1.5], rot: Math.PI / 2 },
+  { room: 2, pos: [0.02, 1.35, 3.0], rot: Math.PI / 2, small: true },
+  { room: 0, pos: [2.25, 1.4, 0.02], rot: 0, small: true },
+  { room: 1, pos: [2.25, 1.4, 0.02], rot: 0, small: true },
 ];
-function Room({ home, onFloor, night, frameUrls, onFrame }: { home: Home; onFloor: (x: number, z: number) => void; night: boolean; frameUrls: (string | null)[]; onFrame: (i: number) => void }) {
-  const f = FLOORS.find((x) => x.id === home.floor) ?? FLOORS[0];
-  const w = WALLS.find((x) => x.id === home.wall) ?? WALLS[0];
-  const floorTex = useMemo(() => woodTexture(f.a, f.b), [f.a, f.b]);
-  const wallTex = useMemo(() => wallTexture(w.color), [w.color]);
+export type Door = { side: "left" | "back" | "right" | "front"; to: number; x: number; z: number };
+/** portas do cômodo (coordenadas locais) */
+export function roomDoors(r: number): Door[] {
+  const col = r % 2;
+  const row = Math.floor(r / 2);
+  const d: Door[] = [];
+  if (col === 1) d.push({ side: "left", to: r - 1, x: 0, z: ROOM / 2 });
+  if (col === 0) d.push({ side: "right", to: r + 1, x: ROOM, z: ROOM / 2 });
+  if (row === 1) d.push({ side: "back", to: r - 2, x: ROOM / 2, z: 0 });
+  if (row === 0) d.push({ side: "front", to: r + 2, x: ROOM / 2, z: ROOM });
+  return d;
+}
+const GAP = 0.8;
+/** parede com vão de porta opcional; along = eixo da parede */
+function WallSeg({ axis, at, h, door, map, color }: { axis: "x" | "z"; at: number; h: number; door: boolean; map?: THREE.Texture; color?: string }) {
+  const parts: [number, number][] = door ? [[0, ROOM / 2 - GAP / 2], [ROOM / 2 + GAP / 2, ROOM]] : [[0, ROOM]];
   return (
     <group>
-      {/* base da casa */}
-      <mesh position={[HOUSE / 2, -0.16, HOUSE / 2]} receiveShadow>
-        <boxGeometry args={[HOUSE + 0.3, 0.3, HOUSE + 0.3]} />
+      {parts.map(([a, b], i) => {
+        const len = b - a;
+        const mid = (a + b) / 2;
+        const pos: [number, number, number] = axis === "x" ? [mid, h / 2, at] : [at, h / 2, mid];
+        const size: [number, number, number] = axis === "x" ? [len + 0.16, h, 0.16] : [0.16, h, len + 0.16];
+        return (
+          <mesh key={i} position={pos} receiveShadow castShadow>
+            <boxGeometry args={size} />
+            {map ? <meshStandardMaterial map={map} roughness={0.95} /> : <meshStandardMaterial color={color} roughness={0.9} />}
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+function Room({ home, room, onFloor, onDoor, night, frameUrls, onFrame }: { home: Home; room: number; onFloor: (x: number, z: number) => void; onDoor: (d: Door) => void; night: boolean; frameUrls: (string | null)[]; onFrame: (i: number) => void }) {
+  const f = FLOORS.find((x) => x.id === home.floor) ?? FLOORS[0];
+  const w = WALLS.find((x) => x.id === home.wall) ?? WALLS[0];
+  const floorTex = useMemo(() => {
+    const t = woodTexture(f.a, f.b);
+    t.repeat.set(1, 1);
+    return t;
+  }, [f.a, f.b]);
+  const wallTex = useMemo(() => wallTexture(w.color), [w.color]);
+  const doors = roomDoors(room);
+  const has = (s: Door["side"]) => doors.some((d) => d.side === s);
+  const outerBack = Math.floor(room / 2) === 0;
+  const outerLeft = room % 2 === 0;
+  return (
+    <group>
+      <mesh position={[ROOM / 2, -0.16, ROOM / 2]} receiveShadow>
+        <boxGeometry args={[ROOM + 0.3, 0.3, ROOM + 0.3]} />
         <meshStandardMaterial color="#6b5446" roughness={0.9} />
       </mesh>
       <mesh
         rotation-x={-Math.PI / 2}
-        position={[HOUSE / 2, 0, HOUSE / 2]}
+        position={[ROOM / 2, 0, ROOM / 2]}
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
           onFloor(e.point.x, e.point.z);
         }}
       >
-        <planeGeometry args={[HOUSE, HOUSE]} />
+        <planeGeometry args={[ROOM, ROOM]} />
         <meshStandardMaterial map={floorTex} roughness={0.75} />
       </mesh>
-      {/* parede do fundo (z=0) com janelas */}
-      <group>
-        <mesh position={[HOUSE / 2, WALL_H / 2, -0.08]} receiveShadow castShadow>
-          <boxGeometry args={[HOUSE + 0.16, WALL_H, 0.16]} />
-          <meshStandardMaterial map={wallTex} roughness={0.95} />
-        </mesh>
-        <mesh position={[HOUSE / 2, 0.06, 0.005]}>
-          <boxGeometry args={[HOUSE, 0.12, 0.02]} />
-          <meshStandardMaterial color="#f7f1e8" />
-        </mesh>
-        <Window x={1.1} night={night} />
-        <Window x={3.4} night={night} />
-        <Window x={5.6} night={night} />
-        <Window x={7.9} night={night} />
-      </group>
-      {/* parede esquerda (x=0) */}
-      <mesh position={[-0.08, WALL_H / 2, HOUSE / 2]} receiveShadow castShadow>
-        <boxGeometry args={[0.16, WALL_H, HOUSE]} />
-        <meshStandardMaterial map={wallTex} roughness={0.95} />
-      </mesh>
-      <mesh position={[0.005, 0.06, HOUSE / 2]}>
-        <boxGeometry args={[0.02, 0.12, HOUSE]} />
-        <meshStandardMaterial color="#f7f1e8" />
-      </mesh>
-      {FRAMES.map((f, i) => (
-        <Frame key={i} pos={f.pos} rot={f.rot} small={f.small} url={frameUrls[i] ?? null} onTap={() => onFrame(i)} />
-      ))}
-      {/* paredes internas com portas */}
-      <InteriorWalls map={wallTex} />
-      {/* nomes dos cômodos */}
-      {ROOM_NAMES.map((n, i) => {
-        const [ox, oz] = roomOff(i);
+      {/* paredes do fundo e da esquerda: altas */}
+      <WallSeg axis="x" at={-0.08} h={WALL_H} door={has("back")} map={wallTex} />
+      <WallSeg axis="z" at={-0.08} h={WALL_H} door={has("left")} map={wallTex} />
+      {/* paredes da frente: baixinhas pra dar pra ver dentro */}
+      <WallSeg axis="x" at={ROOM + 0.08} h={0.35} door={has("front")} color={w.color} />
+      <WallSeg axis="z" at={ROOM + 0.08} h={0.35} door={has("right")} color={w.color} />
+      {outerBack && (
+        <>
+          <Window x={1.0} night={night} />
+          <Window x={3.5} night={night} />
+        </>
+      )}
+      {!outerBack && outerLeft && <Window x={1.0} night={night} />}
+      {FRAMES.map((fr, i) =>
+        fr.room === room ? <Frame key={i} pos={fr.pos} rot={fr.rot} small={fr.small} url={frameUrls[i] ?? null} onTap={() => onFrame(i)} /> : null,
+      )}
+      {doors.map((d) => {
+        const inX = d.side === "left" ? 0.35 : d.side === "right" ? ROOM - 0.35 : d.x;
+        const inZ = d.side === "back" ? 0.35 : d.side === "front" ? ROOM - 0.35 : d.z;
+        const rotY = d.side === "left" || d.side === "right" ? Math.PI / 2 : 0;
         return (
-          <Html key={n} position={[ox + ROOM / 2, 0.05, oz + ROOM - 0.3]} center zIndexRange={[5, 0]}>
-            <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-black/25 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
-              {n}
-            </div>
-          </Html>
+          <group key={d.side} position={[inX, 0.011, inZ]}>
+            <mesh
+              rotation-x={-Math.PI / 2}
+              rotation-z={rotY}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDoor(d);
+              }}
+            >
+              <planeGeometry args={[GAP, 0.6]} />
+              <meshStandardMaterial color="#ff8fbf" emissive="#ff5fa2" emissiveIntensity={0.35} transparent opacity={0.75} />
+            </mesh>
+            <Html position={[0, 0.25, 0]} center zIndexRange={[5, 0]}>
+              <button
+                onClick={() => onDoor(d)}
+                className="whitespace-nowrap rounded-full bg-pink-500/90 px-2 py-0.5 text-[10px] font-bold text-white shadow"
+              >
+                {ROOM_NAMES[d.to]}
+              </button>
+            </Html>
+          </group>
         );
       })}
     </group>
   );
 }
 
-/** paredes internas em cruz, com vão de porta no centro de cada uma */
-function InteriorWalls({ map }: { map: THREE.Texture }) {
-  const g = 0.8; // metade do vão da porta
-  return (
-    <group>
-      {/* parede vertical (x = ROOM) */}
-      <mesh position={[ROOM, WALL_H / 2, (ROOM - g) / 2]} receiveShadow castShadow>
-        <boxGeometry args={[0.12, WALL_H, ROOM - g]} />
-        <meshStandardMaterial map={map} roughness={0.95} />
-      </mesh>
-      <mesh position={[ROOM, WALL_H / 2, (ROOM + g + HOUSE) / 2]} receiveShadow castShadow>
-        <boxGeometry args={[0.12, WALL_H, HOUSE - ROOM - g]} />
-        <meshStandardMaterial map={map} roughness={0.95} />
-      </mesh>
-      {/* parede horizontal (z = ROOM) */}
-      <mesh position={[(ROOM - g) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
-        <boxGeometry args={[ROOM - g, WALL_H, 0.12]} />
-        <meshStandardMaterial map={map} roughness={0.95} />
-      </mesh>
-      <mesh position={[(ROOM + g + HOUSE) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
-        <boxGeometry args={[HOUSE - ROOM - g, WALL_H, 0.12]} />
-        <meshStandardMaterial map={map} roughness={0.95} />
-      </mesh>
-      {/* batentes das portas */}
-      {[ROOM - g, ROOM + g].map((v) => (
-        <mesh key={`vx${v}`} position={[ROOM, 0.06, v]}>
-          <boxGeometry args={[0.16, 0.12, 0.06]} />
-          <meshStandardMaterial color="#f7f1e8" />
-        </mesh>
-      ))}
-      {[ROOM - g, ROOM + g].map((v) => (
-        <mesh key={`hz${v}`} position={[v, 0.06, ROOM]}>
-          <boxGeometry args={[0.06, 0.12, 0.16]} />
-          <meshStandardMaterial color="#f7f1e8" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
 function Window({ x, night }: { x: number; night: boolean }) {
   return (
     <group position={[x, 1.25, 0.01]}>
@@ -365,16 +370,17 @@ function Character({
       const a = (seat.r * Math.PI) / 2;
       return new THREE.Vector3(seat.x + Math.cos(a) * side, 0, seat.z - Math.sin(a) * side);
     }
-    const [ox, oz] = roomOff(av.room);
-    return new THREE.Vector3(av.x + ox, 0, av.z + oz);
-  }, [seat, av.x, av.z, av.room, who]);
+    return new THREE.Vector3(av.x, 0, av.z);
+  }, [seat, av.x, av.z, who]);
 
+  const roomRef = useRef(av.room ?? 0);
   useLayoutEffect(() => {
-    if (firstRef.current) {
+    if (firstRef.current || roomRef.current !== (av.room ?? 0)) {
       pos.current.copy(target);
       firstRef.current = false;
+      roomRef.current = av.room ?? 0;
     }
-  }, [target]);
+  }, [target, av.room]);
 
   const play = (name: string, once = false) => {
     if (cur.current === name) return;
@@ -465,7 +471,7 @@ function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; on
     if (!g) return;
     // passeio igual nos dois aparelhos: posição derivada do relógio
     const seg = Math.floor(Date.now() / 7000);
-    const tgt = new THREE.Vector3(0.8 + hash(seg) * (HOUSE - 1.6), 0, 1.4 + hash(seg + 99) * (HOUSE - 2.2));
+    const tgt = new THREE.Vector3(0.8 + hash(seg) * (ROOM - 1.6), 0, 0.8 + hash(seg + 99) * (ROOM - 1.6));
     const d = tgt.sub(pos.current);
     const dist = d.length();
     const acting = action && Date.now() - action.at < 2200;
@@ -497,9 +503,9 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    cam.position.set(HOUSE / 2 + 10, 9.5, HOUSE / 2 + 10);
-    cam.lookAt(HOUSE / 2, 0.5, HOUSE / 2);
-    cam.zoom = Math.min(size.width, size.height * 1.25) / (HOUSE * 1.45);
+    cam.position.set(ROOM / 2 + 10, 9.5, ROOM / 2 + 10);
+    cam.lookAt(ROOM / 2, 0.6, ROOM / 2);
+    cam.zoom = Math.min(size.width * 1.05, size.height * 1.2) / (ROOM * 1.5);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
   return null;
@@ -519,6 +525,8 @@ export type SceneProps = {
   onPet: () => void;
   frameUrls: (string | null)[];
   onFrame: (i: number) => void;
+  room: number;
+  onDoor: (d: Door) => void;
 };
 
 export default function HouseScene(p: SceneProps) {
@@ -526,19 +534,9 @@ export default function HouseScene(p: SceneProps) {
   const night = hour >= 19 || hour < 6;
   const items = p.home.items;
   // posições no mundo = posição local + deslocamento do cômodo
-  const wItems = useMemo(
-    () =>
-      items.map((it) => {
-        const [ox, oz] = roomOff(it.room);
-        return { ...it, x: it.x + ox, z: it.z + oz };
-      }),
-    [items],
-  );
-  const wGhost = useMemo(() => {
-    if (!p.ghost) return null;
-    const [ox, oz] = roomOff(p.ghost.room);
-    return { ...p.ghost, x: p.ghost.x + ox, z: p.ghost.z + oz };
-  }, [p.ghost]);
+  // só o cômodo atual aparece (coordenadas locais)
+  const wItems = useMemo(() => items.filter((it) => (it.room ?? 0) === p.room), [items, p.room]);
+  const wGhost = p.ghost;
   const petSad = p.home.pet ? Date.now() - p.home.pet.lastFed > 14 * 3600_000 : false;
   return (
     <Canvas shadows orthographic dpr={[1, 1.75]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true }}>
@@ -552,19 +550,19 @@ export default function HouseScene(p: SceneProps) {
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        shadow-camera-left={-9}
-        shadow-camera-right={9}
-        shadow-camera-top={9}
-        shadow-camera-bottom={-9}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
         shadow-bias={-0.0008}
       />
-      {night && <pointLight position={[HOUSE / 2, 1.8, HOUSE / 2]} intensity={10} distance={11} color="#ffcf8a" />}
+      {night && <pointLight position={[ROOM / 2, 1.8, ROOM / 2]} intensity={8} distance={8} color="#ffcf8a" />}
       <Environment resolution={64}>
         <Lightformer intensity={1.4} position={[0, 5, 0]} scale={[10, 10, 1]} rotation-x={Math.PI / 2} />
         <Lightformer intensity={0.8} color="#ffd9c0" position={[-5, 2, 3]} rotation-y={Math.PI / 2} scale={[10, 3, 1]} />
       </Environment>
       <Suspense fallback={null}>
-        <Room home={p.home} onFloor={p.onFloor} night={night} frameUrls={p.frameUrls} onFrame={p.onFrame} />
+        <Room home={p.home} room={p.room} onFloor={p.onFloor} onDoor={p.onDoor} night={night} frameUrls={p.frameUrls} onFrame={p.onFrame} />
         {wItems.map((it) =>
           p.ghost && p.selected === it.uid ? null : (
             <BaseHeight key={it.uid} item={it} items={wItems}>
@@ -588,12 +586,12 @@ export default function HouseScene(p: SceneProps) {
           </BaseHeight>
         )}
         {(["gu", "li"] as Who[]).map((w) =>
-          w === p.me || p.online[w] ? (
+          w === p.me || (p.online[w] && (p.avatars[w].room ?? 0) === p.room) ? (
             <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
         {p.home.pet && <PetModel kind={p.home.pet.kind} sad={petSad} onTap={p.onPet} action={p.petAction} />}
-        <ContactShadows position={[HOUSE / 2, 0.005, HOUSE / 2]} scale={HOUSE} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
+        <ContactShadows position={[ROOM / 2, 0.005, ROOM / 2]} scale={ROOM} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
       </Suspense>
     </Canvas>
   );
