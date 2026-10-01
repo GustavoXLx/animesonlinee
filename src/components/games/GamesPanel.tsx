@@ -15,7 +15,9 @@ import {
   Flame,
   Gavel,
   Hand as HandStop,
+  UserSearch,
 } from "lucide-react";
+import { QuemSouEu } from "./QuemSouEu";
 import { Stop } from "./Stop";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
@@ -35,7 +37,8 @@ type GameKey =
   | "forca"
   | "verdade"
   | "leilao"
-  | "stop";
+  | "stop"
+  | "quemsoueu";
 
 const GAMES: {
   key: GameKey;
@@ -57,6 +60,13 @@ const GAMES: {
     desc: "monte seu esquadrão dando lances",
     icon: Gavel,
     gradient: "from-amber-400 to-yellow-600",
+  },
+  {
+    key: "quemsoueu",
+    name: "Quem sou eu?",
+    desc: "descubra o personagem do outro",
+    icon: UserSearch,
+    gradient: "from-sky-500 to-rose-500",
   },
   {
     key: "gartic",
@@ -163,6 +173,7 @@ export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClo
           {active === "verdade" && <VerdadeDesafio me={me} />}
           {active === "leilao" && <Leilao me={me} />}
           {active === "stop" && <Stop me={me} />}
+          {active === "quemsoueu" && <QuemSouEu me={me} />}
         </div>
         <GameChat gameKey={active} me={me} />
       </div>
