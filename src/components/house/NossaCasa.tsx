@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
   CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
-  type Home, type HomeAction, type PlacedItem, type Who,
+  type Home, type Pet, type HomeAction, type PlacedItem, type Who,
 } from "@/lib/home";
 import { roomDoors, type Avatar, type Door } from "./HouseScene";
 
