@@ -385,7 +385,7 @@ export function QuemSouEu({ me }: { me: Me }) {
       </div>
 
       {state.phase === "end" ? (
-        <div className="border-t border-white/10 p-3 pb-20">
+        <div className="border-t border-white/10 p-3 pb-6">
           <p className="text-center text-base font-bold">
             {state.winner === me ? "Você acertou!" : state.lastGuess?.by === me ? "Errou o chute..." : `${other === "gu" ? "bb gu" : "bb li"} ${state.lastGuess?.ok ? "acertou" : "errou"}!`}
           </p>
@@ -402,7 +402,7 @@ export function QuemSouEu({ me }: { me: Me }) {
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 border-t border-white/10 p-2 pb-20">
+        <div className="flex items-center gap-2 border-t border-white/10 p-2 pr-16">
           <div className="w-14 shrink-0">
             {showSecret ? (
               <GameCard card={secret} color="#f59e0b" />
