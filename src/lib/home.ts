@@ -219,6 +219,7 @@ export type HomeAction =
   | { t: "pat" };
 
 const clampPos = (v: number) => Math.max(0.2, Math.min(ROOM - 0.2, Math.round(v * 4) / 4));
+const clampRoom = (r: number | undefined) => (r === 1 || r === 2 || r === 3 ? r : 0);
 
 export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean): string {
   switch (a.t) {
@@ -235,7 +236,7 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       const i = h.inv.indexOf(a.key);
       if (i < 0) throw new Error("Item não está na caixa");
       h.inv.splice(i, 1);
-      h.items.push({ uid: uid(), k: a.key, x: clampPos(a.x), z: clampPos(a.z), r: ((a.r % 4) + 4) % 4 });
+      h.items.push({ uid: uid(), k: a.key, x: clampPos(a.x), z: clampPos(a.z), r: ((a.r % 4) + 4) % 4, room: clampRoom(a.room) });
       if (otherOnline) h.prog.decor[who] = true;
       return "";
     }
@@ -245,6 +246,7 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       it.x = clampPos(a.x);
       it.z = clampPos(a.z);
       it.r = ((a.r % 4) + 4) % 4;
+      if (a.room !== undefined) it.room = clampRoom(a.room);
       if (otherOnline) h.prog.decor[who] = true;
       return "";
     }
