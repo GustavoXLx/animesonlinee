@@ -837,7 +837,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         onUploadAvatar={(f) => void uploadAvatar(me, f)}
         wp={wallpaper.wp}
         setWp={wallpaper.setWp}
-        onGames={() => setShowGames(true)}
+        onGames={(g) => { setStartGame(g ?? null); setShowGames(true); }}
         onHouse={() => setShowHouse(true)}
         onSearch={() => {
           setShowSearch(true);
@@ -1303,7 +1303,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           {sys}
         </div>
       )}
-      <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} />
+      <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} initialGame={startGame} />
       {showHouse && <NossaCasa me={me} onClose={() => setShowHouse(false)} onGames={() => { setShowHouse(false); setShowGames(true); }} />}
 
       {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
