@@ -283,7 +283,10 @@ export function QuemSouEu({ me }: { me: Me }) {
   // aviso de troca de vez
   const [turnFlash, setTurnFlash] = useState(0);
   useEffect(() => {
-    if (state.phase === "play") setTurnFlash(Date.now());
+    if (state.phase !== "play") return;
+    setTurnFlash(Date.now());
+    const t = window.setTimeout(() => setTurnFlash(0), 1500);
+    return () => window.clearTimeout(t);
   }, [state.turn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const start = (theme: string) => {
@@ -386,7 +389,7 @@ export function QuemSouEu({ me }: { me: Me }) {
           <p className="qse-pop mt-2 text-xs text-white/50" style={{ animationDelay: "1.1s" }}>Não deixa {other === "gu" ? "ele" : "ela"} ver!</p>
         </div>
       )}
-      {!reveal && turnFlash > 0 && Date.now() - turnFlash < 1500 && state.phase === "play" && (
+      {!reveal && turnFlash > 0 && state.phase === "play" && (
         <div key={turnFlash} className="qse-pop pointer-events-none absolute inset-x-0 top-1/3 z-10 mx-auto w-fit rounded-2xl bg-black/80 px-5 py-3 text-lg font-black shadow-2xl">
           {myTurn ? "Sua vez!" : `Vez de ${state.turn === "gu" ? "bb gu" : "bb li"}`}
         </div>
