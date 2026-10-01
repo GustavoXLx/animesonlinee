@@ -94,9 +94,11 @@ export const PETS = [
   { kind: "penguin", name: "Pinguim" },
 ];
 
-export const ROOM = 4.5; // metros (unidades) de cada lado
+export const ROOM = 4.5; // metros (unidades) de cada lado de um cômodo
+export const HOUSE = ROOM * 2; // casa 2x2 cômodos
+export const ROOM_NAMES = ["Sala", "Quarto", "Cozinha", "Escritório"];
 
-export type PlacedItem = { uid: string; k: string; x: number; z: number; r: number };
+export type PlacedItem = { uid: string; k: string; x: number; z: number; r: number; room?: number };
 export type MissionId = "juntos" | "tempo" | "sentar" | "pet" | "decor";
 export const MISSIONS: { id: MissionId; title: string; desc: string; reward: number }[] = [
   { id: "juntos", title: "Em casa juntos", desc: "Estarem os dois na casa ao mesmo tempo", reward: 15 },
@@ -207,8 +209,8 @@ export function checkMissions(
 
 export type HomeAction =
   | { t: "buy"; key: string }
-  | { t: "place"; key: string; x: number; z: number; r: number }
-  | { t: "move"; uid: string; x: number; z: number; r: number }
+  | { t: "place"; key: string; x: number; z: number; r: number; room?: number }
+  | { t: "move"; uid: string; x: number; z: number; r: number; room?: number }
   | { t: "store"; uid: string }
   | { t: "style"; kind: "wall" | "floor"; id: string }
   | { t: "avatar"; model: string }
