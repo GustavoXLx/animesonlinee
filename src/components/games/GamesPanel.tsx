@@ -142,12 +142,23 @@ const GAMES: {
   },
 ];
 
-export function GamesPanel({ me, open, onClose }: { me: Me; open: boolean; onClose: () => void }) {
+export function GamesPanel({
+  me,
+  open,
+  onClose,
+  initialGame,
+}: {
+  me: Me;
+  open: boolean;
+  onClose: () => void;
+  initialGame?: string | null;
+}) {
   const [active, setActive] = useState<GameKey | null>(null);
 
   useEffect(() => {
     if (!open) setActive(null);
-  }, [open]);
+    else if (initialGame && GAMES.some((g) => g.key === initialGame)) setActive(initialGame as GameKey);
+  }, [open, initialGame]);
 
   if (!open) return null;
 
