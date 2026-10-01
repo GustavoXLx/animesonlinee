@@ -520,7 +520,7 @@ export default function HouseScene(p: SceneProps) {
         )}
         {(["gu", "li"] as Who[]).map((w) =>
           w === p.me || p.online[w] ? (
-            <Character key={w + p.home.avatars[w]} who={w} model={p.avatars[w] && p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
+            <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
         {p.home.pet && <PetModel kind={p.home.pet.kind} sad={petSad} onTap={p.onPet} action={p.petAction} />}
