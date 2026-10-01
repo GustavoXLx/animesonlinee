@@ -4,6 +4,7 @@ import {
   User,
   Image as ImageIcon,
   Gamepad2,
+  Flame,
   Search,
   Music,
   ChevronLeft,
@@ -174,7 +175,7 @@ export function ChatMenu({
   onUploadAvatar: (f: File) => void;
   wp: string;
   setWp: (v: string) => void;
-  onGames: () => void;
+  onGames: (game?: string) => void;
   onHouse: () => void;
   onSearch: () => void;
   bubble: string;
@@ -326,6 +327,7 @@ export function ChatMenu({
               <Item icon={<User size={16} />} label="Editar perfil" onClick={() => setView("profile")} />
               <Item icon={<ImageIcon size={16} />} label="Personalizar" onClick={() => setView("wallpaper")} />
               <Item icon={<Gamepad2 size={16} />} label="Jogos" onClick={() => { onClose(); onGames(); }} />
+              <Item icon={<Flame size={16} />} label="Safadeza" onClick={() => { onClose(); onGames("embraza"); }} />
               <Item icon={<Home size={16} />} label="Nossa Casa" onClick={() => { onClose(); onHouse(); }} />
               <Item icon={<Search size={16} />} label="Buscar mensagens" onClick={() => { onClose(); onSearch(); }} />
               <Item icon={<Music size={16} />} label="Músicas" onClick={() => setView("music")} />
