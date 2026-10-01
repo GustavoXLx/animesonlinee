@@ -3,12 +3,10 @@ import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { CAT_BY_KEY, FLOORS, HOUSE, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
+import { CAT_BY_KEY, FLOORS, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
 export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number; say?: string; sayAt?: number };
 
-/** deslocamento (x,z) do canto do cômodo no mundo */
-const roomOff = (r = 0): [number, number] => [(r % 2) * ROOM, Math.floor(r / 2) * ROOM];
 
 const isTop = (k: string) => !!CAT_BY_KEY[k]?.top;
 const furnUrl = (k: string) => `/house/furn/${k}.glb`;
