@@ -456,6 +456,20 @@ export default function HouseScene(p: SceneProps) {
   const hour = new Date().getHours();
   const night = hour >= 19 || hour < 6;
   const items = p.home.items;
+  // posições no mundo = posição local + deslocamento do cômodo
+  const wItems = useMemo(
+    () =>
+      items.map((it) => {
+        const [ox, oz] = roomOff(it.room);
+        return { ...it, x: it.x + ox, z: it.z + oz };
+      }),
+    [items],
+  );
+  const wGhost = useMemo(() => {
+    if (!p.ghost) return null;
+    const [ox, oz] = roomOff(p.ghost.room);
+    return { ...p.ghost, x: p.ghost.x + ox, z: p.ghost.z + oz };
+  }, [p.ghost]);
   const petSad = p.home.pet ? Date.now() - p.home.pet.lastFed > 14 * 3600_000 : false;
   return (
     <Canvas shadows orthographic dpr={[1, 1.75]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true }}>
@@ -469,22 +483,22 @@ export default function HouseScene(p: SceneProps) {
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={6}
-        shadow-camera-bottom={-6}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
         shadow-bias={-0.0008}
       />
-      {night && <pointLight position={[3, 1.8, 3]} intensity={6} distance={7} color="#ffcf8a" />}
+      {night && <pointLight position={[HOUSE / 2, 1.8, HOUSE / 2]} intensity={10} distance={11} color="#ffcf8a" />}
       <Environment resolution={64}>
         <Lightformer intensity={1.4} position={[0, 5, 0]} scale={[10, 10, 1]} rotation-x={Math.PI / 2} />
         <Lightformer intensity={0.8} color="#ffd9c0" position={[-5, 2, 3]} rotation-y={Math.PI / 2} scale={[10, 3, 1]} />
       </Environment>
       <Suspense fallback={null}>
         <Room home={p.home} onFloor={p.onFloor} night={night} />
-        {items.map((it) =>
+        {wItems.map((it) =>
           p.ghost && p.selected === it.uid ? null : (
-            <BaseHeight key={it.uid} item={it} items={items}>
+            <BaseHeight key={it.uid} item={it} items={wItems}>
               {(y) => (
                 <Furn
                   item={it}
@@ -499,18 +513,18 @@ export default function HouseScene(p: SceneProps) {
             </BaseHeight>
           ),
         )}
-        {p.ghost && (
-          <BaseHeight item={p.ghost} items={items}>
-            {(y) => <Furn item={p.ghost!} y={y} ghost />}
+        {wGhost && (
+          <BaseHeight item={wGhost} items={wItems}>
+            {(y) => <Furn item={wGhost} y={y} ghost />}
           </BaseHeight>
         )}
         {(["gu", "li"] as Who[]).map((w) =>
           w === p.me || p.online[w] ? (
-            <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={items} label={w === "gu" ? "bb gu" : "bb li"} />
+            <Character key={w + p.home.avatars[w]} who={w} model={p.avatars[w] && p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
         {p.home.pet && <PetModel kind={p.home.pet.kind} sad={petSad} onTap={p.onPet} action={p.petAction} />}
-        <ContactShadows position={[ROOM / 2, 0.005, ROOM / 2]} scale={ROOM} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
+        <ContactShadows position={[HOUSE / 2, 0.005, HOUSE / 2]} scale={HOUSE} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
       </Suspense>
     </Canvas>
   );
