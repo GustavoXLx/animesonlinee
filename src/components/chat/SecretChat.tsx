@@ -1304,7 +1304,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         </div>
       )}
       <GamesPanel me={me} open={showGames} onClose={() => setShowGames(false)} initialGame={startGame} />
-      {showHouse && <NossaCasa me={me} onClose={() => setShowHouse(false)} onGames={() => { setShowHouse(false); setShowGames(true); }} />}
+      {showHouse && <NossaCasa me={me} onClose={() => setShowHouse(false)} onGames={() => { setShowHouse(false); setStartGame(null); setShowGames(true); }} />}
 
       {showGallery && <GalleryModal cutoff={clearCutoff} onClose={() => setShowGallery(false)} />}
     </div>
