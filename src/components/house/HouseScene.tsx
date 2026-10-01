@@ -1,19 +1,16 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows } from "@react-three/drei";
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { CAT_BY_KEY, FLOORS, HOUSE, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
-export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number };
+export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number; say?: string; sayAt?: number };
 
 /** deslocamento (x,z) do canto do cômodo no mundo */
 const roomOff = (r = 0): [number, number] => [(r % 2) * ROOM, Math.floor(r / 2) * ROOM];
 
-const TOP_ITEMS = new Set([
-  "televisionModern", "televisionVintage", "lampRoundTable", "laptop", "computerScreen", "books", "plantSmall1",
-  "plantSmall2", "plantSmall3", "radio", "kitchenCoffeeMachine", "kitchenMicrowave", "pillow", "pillowBlue", "bear", "speaker",
-]);
+const isTop = (k: string) => !!CAT_BY_KEY[k]?.top;
 const furnUrl = (k: string) => `/house/furn/${k}.glb`;
 
 const sizeCache = new WeakMap<object, { w: number; d: number; h: number; off: THREE.Vector3 }>();
@@ -33,9 +30,19 @@ function useFurn(k: string) {
 }
 /** item "de cima" (TV, abajur...) apoia na superfície embaixo dele */
 function BaseHeight({ item, items, children }: { item: PlacedItem; items: PlacedItem[]; children: (y: number) => React.ReactNode }) {
-  const base = TOP_ITEMS.has(item.k)
-    ? items.find((o) => o.uid !== item.uid && !TOP_ITEMS.has(o.k) && !CAT_BY_KEY[o.k]?.flat && Math.abs(o.x - item.x) < 0.35 && Math.abs(o.z - item.z) < 0.35)
-    : undefined;
+  // apoia na superfície mais próxima (mesa, balcão, rack, cama...)
+  let base: PlacedItem | undefined;
+  if (isTop(item.k)) {
+    let best = 0.62;
+    for (const o of items) {
+      if (o.uid === item.uid || isTop(o.k) || CAT_BY_KEY[o.k]?.flat) continue;
+      const d = Math.max(Math.abs(o.x - item.x), Math.abs(o.z - item.z));
+      if (d < best) {
+        best = d;
+        base = o;
+      }
+    }
+  }
   return base ? <BaseH k={base.k}>{children}</BaseH> : <>{children(0)}</>;
 }
 function BaseH({ k, children }: { k: string; children: (y: number) => React.ReactNode }) {
@@ -127,7 +134,15 @@ function wallTexture(color: string) {
 }
 
 const WALL_H = 2.2;
-function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: number) => void; night: boolean }) {
+const FRAMES: { pos: [number, number, number]; rot: number; small?: boolean }[] = [
+  { pos: [0.02, 1.35, 1.5], rot: Math.PI / 2 },
+  { pos: [0.02, 1.35, 2.8], rot: Math.PI / 2, small: true },
+  { pos: [0.02, 1.35, 6.0], rot: Math.PI / 2 },
+  { pos: [0.02, 1.35, 7.3], rot: Math.PI / 2, small: true },
+  { pos: [2.25, 1.4, 0.02], rot: 0, small: true },
+  { pos: [6.75, 1.4, 0.02], rot: 0, small: true },
+];
+function Room({ home, onFloor, night, frameUrls, onFrame }: { home: Home; onFloor: (x: number, z: number) => void; night: boolean; frameUrls: (string | null)[]; onFrame: (i: number) => void }) {
   const f = FLOORS.find((x) => x.id === home.floor) ?? FLOORS[0];
   const w = WALLS.find((x) => x.id === home.wall) ?? WALLS[0];
   const floorTex = useMemo(() => woodTexture(f.a, f.b), [f.a, f.b]);
@@ -175,10 +190,9 @@ function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: nu
         <boxGeometry args={[0.02, 0.12, HOUSE]} />
         <meshStandardMaterial color="#f7f1e8" />
       </mesh>
-      <Frame z={1.5} />
-      <Frame z={2.8} small />
-      <Frame z={6.0} />
-      <Frame z={7.3} small />
+      {FRAMES.map((f, i) => (
+        <Frame key={i} pos={f.pos} rot={f.rot} small={f.small} url={frameUrls[i] ?? null} onTap={() => onFrame(i)} />
+      ))}
       {/* paredes internas com portas */}
       <InteriorWalls map={wallTex} />
       {/* nomes dos cômodos */}
@@ -265,17 +279,55 @@ function Window({ x, night }: { x: number; night: boolean }) {
     </group>
   );
 }
-function Frame({ z, small }: { z: number; small?: boolean }) {
-  const s = small ? 0.45 : 0.7;
+function Frame({ pos, rot, small, url, onTap }: { pos: [number, number, number]; rot: number; small?: boolean; url: string | null; onTap: () => void }) {
+  const s = small ? 0.5 : 0.75;
+  const pw = s * 0.85;
+  const ph = s * 0.62;
+  const [tex, setTex] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    if (!url) {
+      setTex(null);
+      return;
+    }
+    let alive = true;
+    const l = new THREE.TextureLoader();
+    l.setCrossOrigin("anonymous");
+    l.load(url, (t) => {
+      if (!alive) return t.dispose();
+      t.colorSpace = THREE.SRGBColorSpace;
+      // recorte tipo "cover"
+      const img = t.image as { width: number; height: number };
+      const ia = img.width / img.height;
+      const fa = pw / ph;
+      if (ia > fa) {
+        t.repeat.set(fa / ia, 1);
+        t.offset.set((1 - fa / ia) / 2, 0);
+      } else {
+        t.repeat.set(1, ia / fa);
+        t.offset.set(0, (1 - ia / fa) / 2);
+      }
+      setTex(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [url, pw, ph]);
   return (
-    <group position={[0.02, 1.35, z]} rotation-y={Math.PI / 2}>
+    <group
+      position={pos}
+      rotation-y={rot}
+      onClick={(e) => {
+        e.stopPropagation();
+        onTap();
+      }}
+    >
       <mesh>
         <boxGeometry args={[s, s * 0.75, 0.03]} />
         <meshStandardMaterial color="#5a3d2b" />
       </mesh>
       <mesh position-z={0.017}>
-        <planeGeometry args={[s * 0.85, s * 0.62]} />
-        <meshStandardMaterial color={small ? "#f0b6c8" : "#e9d7a8"} />
+        <planeGeometry args={[pw, ph]} />
+        {tex ? <meshBasicMaterial map={tex} toneMapped={false} /> : <meshStandardMaterial color={small ? "#f0b6c8" : "#e9d7a8"} />}
       </mesh>
     </group>
   );
@@ -296,6 +348,15 @@ function Character({
   const cur = useRef<string>("");
   const pos = useRef(new THREE.Vector3(av.x, 0, av.z));
   const firstRef = useRef(true);
+  const [bubble, setBubble] = useState<string | null>(null);
+  useEffect(() => {
+    if (!av.say || !av.sayAt) return;
+    const left = 6000 - (Date.now() - av.sayAt);
+    if (left <= 0) return;
+    setBubble(av.say);
+    const t = window.setTimeout(() => setBubble(null), left);
+    return () => window.clearTimeout(t);
+  }, [av.say, av.sayAt]);
 
   const seat = av.sit ? items.find((i) => i.uid === av.sit) : undefined;
   const target = useMemo(() => {
@@ -363,8 +424,14 @@ function Character({
     <group ref={group}>
       <primitive object={obj} scale={0.95} />
       <Html position={[0, 0.95, 0]} center distanceFactor={undefined} zIndexRange={[10, 0]}>
-        <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white">
-          {label}
+        <div className="pointer-events-none flex select-none flex-col items-center gap-1">
+          {bubble && (
+            <div className="relative mb-1 max-w-[180px] whitespace-normal break-words rounded-2xl bg-white px-2.5 py-1.5 text-center text-[11px] font-medium leading-snug text-neutral-900 shadow-lg">
+              {bubble}
+              <span className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-white" />
+            </div>
+          )}
+          <div className="whitespace-nowrap rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white">{label}</div>
         </div>
       </Html>
     </group>
@@ -450,6 +517,8 @@ export type SceneProps = {
   onFloor: (x: number, z: number) => void;
   onItem: (it: PlacedItem) => void;
   onPet: () => void;
+  frameUrls: (string | null)[];
+  onFrame: (i: number) => void;
 };
 
 export default function HouseScene(p: SceneProps) {
@@ -495,7 +564,7 @@ export default function HouseScene(p: SceneProps) {
         <Lightformer intensity={0.8} color="#ffd9c0" position={[-5, 2, 3]} rotation-y={Math.PI / 2} scale={[10, 3, 1]} />
       </Environment>
       <Suspense fallback={null}>
-        <Room home={p.home} onFloor={p.onFloor} night={night} />
+        <Room home={p.home} onFloor={p.onFloor} night={night} frameUrls={p.frameUrls} onFrame={p.onFrame} />
         {wItems.map((it) =>
           p.ghost && p.selected === it.uid ? null : (
             <BaseHeight key={it.uid} item={it} items={wItems}>

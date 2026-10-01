@@ -925,3 +925,18 @@ export const homeAct = createServerFn({ method: "POST" })
       return { home: null, msg: "", error: e instanceof Error ? e.message : "erro" };
     }
   });
+
+/** Links das fotos dos quadros da casa. */
+export const homeFrameUrls = createServerFn({ method: "POST" })
+  .inputValidator((d: { paths: string[] }) => ({ paths: (Array.isArray(d.paths) ? d.paths : []).map(String).slice(0, 8) }))
+  .handler(async ({ data }) => {
+    await gate();
+    const { FRAME_PATH_RE } = await import("./home");
+    const paths = data.paths.filter((p) => FRAME_PATH_RE.test(p));
+    if (!paths.length) return {} as Record<string, string>;
+    const db = await admin();
+    const { data: signed } = await db.storage.from("chat-media").createSignedUrls(paths, SIGNED_TTL);
+    const out: Record<string, string> = {};
+    (signed ?? []).forEach((s) => s.path && s.signedUrl && (out[s.path] = s.signedUrl));
+    return out;
+  });

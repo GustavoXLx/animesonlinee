@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Heart, Hammer, ShoppingBag, Shirt, PawPrint, Target, RotateCw, Package, Check, Hand, ArrowUpFromLine, Gamepad2 } from "lucide-react";
+import { ImagePlus, MessageCircle, Send, Trash2, X, Heart, Hammer, ShoppingBag, Shirt, PawPrint, Target, RotateCw, Package, Check, Hand, ArrowUpFromLine, Gamepad2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { homeAct, homePing } from "@/lib/chat.functions";
+import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
   CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, TOGETHER_GOAL, WALLS, BONUS, petStats,
   type Home, type HomeAction, type PlacedItem, type Who,
@@ -11,13 +11,20 @@ import type { Avatar } from "./HouseScene";
 
 const HouseScene = lazy(() => import("./HouseScene"));
 
-type Panel = null | "shop" | "box" | "char" | "pet" | "missions";
+type Panel = null | "shop" | "box" | "char" | "pet" | "missions" | "frame";
 const other = (w: Who): Who => (w === "gu" ? "li" : "gu");
-const CAT_NAMES = { sala: "Sala", quarto: "Quarto", cozinha: "Cozinha", decor: "Decoração" } as const;
+const CAT_NAMES = { sala: "Sala", quarto: "Quarto", cozinha: "Cozinha", banheiro: "Banheiro", decor: "Decoração" } as const;
 
 export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => void; onGames?: () => void }) {
   const ping = useServerFn(homePing);
   const act = useServerFn(homeAct);
+  const frameUrlsFn = useServerFn(homeFrameUrls);
+  const uploadFn = useServerFn(createUpload);
+  const [frameUrls, setFrameUrls] = useState<(string | null)[]>([]);
+  const [frameIdx, setFrameIdx] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [talk, setTalk] = useState(false);
+  const [text, setText] = useState("");
   const [home, setHome] = useState<Home | null>(null);
   const [online, setOnline] = useState<Record<Who, boolean>>({ gu: false, li: false });
   const [together, setTogether] = useState(0);
@@ -108,6 +115,47 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
     [me],
   );
 
+  // links das fotos dos quadros (só busca quando muda alguma foto)
+  const framesKey = (home?.frames ?? []).join("|");
+  useEffect(() => {
+    const paths = framesKey ? framesKey.split("|") : [];
+    const real = paths.filter(Boolean);
+    if (!real.length) {
+      setFrameUrls([]);
+      return;
+    }
+    let alive = true;
+    frameUrlsFn({ data: { paths: real } })
+      .then((m) => alive && setFrameUrls(paths.map((p) => (p ? (m[p] ?? null) : null))))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [framesKey, frameUrlsFn]);
+
+  const sendSay = () => {
+    const t = text.trim().slice(0, 120);
+    if (!t) return;
+    moveMe({ say: t, sayAt: Date.now() });
+    setText("");
+  };
+
+  const uploadFrame = async (file: File) => {
+    setUploading(true);
+    try {
+      const raw = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const ext = ["jpg", "jpeg", "png", "webp", "gif", "heic"].includes(raw) ? raw : "jpg";
+      const { path, token } = await uploadFn({ data: { ext } });
+      const { error } = await supabase.storage.from("chat-media").uploadToSignedUrl(path, token, file, { contentType: file.type || "image/jpeg" });
+      if (error) throw error;
+      if (await run({ t: "frame", i: frameIdx, path })) setPanel(null);
+    } catch {
+      say("Não deu pra enviar a foto");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const run = async (action: HomeAction) => {
     setBusy(true);
     try {
@@ -147,7 +195,14 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
 
   const onItem = (it: PlacedItem) => {
     if (decor) {
-      if (ghost) return;
+      if (ghost) {
+        // eletrodomésticos/objetos pequenos: tocar na mesa coloca em cima dela
+        if (CAT_BY_KEY[ghost.k]?.top) {
+          const t = toLocal(it.x, it.z);
+          setGhost({ ...ghost, room: t.room, x: Math.round(t.lx * 4) / 4, z: Math.round(t.lz * 4) / 4 });
+        }
+        return;
+      }
       setSelected(it.uid);
       return;
     }
@@ -201,6 +256,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   }
 
   const sel = home.items.find((i) => i.uid === selected);
+  const framePath = home.frames?.[frameIdx] ?? null;
   const doneCount = MISSIONS.filter((m) => home.missions[m.id]).length;
   const partner = other(me);
 
@@ -220,6 +276,12 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
             onFloor={onFloor}
             onItem={onItem}
             onPet={() => setPanel("pet")}
+            frameUrls={frameUrls}
+            onFrame={(i) => {
+              if (decor) return;
+              setFrameIdx(i);
+              setPanel("frame");
+            }}
           />
         </Suspense>
       </div>
@@ -247,7 +309,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
         <div className="absolute inset-x-0 top-16 mx-auto flex w-fit items-center gap-2 rounded-2xl bg-black/55 p-2 text-xs backdrop-blur">
           {ghost ? (
             <>
-              <span className="px-2 text-white/80">Toque no chão pra posicionar</span>
+              <span className="px-2 text-white/80">{CAT_BY_KEY[ghost.k]?.top ? "Toque numa mesa ou no chão" : "Toque no chão pra posicionar"}</span>
               <Tool icon={<RotateCw size={15} />} label="Girar" onClick={() => setGhost({ ...ghost, r: (ghost.r + 1) % 4 })} />
               <Tool icon={<Check size={15} />} label="Colocar" onClick={confirmGhost} disabled={busy} strong />
               <Tool icon={<X size={15} />} label="Cancelar" onClick={() => setGhost(null)} />
@@ -267,8 +329,29 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
 
       {/* rodapé */}
       <div className="absolute inset-x-0 bottom-0 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        {!decor && talk && (
+          <form
+            className="mx-auto mb-2 flex max-w-md items-center gap-2 rounded-full bg-black/55 p-1 pl-4 backdrop-blur"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendSay();
+            }}
+          >
+            <input
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, 120))}
+              placeholder="Falar algo na casa..."
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-white/50"
+            />
+            <button type="submit" disabled={!text.trim()} className="rounded-full bg-pink-500 p-2 disabled:opacity-40" aria-label="Enviar">
+              <Send size={15} />
+            </button>
+          </form>
+        )}
         {!decor && (
           <div className="mb-2 flex justify-center gap-2">
+            <Pill onClick={() => setTalk(!talk)}><MessageCircle size={13} /> {talk ? "Fechar" : "Falar"}</Pill>
             <Pill onClick={() => emote("emote-yes")}>Acenar</Pill>
             <Pill onClick={() => emote("jump")}>Pular</Pill>
             <Pill onClick={() => emote("emote-no")}>Negar</Pill>
@@ -316,6 +399,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
                     >
                       <Thumb k={c.key} />
                       <span className="text-[11px] leading-tight">{c.name}</span>
+                      {c.top && <span className="text-[9px] text-white/50">vai em cima da mesa</span>}
                       <span className="flex items-center gap-0.5 text-[11px] font-bold text-pink-300">
                         <Heart size={10} className="fill-pink-300" /> {c.price}
                       </span>
@@ -334,6 +418,41 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
                     <StyleBtn key={f.id} active={home.floor === f.id} owned={home.styles.includes(f.id)} price={f.price} label={f.name} swatch={f.a} onClick={() => run({ t: "style", kind: "floor", id: f.id })} />
                   ))}
                 </div>
+              </>
+            )}
+
+            {panel === "frame" && (
+              <>
+                <Head title="Quadro" />
+                <div className="mb-3 overflow-hidden rounded-2xl border-4 border-[#5a3d2b] bg-white/5">
+                  {frameUrls[frameIdx] ? (
+                    <img src={frameUrls[frameIdx]!} alt="" className="aspect-[4/3] w-full object-cover" />
+                  ) : (
+                    <div className="flex aspect-[4/3] items-center justify-center text-sm text-white/50">Quadro vazio</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-pink-500 py-2.5 text-sm font-semibold ${uploading ? "opacity-50" : ""}`}>
+                    <ImagePlus size={16} /> {uploading ? "Enviando..." : framePath ? "Trocar foto" : "Colocar foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) uploadFrame(f);
+                      }}
+                    />
+                  </label>
+                  {framePath && (
+                    <button disabled={busy} onClick={async () => (await run({ t: "frame", i: frameIdx, path: null })) && setPanel(null)} className="rounded-xl bg-white/10 px-4 text-sm" aria-label="Tirar foto">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+                <p className="mt-2 text-[11px] text-white/50">A foto aparece pros dois na parede da casa.</p>
               </>
             )}
 

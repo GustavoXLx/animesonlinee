@@ -4,9 +4,11 @@ export type Who = "gu" | "li";
 export type CatalogItem = {
   key: string;
   name: string;
-  cat: "sala" | "quarto" | "cozinha" | "decor";
+  cat: "sala" | "quarto" | "cozinha" | "banheiro" | "decor";
   price: number;
   seat?: boolean;
+  /** vai em cima de mesas/balcões */
+  top?: boolean;
   /** pode ficar por cima de tapete */
   flat?: boolean;
 };
@@ -63,7 +65,54 @@ export const CATALOG: CatalogItem[] = [
   { key: "sideTable", name: "Mesinha", cat: "decor", price: 12 },
   { key: "trashcan", name: "Lixeira", cat: "decor", price: 4 },
   { key: "cardboardBoxOpen", name: "Caixa", cat: "decor", price: 3 },
+  { key: "loungeSofaCorner", name: "Sofá de canto", cat: "sala", price: 65, seat: true },
+  { key: "loungeSofaOttoman", name: "Puff", cat: "sala", price: 15, seat: true },
+  { key: "loungeDesignChair", name: "Poltrona design", cat: "sala", price: 40, seat: true },
+  { key: "tableCoffeeSquare", name: "Mesa de centro quadrada", cat: "sala", price: 20 },
+  { key: "tableCoffeeGlassSquare", name: "Mesa de vidro quadrada", cat: "sala", price: 25 },
+  { key: "bookcaseOpenLow", name: "Estante baixa", cat: "sala", price: 20 },
+  { key: "cabinetTelevisionDoors", name: "Rack com portas", cat: "sala", price: 30 },
+  { key: "speakerSmall", name: "Caixinha de som", cat: "sala", price: 10, top: true },
+  { key: "televisionAntenna", name: "TV de antena", cat: "sala", price: 30, top: true },
+  { key: "rugRounded", name: "Tapete arredondado", cat: "sala", price: 15, flat: true },
+  { key: "rugDoormat", name: "Capacho", cat: "decor", price: 5, flat: true },
+  { key: "bedBunk", name: "Beliche", cat: "quarto", price: 50, seat: true },
+  { key: "cabinetBedDrawerTable", name: "Criado com gaveta", cat: "quarto", price: 18 },
+  { key: "lampSquareTable", name: "Abajur quadrado", cat: "quarto", price: 10, top: true },
+  { key: "pillowLong", name: "Almofada longa", cat: "quarto", price: 6, top: true },
+  { key: "pillowBlueLong", name: "Almofada longa azul", cat: "quarto", price: 6, top: true },
+  { key: "dryer", name: "Secadora", cat: "quarto", price: 30 },
+  { key: "washerDryerStacked", name: "Lava e seca", cat: "quarto", price: 50 },
+  { key: "bookcaseClosedDoors", name: "Guarda-roupa", cat: "quarto", price: 40 },
+  { key: "coatRack", name: "Cabide de parede", cat: "quarto", price: 8 },
+  { key: "kitchenBar", name: "Bancada", cat: "cozinha", price: 25 },
+  { key: "kitchenBarEnd", name: "Ponta da bancada", cat: "cozinha", price: 20 },
+  { key: "kitchenFridgeLarge", name: "Geladeira duplex", cat: "cozinha", price: 60 },
+  { key: "kitchenStoveElectric", name: "Cooktop", cat: "cozinha", price: 40 },
+  { key: "kitchenCabinetDrawer", name: "Gaveteiro", cat: "cozinha", price: 20 },
+  { key: "kitchenBlender", name: "Liquidificador", cat: "cozinha", price: 12, top: true },
+  { key: "toaster", name: "Torradeira", cat: "cozinha", price: 10, top: true },
+  { key: "tableGlass", name: "Mesa de vidro", cat: "cozinha", price: 30 },
+  { key: "tableCloth", name: "Mesa com toalha", cat: "cozinha", price: 30 },
+  { key: "tableCross", name: "Mesa rústica", cat: "cozinha", price: 28 },
+  { key: "chairModernCushion", name: "Cadeira moderna", cat: "cozinha", price: 14, seat: true },
+  { key: "chairRounded", name: "Cadeira redonda", cat: "cozinha", price: 12, seat: true },
+  { key: "stoolBarSquare", name: "Banqueta quadrada", cat: "cozinha", price: 8, seat: true },
+  { key: "bathtub", name: "Banheira", cat: "banheiro", price: 60 },
+  { key: "shower", name: "Chuveiro", cat: "banheiro", price: 45 },
+  { key: "toilet", name: "Vaso", cat: "banheiro", price: 25, seat: true },
+  { key: "bathroomSink", name: "Pia do banheiro", cat: "banheiro", price: 25 },
+  { key: "bathroomCabinet", name: "Armário do banheiro", cat: "banheiro", price: 20 },
+  { key: "bench", name: "Banco", cat: "decor", price: 15, seat: true },
+  { key: "benchCushion", name: "Banco estofado", cat: "decor", price: 20, seat: true },
+  { key: "deskCorner", name: "Escrivaninha em L", cat: "decor", price: 35 },
+  { key: "computerKeyboard", name: "Teclado", cat: "decor", price: 6, top: true },
+  { key: "computerMouse", name: "Mouse", cat: "decor", price: 4, top: true },
+  { key: "sideTableDrawers", name: "Mesinha com gaveta", cat: "decor", price: 15 },
+  { key: "cardboardBoxClosed", name: "Caixa fechada", cat: "decor", price: 3 },
 ];
+const OLD_TOP = ["televisionModern", "televisionVintage", "lampRoundTable", "laptop", "computerScreen", "books", "plantSmall1", "plantSmall2", "plantSmall3", "radio", "kitchenCoffeeMachine", "kitchenMicrowave", "pillow", "pillowBlue", "bear", "speaker"];
+for (const c of CATALOG) if (OLD_TOP.includes(c.key)) c.top = true;
 export const CAT_BY_KEY = Object.fromEntries(CATALOG.map((c) => [c.key, c]));
 
 export const WALLS = [
@@ -125,7 +174,11 @@ export type Home = {
   prog: { pet: Partial<Record<Who, boolean>>; decor: Partial<Record<Who, boolean>> };
   bonus: boolean;
   log: { t: number; text: string }[];
+  /** fotos dos quadros (caminho no armazenamento), índice = quadro */
+  frames: (string | null)[];
 };
+export const FRAME_COUNT = 6;
+export const FRAME_PATH_RE = /^\d+_[a-z0-9]{4,12}\.(jpg|jpeg|png|webp|heic|gif)$/i;
 
 export function today() {
   return new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
@@ -157,13 +210,14 @@ export function starter(): Home {
     prog: { pet: {}, decor: {} },
     bonus: false,
     log: [],
+    frames: [],
   };
 }
 
 export function normalize(raw: Partial<Home> | null | undefined): Home {
   const s = starter();
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.items)) return s;
-  const h: Home = { ...s, ...raw, avatars: { ...s.avatars, ...(raw.avatars ?? {}) }, prog: { pet: {}, decor: {}, ...(raw.prog ?? {}) } };
+  const h: Home = { ...s, ...raw, frames: Array.isArray(raw.frames) ? raw.frames : [], avatars: { ...s.avatars, ...(raw.avatars ?? {}) }, prog: { pet: {}, decor: {}, ...(raw.prog ?? {}) } };
   if (h.day !== today()) {
     h.day = today();
     h.missions = {};
@@ -216,7 +270,8 @@ export type HomeAction =
   | { t: "avatar"; model: string }
   | { t: "adopt"; kind: string; name: string }
   | { t: "feed" }
-  | { t: "pat" };
+  | { t: "pat" }
+  | { t: "frame"; i: number; path: string | null };
 
 const clampPos = (v: number) => Math.max(0.2, Math.min(ROOM - 0.2, Math.round(v * 4) / 4));
 const clampRoom = (r: number | undefined) => (r === 1 || r === 2 || r === 3 ? r : 0);
@@ -292,6 +347,17 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       } else h.pet.lastPet = Date.now();
       if (otherOnline) h.prog.pet[who] = true;
       return "";
+    }
+    case "frame": {
+      const i = Math.floor(Number(a.i));
+      if (!(i >= 0 && i < FRAME_COUNT)) throw new Error("Quadro inválido");
+      if (a.path !== null && !FRAME_PATH_RE.test(String(a.path))) throw new Error("Foto inválida");
+      const f = Array.isArray(h.frames) ? [...h.frames] : [];
+      while (f.length < FRAME_COUNT) f.push(null);
+      f[i] = a.path;
+      h.frames = f;
+      if (a.path) note(h, `${name(who)} pendurou uma foto num quadro`);
+      return a.path ? "Foto no quadro" : "Quadro limpo";
     }
   }
 }
