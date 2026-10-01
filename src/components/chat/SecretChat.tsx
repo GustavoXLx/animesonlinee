@@ -213,6 +213,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const [otherTyping, setOtherTyping] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGames, setShowGames] = useState(false);
+  const [startGame, setStartGame] = useState<string | null>(null);
   const [showHouse, setShowHouse] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   useEffect(() => {

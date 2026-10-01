@@ -175,7 +175,7 @@ export function ChatMenu({
   onUploadAvatar: (f: File) => void;
   wp: string;
   setWp: (v: string) => void;
-  onGames: () => void;
+  onGames: (game?: string) => void;
   onHouse: () => void;
   onSearch: () => void;
   bubble: string;
