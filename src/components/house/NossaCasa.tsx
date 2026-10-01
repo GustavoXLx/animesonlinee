@@ -321,7 +321,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
         <div className="rounded-full bg-black/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider backdrop-blur">{ROOM_NAMES[curRoom]}</div>
         <div className="ml-auto flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs backdrop-blur">
           <span className={`h-2 w-2 rounded-full ${online[partner] ? "bg-emerald-400" : "bg-white/30"}`} />
-          {partner === "gu" ? "bb gu" : "bb li"} {online[partner] ? `na ${ROOM_NAMES[avatars[partner].room ?? 0]}` : "fora de casa"}
+          {partner === "gu" ? "bb gu" : "bb li"} {online[partner] ? `· ${ROOM_NAMES[avatars[partner].room ?? 0]}` : "fora de casa"}
         </div>
       </div>
 
