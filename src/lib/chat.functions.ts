@@ -969,7 +969,7 @@ export const genPartyPrompts = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
         instructions:
-          "Você cria cartas para um jogo de casal (namorados, os dois são 'bb gu' e 'bb li'). Português brasileiro. Nunca fale de ex, crushes antigos ou relacionamentos anteriores. Responda APENAS com um array JSON de strings.",
+          "Você cria cartas para um jogo de casal (namorados, os dois são 'bb gu' e 'bb li'). Português brasileiro. PROIBIDO: ex, crushes, primeiro beijo, qualquer pessoa ou relacionamento antes do casal, terceiros atraentes, flerte com outros, ciúmes, traição, desconfiança. Responda APENAS com um array JSON de strings.",
         input: `Crie 15 ${format}, tom ${tone}, sobre o tema: "${data.theme || "nós dois"}". Curtas (máx 110 caracteres), todas diferentes.`,
       }),
     });
