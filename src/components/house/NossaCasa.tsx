@@ -4,8 +4,8 @@ import { ImagePlus, MessageCircle, Send, Trash2, X, Heart, Hammer, ShoppingBag, 
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
-  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats,
-  type Home, type HomeAction, type PlacedItem, type Who,
+  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
+  type Home, type Pet, type HomeAction, type PlacedItem, type Who,
 } from "@/lib/home";
 import { roomDoors, type Avatar, type Door } from "./HouseScene";
 
@@ -37,9 +37,11 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   const [selected, setSelected] = useState<string | null>(null);
   const [ghost, setGhost] = useState<(PlacedItem & { fromBox?: boolean }) | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [petAction, setPetAction] = useState<{ name: string; at: number } | null>(null);
+  const [petAction, setPetAction] = useState<{ name: string; at: number; i?: number } | null>(null);
   const [cat, setCat] = useState<keyof typeof CAT_NAMES>("sala");
   const [petName, setPetName] = useState("");
+  const [petIdx, setPetIdx] = useState(0);
+  const [adopting, setAdopting] = useState(false);
   const [busy, setBusy] = useState(false);
   const chRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const avRef = useRef(avatars);
@@ -91,7 +93,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
       if ((payload as { who: Who }).who === me) return;
       ch.send({ type: "broadcast", event: "av", payload: { who: me, av: avRef.current[me] } });
     });
-    ch.on("broadcast", { event: "pet" }, ({ payload }) => setPetAction(payload as { name: string; at: number }));
+    ch.on("broadcast", { event: "pet" }, ({ payload }) => setPetAction(payload as { name: string; at: number; i?: number }));
     ch.subscribe((s) => {
       if (s === "SUBSCRIBED") {
         ch.send({ type: "broadcast", event: "hello", payload: { who: me } });
@@ -246,9 +248,9 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   };
 
   const petDo = async (t: "feed" | "pat") => {
-    const ok = await run({ t });
+    const ok = await run({ t, i: petIdx });
     if (ok) {
-      const a = { name: t === "feed" ? "eat" : "gesture-positive", at: Date.now() };
+      const a = { name: t === "feed" ? "eat" : "gesture-positive", at: Date.now(), i: petIdx };
       setPetAction(a);
       chRef.current?.send({ type: "broadcast", event: "pet", payload: a });
       if (!online[other(me)]) say("Conta pra missão só quando os dois estão em casa");
@@ -297,7 +299,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
             petAction={petAction}
             onFloor={onFloor}
             onItem={onItem}
-            onPet={() => setPanel("pet")}
+            onPet={(i) => { setPetIdx(i); setAdopting(false); setPanel("pet"); }}
             frameUrls={frameUrls}
             room={curRoom}
             onDoor={(d) => !decor && goDoor(d)}
@@ -528,9 +530,31 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
 
             {panel === "pet" && (
               <>
-                <Head title={home.pet ? home.pet.name : "Adotar um pet"} />
-                {home.pet ? (
-                  <PetPanel home={home} busy={busy} onFeed={() => petDo("feed")} onPat={() => petDo("pat")} />
+                <Head title={home.pets[petIdx] && !adopting ? home.pets[petIdx].name : "Adotar um pet"} />
+                {home.pets.length > 0 && (
+                  <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                    {home.pets.map((pt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setPetIdx(i); setAdopting(false); }}
+                        className={`flex shrink-0 flex-col items-center rounded-xl p-1.5 ${i === petIdx && !adopting ? "bg-pink-500/30 ring-1 ring-pink-400" : "bg-white/5"}`}
+                      >
+                        <img src={`/house/pets/prev/${pt.kind}.png`} alt="" className="h-10 w-10 object-contain" />
+                        <span className="max-w-[56px] truncate text-[10px]">{pt.name}</span>
+                      </button>
+                    ))}
+                    {home.pets.length < MAX_PETS && (
+                      <button
+                        onClick={() => setAdopting(true)}
+                        className={`flex h-[62px] w-[56px] shrink-0 items-center justify-center rounded-xl text-2xl ${adopting ? "bg-pink-500/30 ring-1 ring-pink-400" : "bg-white/5"}`}
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                )}
+                {home.pets[petIdx] && !adopting ? (
+                  <PetPanel pet={home.pets[petIdx]} busy={busy} onFeed={() => petDo("feed")} onPat={() => petDo("pat")} />
                 ) : (
                   <>
                     <div className="grid grid-cols-3 gap-2">
@@ -538,7 +562,13 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
                         <button
                           key={p.kind}
                           disabled={busy}
-                          onClick={() => run({ t: "adopt", kind: p.kind, name: petName || p.name })}
+                          onClick={async () => {
+                            if (await run({ t: "adopt", kind: p.kind, name: petName || p.name })) {
+                              setPetIdx(home.pets.length);
+                              setAdopting(false);
+                              setPetName("");
+                            }
+                          }}
                           className="flex flex-col items-center gap-1 rounded-2xl bg-white/5 p-2"
                         >
                           <img src={`/house/pets/prev/${p.kind}.png`} alt="" className="aspect-square w-full object-contain" loading="lazy" />
@@ -597,17 +627,17 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   );
 }
 
-function PetPanel({ home, busy, onFeed, onPat }: { home: Home; busy: boolean; onFeed: () => void; onPat: () => void }) {
+function PetPanel({ pet, busy, onFeed, onPat }: { pet: Pet; busy: boolean; onFeed: () => void; onPat: () => void }) {
   const [, force] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => force((n) => n + 1), 30_000);
     return () => window.clearInterval(id);
   }, []);
-  const s = petStats(home.pet!);
+  const s = petStats(pet);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <img src={`/house/pets/prev/${home.pet!.kind}.png`} alt="" className="h-20 w-20 rounded-2xl bg-white/5 object-contain" />
+        <img src={`/house/pets/prev/${pet.kind}.png`} alt="" className="h-20 w-20 rounded-2xl bg-white/5 object-contain" />
         <div className="flex-1 space-y-2">
           <Bar label="Barriga" v={s.hunger} color="bg-amber-400" />
           <Bar label="Alegria" v={s.joy} color="bg-pink-400" />

@@ -159,6 +159,7 @@ export const MISSIONS: { id: MissionId; title: string; desc: string; reward: num
 export const BONUS = 30;
 export const TOGETHER_GOAL = 300;
 
+export const MAX_PETS = 6;
 export type Pet = { kind: string; name: string; lastFed: number; lastPet: number };
 export type Home = {
   coins: number;
@@ -169,6 +170,8 @@ export type Home = {
   styles: string[];
   avatars: Record<Who, string>;
   pet: Pet | null;
+  /** todos os pets (o primeiro também fica em `pet`) */
+  pets: Pet[];
   day: string;
   missions: Partial<Record<MissionId, boolean>>;
   prog: { pet: Partial<Record<Who, boolean>>; decor: Partial<Record<Who, boolean>> };
@@ -205,6 +208,7 @@ export function starter(): Home {
     styles: ["creme", "carvalho"],
     avatars: { gu: "male-a", li: "female-a" },
     pet: null,
+    pets: [],
     day: today(),
     missions: {},
     prog: { pet: {}, decor: {} },
@@ -218,6 +222,8 @@ export function normalize(raw: Partial<Home> | null | undefined): Home {
   const s = starter();
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.items)) return s;
   const h: Home = { ...s, ...raw, frames: Array.isArray(raw.frames) ? raw.frames : [], avatars: { ...s.avatars, ...(raw.avatars ?? {}) }, prog: { pet: {}, decor: {}, ...(raw.prog ?? {}) } };
+  h.pets = Array.isArray(raw.pets) ? raw.pets : raw.pet ? [raw.pet] : [];
+  h.pet = h.pets[0] ?? null;
   if (h.day !== today()) {
     h.day = today();
     h.missions = {};
@@ -269,8 +275,8 @@ export type HomeAction =
   | { t: "style"; kind: "wall" | "floor"; id: string }
   | { t: "avatar"; model: string }
   | { t: "adopt"; kind: string; name: string }
-  | { t: "feed" }
-  | { t: "pat" }
+  | { t: "feed"; i?: number }
+  | { t: "pat"; i?: number }
   | { t: "frame"; i: number; path: string | null };
 
 const clampPos = (v: number) => Math.max(0.2, Math.min(ROOM - 0.2, Math.round(v * 4) / 4));
@@ -331,20 +337,23 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       return "";
     }
     case "adopt": {
-      if (h.pet) throw new Error("Vocês já têm um pet");
+      if (h.pets.length >= MAX_PETS) throw new Error(`Máximo de ${MAX_PETS} pets`);
       if (!PETS.some((p) => p.kind === a.kind)) throw new Error("Pet inválido");
       const nm = String(a.name || "").trim().slice(0, 16) || "Bolinha";
-      h.pet = { kind: a.kind, name: nm, lastFed: Date.now(), lastPet: Date.now() };
+      h.pets = [...h.pets, { kind: a.kind, name: nm, lastFed: Date.now(), lastPet: Date.now() }];
+      h.pet = h.pets[0];
       note(h, `${name(who)} adotou ${nm}`);
       return `${nm} chegou em casa`;
     }
     case "feed":
     case "pat": {
-      if (!h.pet) throw new Error("Sem pet");
+      const pet = h.pets[Math.max(0, Math.floor(Number(a.i ?? 0)))];
+      if (!pet) throw new Error("Sem pet");
       if (a.t === "feed") {
-        if (petStats(h.pet).hunger > 85) throw new Error(`${h.pet.name} está de barriga cheia`);
-        h.pet.lastFed = Date.now();
-      } else h.pet.lastPet = Date.now();
+        if (petStats(pet).hunger > 85) throw new Error(`${pet.name} está de barriga cheia`);
+        pet.lastFed = Date.now();
+      } else pet.lastPet = Date.now();
+      h.pet = h.pets[0];
       if (otherOnline) h.prog.pet[who] = true;
       return "";
     }
