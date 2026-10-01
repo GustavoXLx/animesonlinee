@@ -66,7 +66,7 @@ export function GameChat({ gameKey, me }: { gameKey: string; me: Me }) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[60] flex h-80 w-72 max-w-[85vw] flex-col overflow-hidden rounded-3xl border border-white/15 bg-neutral-900/95 shadow-2xl backdrop-blur">
+    <div className="relative z-[60] flex h-56 w-full shrink-0 flex-col overflow-hidden rounded-t-3xl border-t border-white/15 bg-neutral-900 shadow-2xl">
       <header className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
         <MessageCircle size={14} className="text-pink-400" />
         <p className="flex-1 text-xs font-semibold">chat do jogo</p>
