@@ -1,10 +1,12 @@
+import { SAFADO_NUNCA, SAFADO_PROVAVEL } from "./embrazaSafado";
 export type PartyMode = "nunca" | "provavel";
-export type PartyLevel = "fofo" | "engracado" | "apimentado";
+export type PartyLevel = "fofo" | "engracado" | "apimentado" | "safado";
 
 export const LEVELS: { key: PartyLevel; name: string; desc: string }[] = [
   { key: "fofo", name: "Fofo", desc: "romântico e leve" },
   { key: "engracado", name: "Engraçado", desc: "vergonha e risada" },
   { key: "apimentado", name: "Apimentado", desc: "ousado, só pra nós" },
+  { key: "safado", name: "Safado", desc: "quente de verdade" },
 ];
 
 // Tudo sobre o casal no presente — nada de ex, passado ou ciúmes.
@@ -231,6 +233,7 @@ export const PROMPTS: Record<PartyMode, Record<PartyLevel, string[]>> = {
       "Eu nunca acenei para alguém que estava dando tchau para a pessoa atrás de mim.",
       "Eu nunca fui jogar o lixo fora e quase descartei a chave junto.",
     ],
+    safado: SAFADO_NUNCA,
     apimentado: [
       "Eu nunca imaginei nosso próximo beijo durante o dia",
       "Eu nunca senti vontade de te agarrar no meio de uma conversa séria",
@@ -568,6 +571,7 @@ export const PROMPTS: Record<PartyMode, Record<PartyLevel, string[]>> = {
       "Quem é mais provável de comprar pijamas combinando para o casal e o cachorro?",
       "Quem é mais provável de ensaiar um discurso para um prêmio que nem existe?",
     ],
+    safado: SAFADO_PROVAVEL,
     apimentado: [
       "Quem é mais provável de roubar um beijo do nada?",
       "Quem é mais provável de provocar o outro de propósito?",

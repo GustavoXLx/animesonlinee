@@ -7,6 +7,7 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
   const [state, setStateLocal] = useState<T>(initial);
   const [peerOnline, setPeerOnline] = useState(false);
   const stateRef = useRef<T>(initial);
+  const tsRef = useRef(0);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const listenersRef = useRef<Record<string, (payload: unknown, from: Me) => void>>({});
 
@@ -18,6 +19,7 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
     if (!gameKey) return;
     setStateLocal(initial);
     stateRef.current = initial;
+    tsRef.current = 0;
     const other: Me = me === "gu" ? "li" : "gu";
     const channel = supabase.channel(`game-${gameKey}`, {
       config: { presence: { key: me }, broadcast: { self: false } },
@@ -25,9 +27,13 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
 
     channel
       .on("broadcast", { event: "state" }, (payload) => {
-        const p = payload.payload as { state: T; from: Me };
+        const p = payload.payload as { state: T; from: Me; ts?: number };
         if (p?.from === me) return;
+        const ts = p?.ts ?? 0;
+        // Ignora estados mais antigos (ex: o outro entrando com o estado inicial)
+        if (ts < tsRef.current) return;
         if (p?.state !== undefined) {
+          tsRef.current = ts;
           stateRef.current = p.state;
           setStateLocal(p.state);
         }
@@ -37,7 +43,7 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
           channel.send({
             type: "broadcast",
             event: "state",
-            payload: { state: stateRef.current, from: me },
+            payload: { state: stateRef.current, from: me, ts: tsRef.current },
           });
         }
       })
@@ -72,10 +78,11 @@ export function useGameChannel<T>(gameKey: string | null, me: Me, initial: T) {
       setStateLocal((prev) => {
         const value = typeof next === "function" ? (next as (p: T) => T)(prev) : next;
         stateRef.current = value;
+        tsRef.current = Math.max(Date.now(), tsRef.current + 1);
         chanRef.current?.send({
           type: "broadcast",
           event: "state",
-          payload: { state: value, from: me },
+          payload: { state: value, from: me, ts: tsRef.current },
         });
         return value;
       });

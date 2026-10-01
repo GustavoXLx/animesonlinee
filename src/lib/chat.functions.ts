@@ -945,13 +945,15 @@ export const homeFrameUrls = createServerFn({ method: "POST" })
 export const genPartyPrompts = createServerFn({ method: "POST" })
   .inputValidator((d: { mode: "nunca" | "provavel"; level: string; theme: string }) => ({
     mode: d.mode === "provavel" ? "provavel" : "nunca",
-    level: ["fofo", "engracado", "apimentado"].includes(d.level) ? d.level : "fofo",
+    level: ["fofo", "engracado", "apimentado", "safado"].includes(d.level) ? d.level : "fofo",
     theme: String(d.theme ?? "").slice(0, 80),
   }))
   .handler(async ({ data }): Promise<{ prompts: string[]; error?: string }> => {
     await gate();
     const tone =
-      data.level === "apimentado"
+      data.level === "safado"
+        ? "bem safado, sensual e provocante, para um casal adulto (os dois maiores de idade) — desejo, tesão, provocação, lugares ousados, roupas, toques, fantasias leves; sugestivo e quente, mas sem descrição gráfica de atos sexuais"
+        : data.level === "apimentado"
         ? "ousado e provocante, para um casal adulto, mas SEM conteúdo sexual explícito"
         : data.level === "engracado"
           ? "engraçado e constrangedor"
@@ -968,22 +970,36 @@ export const genPartyPrompts = createServerFn({ method: "POST" })
       },
       body: JSON.stringify({
         model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
         instructions:
           "Você cria cartas para um jogo de casal (namorados, os dois são 'bb gu' e 'bb li'). Português brasileiro. PROIBIDO: ex, crushes, primeiro beijo, qualquer pessoa ou relacionamento antes do casal, terceiros atraentes, flerte com outros, ciúmes, traição, desconfiança. Responda APENAS com um array JSON de strings.",
-        input: `Crie 15 ${format}, tom ${tone}, sobre o tema: "${data.theme || "nós dois"}". Curtas (máx 110 caracteres), todas diferentes.`,
+        input: `Crie 12 ${format}, tom ${tone}, sobre o tema: "${data.theme || "nós dois"}". Curtas (máx 110 caracteres), todas diferentes.`,
       }),
     });
     if (!res.ok) {
       const msg = res.status === 429 ? "Muitos pedidos, tente em instantes." : res.status === 402 ? "Créditos de IA esgotados." : "Não deu pra gerar agora.";
       return { prompts: [], error: msg };
     }
-    const j = (await res.json()) as {
-      output_text?: string;
-      output?: { content?: { text?: string }[] }[];
-    };
-    const text =
-      j.output_text ??
-      (j.output ?? []).flatMap((o) => o.content ?? []).map((c) => c.text ?? "").join("");
+    let text = "";
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const l of lines) {
+        if (!l.startsWith("data:")) continue;
+        try {
+          const ev = JSON.parse(l.slice(5).trim()) as { type?: string; delta?: string };
+          if (ev.type === "response.output_text.delta" && ev.delta) text += ev.delta;
+        } catch {}
+      }
+    }
     const m = text.match(/\[[\s\S]*\]/);
     try {
       const arr = JSON.parse(m ? m[0] : "[]") as unknown[];

@@ -269,7 +269,8 @@ export function QuemSouEu({ me }: { me: Me }) {
     localStorage.setItem(USED_KEY, JSON.stringify(merged));
   }, [state.used]);
 
-  useEffect(() => setGuessing(false), [state.round, state.phase]);
+  const [peek, setPeek] = useState(false);
+  useEffect(() => { setGuessing(false); setPeek(false); }, [state.round, state.phase]);
 
   // animação mostrando a sua carta no começo da rodada
   const [reveal, setReveal] = useState(false);
@@ -413,6 +414,14 @@ export function QuemSouEu({ me }: { me: Me }) {
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
+        {state.phase === "play" && (
+          <button
+            onClick={() => setPeek((v) => !v)}
+            className={`mb-2 w-full rounded-xl py-2 text-xs font-semibold ${peek ? "bg-yellow-400 text-neutral-900" : "bg-white/10 text-white/80"}`}
+          >
+            {peek ? `Vendo o tabuleiro de ${other === "gu" ? "bb gu" : "bb li"} · voltar pro meu` : `Ver tabuleiro de ${other === "gu" ? "bb gu" : "bb li"}`}
+          </button>
+        )}
         <div
           className="grid grid-cols-6 gap-1.5 rounded-2xl p-2 sm:gap-2"
           style={{ background: `linear-gradient(180deg, ${color}33, ${color}66)`, boxShadow: `inset 0 -6px 0 ${color}` }}
@@ -423,9 +432,9 @@ export function QuemSouEu({ me }: { me: Me }) {
               key={state.round + "-" + i}
               card={c}
               color={color}
-              down={state.down[me].includes(i) && state.phase === "play"}
+              down={state.down[peek ? other : me].includes(i) && state.phase === "play"}
               highlight={state.phase === "end" && i === state.secret[other]}
-              onClick={state.phase === "play" ? () => toggle(i) : undefined}
+              onClick={state.phase === "play" && !peek ? () => toggle(i) : undefined}
             />
             </div>
           ))}
