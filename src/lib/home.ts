@@ -94,9 +94,11 @@ export const PETS = [
   { kind: "penguin", name: "Pinguim" },
 ];
 
-export const ROOM = 4.5; // metros (unidades) de cada lado
+export const ROOM = 4.5; // metros (unidades) de cada lado de um cômodo
+export const HOUSE = ROOM * 2; // casa 2x2 cômodos
+export const ROOM_NAMES = ["Sala", "Quarto", "Cozinha", "Escritório"];
 
-export type PlacedItem = { uid: string; k: string; x: number; z: number; r: number };
+export type PlacedItem = { uid: string; k: string; x: number; z: number; r: number; room?: number };
 export type MissionId = "juntos" | "tempo" | "sentar" | "pet" | "decor";
 export const MISSIONS: { id: MissionId; title: string; desc: string; reward: number }[] = [
   { id: "juntos", title: "Em casa juntos", desc: "Estarem os dois na casa ao mesmo tempo", reward: 15 },
@@ -207,8 +209,8 @@ export function checkMissions(
 
 export type HomeAction =
   | { t: "buy"; key: string }
-  | { t: "place"; key: string; x: number; z: number; r: number }
-  | { t: "move"; uid: string; x: number; z: number; r: number }
+  | { t: "place"; key: string; x: number; z: number; r: number; room?: number }
+  | { t: "move"; uid: string; x: number; z: number; r: number; room?: number }
   | { t: "store"; uid: string }
   | { t: "style"; kind: "wall" | "floor"; id: string }
   | { t: "avatar"; model: string }
@@ -217,6 +219,7 @@ export type HomeAction =
   | { t: "pat" };
 
 const clampPos = (v: number) => Math.max(0.2, Math.min(ROOM - 0.2, Math.round(v * 4) / 4));
+const clampRoom = (r: number | undefined) => (r === 1 || r === 2 || r === 3 ? r : 0);
 
 export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean): string {
   switch (a.t) {
@@ -233,7 +236,7 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       const i = h.inv.indexOf(a.key);
       if (i < 0) throw new Error("Item não está na caixa");
       h.inv.splice(i, 1);
-      h.items.push({ uid: uid(), k: a.key, x: clampPos(a.x), z: clampPos(a.z), r: ((a.r % 4) + 4) % 4 });
+      h.items.push({ uid: uid(), k: a.key, x: clampPos(a.x), z: clampPos(a.z), r: ((a.r % 4) + 4) % 4, room: clampRoom(a.room) });
       if (otherOnline) h.prog.decor[who] = true;
       return "";
     }
@@ -243,6 +246,7 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       it.x = clampPos(a.x);
       it.z = clampPos(a.z);
       it.r = ((a.r % 4) + 4) % 4;
+      if (a.room !== undefined) it.room = clampRoom(a.room);
       if (otherOnline) h.prog.decor[who] = true;
       return "";
     }

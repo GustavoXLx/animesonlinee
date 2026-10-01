@@ -3,9 +3,12 @@ import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { CAT_BY_KEY, FLOORS, ROOM, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
+import { CAT_BY_KEY, FLOORS, HOUSE, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
-export type Avatar = { x: number; z: number; sit: string | null; emote: string | null; emoteAt: number };
+export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number };
+
+/** deslocamento (x,z) do canto do cômodo no mundo */
+const roomOff = (r = 0): [number, number] => [(r % 2) * ROOM, Math.floor(r / 2) * ROOM];
 
 const TOP_ITEMS = new Set([
   "televisionModern", "televisionVintage", "lampRoundTable", "laptop", "computerScreen", "books", "plantSmall1",
@@ -132,46 +135,103 @@ function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: nu
   return (
     <group>
       {/* base da casa */}
-      <mesh position={[ROOM / 2, -0.16, ROOM / 2]} receiveShadow>
-        <boxGeometry args={[ROOM + 0.3, 0.3, ROOM + 0.3]} />
+      <mesh position={[HOUSE / 2, -0.16, HOUSE / 2]} receiveShadow>
+        <boxGeometry args={[HOUSE + 0.3, 0.3, HOUSE + 0.3]} />
         <meshStandardMaterial color="#6b5446" roughness={0.9} />
       </mesh>
       <mesh
         rotation-x={-Math.PI / 2}
-        position={[ROOM / 2, 0, ROOM / 2]}
+        position={[HOUSE / 2, 0, HOUSE / 2]}
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
           onFloor(e.point.x, e.point.z);
         }}
       >
-        <planeGeometry args={[ROOM, ROOM]} />
+        <planeGeometry args={[HOUSE, HOUSE]} />
         <meshStandardMaterial map={floorTex} roughness={0.75} />
       </mesh>
-      {/* parede do fundo (z=0) com janela */}
+      {/* parede do fundo (z=0) com janelas */}
       <group>
-        <mesh position={[ROOM / 2, WALL_H / 2, -0.08]} receiveShadow castShadow>
-          <boxGeometry args={[ROOM + 0.16, WALL_H, 0.16]} />
+        <mesh position={[HOUSE / 2, WALL_H / 2, -0.08]} receiveShadow castShadow>
+          <boxGeometry args={[HOUSE + 0.16, WALL_H, 0.16]} />
           <meshStandardMaterial map={wallTex} roughness={0.95} />
         </mesh>
-        <mesh position={[ROOM / 2, 0.06, 0.005]}>
-          <boxGeometry args={[ROOM, 0.12, 0.02]} />
+        <mesh position={[HOUSE / 2, 0.06, 0.005]}>
+          <boxGeometry args={[HOUSE, 0.12, 0.02]} />
           <meshStandardMaterial color="#f7f1e8" />
         </mesh>
         <Window x={1.1} night={night} />
         <Window x={3.4} night={night} />
+        <Window x={5.6} night={night} />
+        <Window x={7.9} night={night} />
       </group>
       {/* parede esquerda (x=0) */}
-      <mesh position={[-0.08, WALL_H / 2, ROOM / 2]} receiveShadow castShadow>
-        <boxGeometry args={[0.16, WALL_H, ROOM]} />
+      <mesh position={[-0.08, WALL_H / 2, HOUSE / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.16, WALL_H, HOUSE]} />
         <meshStandardMaterial map={wallTex} roughness={0.95} />
       </mesh>
-      <mesh position={[0.005, 0.06, ROOM / 2]}>
-        <boxGeometry args={[0.02, 0.12, ROOM]} />
+      <mesh position={[0.005, 0.06, HOUSE / 2]}>
+        <boxGeometry args={[0.02, 0.12, HOUSE]} />
         <meshStandardMaterial color="#f7f1e8" />
       </mesh>
       <Frame z={1.5} />
       <Frame z={2.8} small />
+      <Frame z={6.0} />
+      <Frame z={7.3} small />
+      {/* paredes internas com portas */}
+      <InteriorWalls map={wallTex} />
+      {/* nomes dos cômodos */}
+      {ROOM_NAMES.map((n, i) => {
+        const [ox, oz] = roomOff(i);
+        return (
+          <Html key={n} position={[ox + ROOM / 2, 0.05, oz + ROOM - 0.3]} center zIndexRange={[5, 0]}>
+            <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-black/25 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
+              {n}
+            </div>
+          </Html>
+        );
+      })}
+    </group>
+  );
+}
+
+/** paredes internas em cruz, com vão de porta no centro de cada uma */
+function InteriorWalls({ map }: { map: THREE.Texture }) {
+  const g = 0.8; // metade do vão da porta
+  return (
+    <group>
+      {/* parede vertical (x = ROOM) */}
+      <mesh position={[ROOM, WALL_H / 2, (ROOM - g) / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.12, WALL_H, ROOM - g]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      <mesh position={[ROOM, WALL_H / 2, (ROOM + g + HOUSE) / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.12, WALL_H, HOUSE - ROOM - g]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      {/* parede horizontal (z = ROOM) */}
+      <mesh position={[(ROOM - g) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
+        <boxGeometry args={[ROOM - g, WALL_H, 0.12]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      <mesh position={[(ROOM + g + HOUSE) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
+        <boxGeometry args={[HOUSE - ROOM - g, WALL_H, 0.12]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      {/* batentes das portas */}
+      {[ROOM - g, ROOM + g].map((v) => (
+        <mesh key={`vx${v}`} position={[ROOM, 0.06, v]}>
+          <boxGeometry args={[0.16, 0.12, 0.06]} />
+          <meshStandardMaterial color="#f7f1e8" />
+        </mesh>
+      ))}
+      {[ROOM - g, ROOM + g].map((v) => (
+        <mesh key={`hz${v}`} position={[v, 0.06, ROOM]}>
+          <boxGeometry args={[0.06, 0.12, 0.16]} />
+          <meshStandardMaterial color="#f7f1e8" />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -244,8 +304,9 @@ function Character({
       const a = (seat.r * Math.PI) / 2;
       return new THREE.Vector3(seat.x + Math.cos(a) * side, 0, seat.z - Math.sin(a) * side);
     }
-    return new THREE.Vector3(av.x, 0, av.z);
-  }, [seat, av.x, av.z, who]);
+    const [ox, oz] = roomOff(av.room);
+    return new THREE.Vector3(av.x + ox, 0, av.z + oz);
+  }, [seat, av.x, av.z, av.room, who]);
 
   useLayoutEffect(() => {
     if (firstRef.current) {
@@ -337,7 +398,7 @@ function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; on
     if (!g) return;
     // passeio igual nos dois aparelhos: posição derivada do relógio
     const seg = Math.floor(Date.now() / 7000);
-    const tgt = new THREE.Vector3(0.8 + hash(seg) * (ROOM - 1.6), 0, 1.4 + hash(seg + 99) * (ROOM - 2.2));
+    const tgt = new THREE.Vector3(0.8 + hash(seg) * (HOUSE - 1.6), 0, 1.4 + hash(seg + 99) * (HOUSE - 2.2));
     const d = tgt.sub(pos.current);
     const dist = d.length();
     const acting = action && Date.now() - action.at < 2200;
@@ -369,9 +430,9 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    cam.position.set(ROOM / 2 + 10, 9.5, ROOM / 2 + 10);
-    cam.lookAt(ROOM / 2, 0.5, ROOM / 2);
-    cam.zoom = Math.min(size.width, size.height * 1.25) / (ROOM * 1.6);
+    cam.position.set(HOUSE / 2 + 10, 9.5, HOUSE / 2 + 10);
+    cam.lookAt(HOUSE / 2, 0.5, HOUSE / 2);
+    cam.zoom = Math.min(size.width, size.height * 1.25) / (HOUSE * 1.45);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
   return null;
@@ -395,6 +456,20 @@ export default function HouseScene(p: SceneProps) {
   const hour = new Date().getHours();
   const night = hour >= 19 || hour < 6;
   const items = p.home.items;
+  // posições no mundo = posição local + deslocamento do cômodo
+  const wItems = useMemo(
+    () =>
+      items.map((it) => {
+        const [ox, oz] = roomOff(it.room);
+        return { ...it, x: it.x + ox, z: it.z + oz };
+      }),
+    [items],
+  );
+  const wGhost = useMemo(() => {
+    if (!p.ghost) return null;
+    const [ox, oz] = roomOff(p.ghost.room);
+    return { ...p.ghost, x: p.ghost.x + ox, z: p.ghost.z + oz };
+  }, [p.ghost]);
   const petSad = p.home.pet ? Date.now() - p.home.pet.lastFed > 14 * 3600_000 : false;
   return (
     <Canvas shadows orthographic dpr={[1, 1.75]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true }}>
@@ -408,22 +483,22 @@ export default function HouseScene(p: SceneProps) {
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={6}
-        shadow-camera-bottom={-6}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
         shadow-bias={-0.0008}
       />
-      {night && <pointLight position={[3, 1.8, 3]} intensity={6} distance={7} color="#ffcf8a" />}
+      {night && <pointLight position={[HOUSE / 2, 1.8, HOUSE / 2]} intensity={10} distance={11} color="#ffcf8a" />}
       <Environment resolution={64}>
         <Lightformer intensity={1.4} position={[0, 5, 0]} scale={[10, 10, 1]} rotation-x={Math.PI / 2} />
         <Lightformer intensity={0.8} color="#ffd9c0" position={[-5, 2, 3]} rotation-y={Math.PI / 2} scale={[10, 3, 1]} />
       </Environment>
       <Suspense fallback={null}>
         <Room home={p.home} onFloor={p.onFloor} night={night} />
-        {items.map((it) =>
+        {wItems.map((it) =>
           p.ghost && p.selected === it.uid ? null : (
-            <BaseHeight key={it.uid} item={it} items={items}>
+            <BaseHeight key={it.uid} item={it} items={wItems}>
               {(y) => (
                 <Furn
                   item={it}
@@ -438,18 +513,18 @@ export default function HouseScene(p: SceneProps) {
             </BaseHeight>
           ),
         )}
-        {p.ghost && (
-          <BaseHeight item={p.ghost} items={items}>
-            {(y) => <Furn item={p.ghost!} y={y} ghost />}
+        {wGhost && (
+          <BaseHeight item={wGhost} items={wItems}>
+            {(y) => <Furn item={wGhost} y={y} ghost />}
           </BaseHeight>
         )}
         {(["gu", "li"] as Who[]).map((w) =>
           w === p.me || p.online[w] ? (
-            <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={items} label={w === "gu" ? "bb gu" : "bb li"} />
+            <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
         {p.home.pet && <PetModel kind={p.home.pet.kind} sad={petSad} onTap={p.onPet} action={p.petAction} />}
-        <ContactShadows position={[ROOM / 2, 0.005, ROOM / 2]} scale={ROOM} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
+        <ContactShadows position={[HOUSE / 2, 0.005, HOUSE / 2]} scale={HOUSE} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
       </Suspense>
     </Canvas>
   );

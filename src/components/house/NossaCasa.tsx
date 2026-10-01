@@ -22,8 +22,8 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   const [online, setOnline] = useState<Record<Who, boolean>>({ gu: false, li: false });
   const [together, setTogether] = useState(0);
   const [avatars, setAvatars] = useState<Record<Who, Avatar>>({
-    gu: { x: 2.4, z: 2.6, sit: null, emote: null, emoteAt: 0 },
-    li: { x: 3.6, z: 2.6, sit: null, emote: null, emoteAt: 0 },
+    gu: { x: 2.4, z: 2.6, room: 0, sit: null, emote: null, emoteAt: 0 },
+    li: { x: 3.6, z: 2.6, room: 0, sit: null, emote: null, emoteAt: 0 },
   });
   const [panel, setPanel] = useState<Panel>(null);
   const [decor, setDecor] = useState(false);
@@ -126,16 +126,23 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
     }
   };
 
+  // a cena manda coordenadas do mundo; aqui viram cômodo + posição local
+  const toLocal = (x: number, z: number) => {
+    const room = (x >= ROOM ? 1 : 0) + (z >= ROOM ? 2 : 0);
+    const lx = Math.max(0.3, Math.min(ROOM - 0.3, x - (room % 2) * ROOM));
+    const lz = Math.max(0.3, Math.min(ROOM - 0.3, z - Math.floor(room / 2) * ROOM));
+    return { room, lx, lz };
+  };
+
   const onFloor = (x: number, z: number) => {
-    const cx = Math.max(0.3, Math.min(ROOM - 0.3, x));
-    const cz = Math.max(0.3, Math.min(ROOM - 0.3, z));
+    const { room, lx, lz } = toLocal(x, z);
     if (decor) {
-      if (ghost) setGhost({ ...ghost, x: Math.round(cx * 4) / 4, z: Math.round(cz * 4) / 4 });
+      if (ghost) setGhost({ ...ghost, room, x: Math.round(lx * 4) / 4, z: Math.round(lz * 4) / 4 });
       else setSelected(null);
       return;
     }
     if (avatars[me].sit) pendingSit.current = null;
-    moveMe({ x: cx, z: cz, sit: null });
+    moveMe({ x: lx, z: lz, room, sit: null });
   };
 
   const onItem = (it: PlacedItem) => {
@@ -144,12 +151,15 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
       setSelected(it.uid);
       return;
     }
+    // it chega com coordenadas do mundo; converte pra local do cômodo
+    const { room, lx, lz } = toLocal(it.x, it.z);
     const c = CAT_BY_KEY[it.k];
     if (c?.seat) {
       pendingSit.current = it.uid;
-      moveMe({ sit: it.uid, x: it.x, z: it.z });
+      moveMe({ sit: it.uid, x: lx, z: lz, room });
     } else {
-      moveMe({ x: Math.max(0.3, Math.min(ROOM - 0.3, it.x + 0.6)), z: Math.max(0.3, Math.min(ROOM - 0.3, it.z + 0.6)), sit: null });
+      const near = toLocal(it.x + 0.6, it.z + 0.6);
+      moveMe({ x: near.lx, z: near.lz, room: near.room, sit: null });
     }
   };
 
@@ -171,8 +181,8 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
   const confirmGhost = async () => {
     if (!ghost) return;
     const ok = ghost.fromBox
-      ? await run({ t: "place", key: ghost.k, x: ghost.x, z: ghost.z, r: ghost.r })
-      : await run({ t: "move", uid: ghost.uid, x: ghost.x, z: ghost.z, r: ghost.r });
+      ? await run({ t: "place", key: ghost.k, x: ghost.x, z: ghost.z, r: ghost.r, room: ghost.room ?? 0 })
+      : await run({ t: "move", uid: ghost.uid, x: ghost.x, z: ghost.z, r: ghost.r, room: ghost.room ?? 0 });
     if (ok) {
       setGhost(null);
       setSelected(null);
@@ -340,7 +350,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
                         onClick={() => {
                           setDecor(true);
                           setSelected(null);
-                          setGhost({ uid: `new-${i}`, k, x: ROOM / 2, z: ROOM / 2, r: 0, fromBox: true });
+                          setGhost({ uid: `new-${i}`, k, x: ROOM / 2, z: ROOM / 2, r: 0, room: 0, fromBox: true });
                           setPanel(null);
                         }}
                         className="flex flex-col items-center gap-1 rounded-2xl bg-white/5 p-2"
