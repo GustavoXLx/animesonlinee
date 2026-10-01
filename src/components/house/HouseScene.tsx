@@ -3,9 +3,12 @@ import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { CAT_BY_KEY, FLOORS, ROOM, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
+import { CAT_BY_KEY, FLOORS, HOUSE, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
-export type Avatar = { x: number; z: number; sit: string | null; emote: string | null; emoteAt: number };
+export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number };
+
+/** deslocamento (x,z) do canto do cômodo no mundo */
+const roomOff = (r = 0): [number, number] => [(r % 2) * ROOM, Math.floor(r / 2) * ROOM];
 
 const TOP_ITEMS = new Set([
   "televisionModern", "televisionVintage", "lampRoundTable", "laptop", "computerScreen", "books", "plantSmall1",
@@ -132,46 +135,103 @@ function Room({ home, onFloor, night }: { home: Home; onFloor: (x: number, z: nu
   return (
     <group>
       {/* base da casa */}
-      <mesh position={[ROOM / 2, -0.16, ROOM / 2]} receiveShadow>
-        <boxGeometry args={[ROOM + 0.3, 0.3, ROOM + 0.3]} />
+      <mesh position={[HOUSE / 2, -0.16, HOUSE / 2]} receiveShadow>
+        <boxGeometry args={[HOUSE + 0.3, 0.3, HOUSE + 0.3]} />
         <meshStandardMaterial color="#6b5446" roughness={0.9} />
       </mesh>
       <mesh
         rotation-x={-Math.PI / 2}
-        position={[ROOM / 2, 0, ROOM / 2]}
+        position={[HOUSE / 2, 0, HOUSE / 2]}
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
           onFloor(e.point.x, e.point.z);
         }}
       >
-        <planeGeometry args={[ROOM, ROOM]} />
+        <planeGeometry args={[HOUSE, HOUSE]} />
         <meshStandardMaterial map={floorTex} roughness={0.75} />
       </mesh>
-      {/* parede do fundo (z=0) com janela */}
+      {/* parede do fundo (z=0) com janelas */}
       <group>
-        <mesh position={[ROOM / 2, WALL_H / 2, -0.08]} receiveShadow castShadow>
-          <boxGeometry args={[ROOM + 0.16, WALL_H, 0.16]} />
+        <mesh position={[HOUSE / 2, WALL_H / 2, -0.08]} receiveShadow castShadow>
+          <boxGeometry args={[HOUSE + 0.16, WALL_H, 0.16]} />
           <meshStandardMaterial map={wallTex} roughness={0.95} />
         </mesh>
-        <mesh position={[ROOM / 2, 0.06, 0.005]}>
-          <boxGeometry args={[ROOM, 0.12, 0.02]} />
+        <mesh position={[HOUSE / 2, 0.06, 0.005]}>
+          <boxGeometry args={[HOUSE, 0.12, 0.02]} />
           <meshStandardMaterial color="#f7f1e8" />
         </mesh>
         <Window x={1.1} night={night} />
         <Window x={3.4} night={night} />
+        <Window x={5.6} night={night} />
+        <Window x={7.9} night={night} />
       </group>
       {/* parede esquerda (x=0) */}
-      <mesh position={[-0.08, WALL_H / 2, ROOM / 2]} receiveShadow castShadow>
-        <boxGeometry args={[0.16, WALL_H, ROOM]} />
+      <mesh position={[-0.08, WALL_H / 2, HOUSE / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.16, WALL_H, HOUSE]} />
         <meshStandardMaterial map={wallTex} roughness={0.95} />
       </mesh>
-      <mesh position={[0.005, 0.06, ROOM / 2]}>
-        <boxGeometry args={[0.02, 0.12, ROOM]} />
+      <mesh position={[0.005, 0.06, HOUSE / 2]}>
+        <boxGeometry args={[0.02, 0.12, HOUSE]} />
         <meshStandardMaterial color="#f7f1e8" />
       </mesh>
       <Frame z={1.5} />
       <Frame z={2.8} small />
+      <Frame z={6.0} />
+      <Frame z={7.3} small />
+      {/* paredes internas com portas */}
+      <InteriorWalls map={wallTex} />
+      {/* nomes dos cômodos */}
+      {ROOM_NAMES.map((n, i) => {
+        const [ox, oz] = roomOff(i);
+        return (
+          <Html key={n} position={[ox + ROOM / 2, 0.05, oz + ROOM - 0.3]} center zIndexRange={[5, 0]}>
+            <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-black/25 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/60">
+              {n}
+            </div>
+          </Html>
+        );
+      })}
+    </group>
+  );
+}
+
+/** paredes internas em cruz, com vão de porta no centro de cada uma */
+function InteriorWalls({ map }: { map: THREE.Texture }) {
+  const g = 0.8; // metade do vão da porta
+  return (
+    <group>
+      {/* parede vertical (x = ROOM) */}
+      <mesh position={[ROOM, WALL_H / 2, (ROOM - g) / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.12, WALL_H, ROOM - g]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      <mesh position={[ROOM, WALL_H / 2, (ROOM + g + HOUSE) / 2]} receiveShadow castShadow>
+        <boxGeometry args={[0.12, WALL_H, HOUSE - ROOM - g]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      {/* parede horizontal (z = ROOM) */}
+      <mesh position={[(ROOM - g) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
+        <boxGeometry args={[ROOM - g, WALL_H, 0.12]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      <mesh position={[(ROOM + g + HOUSE) / 2, WALL_H / 2, ROOM]} receiveShadow castShadow>
+        <boxGeometry args={[HOUSE - ROOM - g, WALL_H, 0.12]} />
+        <meshStandardMaterial map={map} roughness={0.95} />
+      </mesh>
+      {/* batentes das portas */}
+      {[ROOM - g, ROOM + g].map((v) => (
+        <mesh key={`vx${v}`} position={[ROOM, 0.06, v]}>
+          <boxGeometry args={[0.16, 0.12, 0.06]} />
+          <meshStandardMaterial color="#f7f1e8" />
+        </mesh>
+      ))}
+      {[ROOM - g, ROOM + g].map((v) => (
+        <mesh key={`hz${v}`} position={[v, 0.06, ROOM]}>
+          <boxGeometry args={[0.06, 0.12, 0.16]} />
+          <meshStandardMaterial color="#f7f1e8" />
+        </mesh>
+      ))}
     </group>
   );
 }
