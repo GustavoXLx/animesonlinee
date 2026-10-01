@@ -940,3 +940,56 @@ export const homeFrameUrls = createServerFn({ method: "POST" })
     (signed ?? []).forEach((s) => s.path && s.signedUrl && (out[s.path] = s.signedUrl));
     return out;
   });
+
+/** Gera cartas do jogo Embraza (Eu Nunca / O Mais Provável) a partir de um tema. */
+export const genPartyPrompts = createServerFn({ method: "POST" })
+  .inputValidator((d: { mode: "nunca" | "provavel"; level: string; theme: string }) => ({
+    mode: d.mode === "provavel" ? "provavel" : "nunca",
+    level: ["fofo", "engracado", "apimentado"].includes(d.level) ? d.level : "fofo",
+    theme: String(d.theme ?? "").slice(0, 80),
+  }))
+  .handler(async ({ data }): Promise<{ prompts: string[]; error?: string }> => {
+    await gate();
+    const tone =
+      data.level === "apimentado"
+        ? "ousado e provocante, para um casal adulto, mas SEM conteúdo sexual explícito"
+        : data.level === "engracado"
+          ? "engraçado e constrangedor"
+          : "fofo e romântico";
+    const format =
+      data.mode === "nunca"
+        ? 'frases começando com "Eu nunca"'
+        : 'perguntas começando com "Quem é mais provável de" e terminando com "?"';
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-6-astra",
+        instructions:
+          "Você cria cartas para um jogo de casal (namorados, os dois são 'bb gu' e 'bb li'). Português brasileiro. Nunca fale de ex, crushes antigos ou relacionamentos anteriores. Responda APENAS com um array JSON de strings.",
+        input: `Crie 15 ${format}, tom ${tone}, sobre o tema: "${data.theme || "nós dois"}". Curtas (máx 110 caracteres), todas diferentes.`,
+      }),
+    });
+    if (!res.ok) {
+      const msg = res.status === 429 ? "Muitos pedidos, tente em instantes." : res.status === 402 ? "Créditos de IA esgotados." : "Não deu pra gerar agora.";
+      return { prompts: [], error: msg };
+    }
+    const j = (await res.json()) as {
+      output_text?: string;
+      output?: { content?: { text?: string }[] }[];
+    };
+    const text =
+      j.output_text ??
+      (j.output ?? []).flatMap((o) => o.content ?? []).map((c) => c.text ?? "").join("");
+    const m = text.match(/\[[\s\S]*\]/);
+    try {
+      const arr = JSON.parse(m ? m[0] : "[]") as unknown[];
+      const prompts = arr.filter((s): s is string => typeof s === "string").map((s) => s.slice(0, 140)).slice(0, 20);
+      return prompts.length ? { prompts } : { prompts: [], error: "A IA não respondeu, tente outro tema." };
+    } catch {
+      return { prompts: [], error: "A IA não respondeu, tente outro tema." };
+    }
+  });
