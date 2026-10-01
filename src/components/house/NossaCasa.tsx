@@ -4,10 +4,10 @@ import { ImagePlus, MessageCircle, Send, Trash2, X, Heart, Hammer, ShoppingBag, 
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
-  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, TOGETHER_GOAL, WALLS, BONUS, petStats,
+  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats,
   type Home, type HomeAction, type PlacedItem, type Who,
 } from "@/lib/home";
-import type { Avatar } from "./HouseScene";
+import { roomDoors, type Avatar, type Door } from "./HouseScene";
 
 const HouseScene = lazy(() => import("./HouseScene"));
 
@@ -174,12 +174,31 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
     }
   };
 
-  // a cena manda coordenadas do mundo; aqui viram cômodo + posição local
-  const toLocal = (x: number, z: number) => {
-    const room = (x >= ROOM ? 1 : 0) + (z >= ROOM ? 2 : 0);
-    const lx = Math.max(0.3, Math.min(ROOM - 0.3, x - (room % 2) * ROOM));
-    const lz = Math.max(0.3, Math.min(ROOM - 0.3, z - Math.floor(room / 2) * ROOM));
-    return { room, lx, lz };
+  // a cena mostra só o cômodo atual, em coordenadas locais; paredes = limites
+  const curRoom = avatars[me].room ?? 0;
+  const toLocal = (x: number, z: number) => ({
+    room: curRoom,
+    lx: Math.max(0.35, Math.min(ROOM - 0.35, x)),
+    lz: Math.max(0.35, Math.min(ROOM - 0.35, z)),
+  });
+  const doorTimer = useRef<number | null>(null);
+  const goDoor = (d: Door) => {
+    if (doorTimer.current) window.clearTimeout(doorTimer.current);
+    if (avatars[me].sit) pendingSit.current = null;
+    const tx = Math.max(0.35, Math.min(ROOM - 0.35, d.x));
+    const tz = Math.max(0.35, Math.min(ROOM - 0.35, d.z));
+    const a = avatars[me];
+    const dist = Math.hypot(a.x - tx, a.z - tz);
+    moveMe({ x: tx, z: tz, sit: null });
+    doorTimer.current = window.setTimeout(() => {
+      // entra pela porta oposta do outro cômodo
+      const back = roomDoors(d.to).find((o) => o.to === curRoom);
+      const ex = back ? (back.side === "left" ? 0.7 : back.side === "right" ? ROOM - 0.7 : back.x) : ROOM / 2;
+      const ez = back ? (back.side === "back" ? 0.7 : back.side === "front" ? ROOM - 0.7 : back.z) : ROOM / 2;
+      moveMe({ room: d.to, x: ex, z: ez, sit: null });
+      setSelected(null);
+      say(ROOM_NAMES[d.to]);
+    }, (dist / 1.8) * 1000 + 120);
   };
 
   const onFloor = (x: number, z: number) => {
@@ -189,6 +208,9 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
       else setSelected(null);
       return;
     }
+    if (doorTimer.current) window.clearTimeout(doorTimer.current);
+    const near = roomDoors(curRoom).find((d) => Math.hypot(d.x - x, d.z - z) < 0.75);
+    if (near) return goDoor(near);
     if (avatars[me].sit) pendingSit.current = null;
     moveMe({ x: lx, z: lz, room, sit: null });
   };
@@ -277,6 +299,8 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
             onItem={onItem}
             onPet={() => setPanel("pet")}
             frameUrls={frameUrls}
+            room={curRoom}
+            onDoor={(d) => !decor && goDoor(d)}
             onFrame={(i) => {
               if (decor) return;
               setFrameIdx(i);
@@ -294,9 +318,10 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
         <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-sm font-bold backdrop-blur">
           <Heart size={15} className="fill-pink-400 text-pink-400" /> {home.coins}
         </div>
+        <div className="rounded-full bg-black/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider backdrop-blur">{ROOM_NAMES[curRoom]}</div>
         <div className="ml-auto flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs backdrop-blur">
           <span className={`h-2 w-2 rounded-full ${online[partner] ? "bg-emerald-400" : "bg-white/30"}`} />
-          {partner === "gu" ? "bb gu" : "bb li"} {online[partner] ? "está em casa" : "fora de casa"}
+          {partner === "gu" ? "bb gu" : "bb li"} {online[partner] ? `· ${ROOM_NAMES[avatars[partner].room ?? 0]}` : "fora de casa"}
         </div>
       </div>
 
@@ -469,7 +494,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
                         onClick={() => {
                           setDecor(true);
                           setSelected(null);
-                          setGhost({ uid: `new-${i}`, k, x: ROOM / 2, z: ROOM / 2, r: 0, room: 0, fromBox: true });
+                          setGhost({ uid: `new-${i}`, k, x: ROOM / 2, z: ROOM / 2, r: 0, room: curRoom, fromBox: true });
                           setPanel(null);
                         }}
                         className="flex flex-col items-center gap-1 rounded-2xl bg-white/5 p-2"
