@@ -446,7 +446,7 @@ function hash(n: number) {
   const x = Math.sin(n * 127.1) * 43758.5453;
   return x - Math.floor(x);
 }
-function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; onTap: () => void; action: { name: string; at: number } | null }) {
+function PetModel({ kind, sad, onTap, action, seed }: { kind: string; sad: boolean; onTap: () => void; action: { name: string; at: number } | null; seed: number }) {
   const gltf = useGLTF(`/house/pets/animal-${kind}.glb`);
   const obj = useMemo(() => {
     const o = skClone(gltf.scene);
@@ -456,7 +456,8 @@ function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; on
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(gltf.animations, group);
   const cur = useRef("");
-  const pos = useRef(new THREE.Vector3(2, 0, 2));
+  const pos = useRef(new THREE.Vector3(1 + seed * 0.4, 0, 2));
+  const tgt = useRef(new THREE.Vector3());
   const play = (n: string) => {
     if (cur.current === n || !actions[n]) return;
     actions[n]!.reset().fadeIn(0.2).play();
@@ -468,9 +469,8 @@ function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; on
     const g = group.current;
     if (!g) return;
     // passeio igual nos dois aparelhos: posição derivada do relógio
-    const seg = Math.floor(Date.now() / 7000);
-    const tgt = new THREE.Vector3(0.8 + hash(seg) * (ROOM - 1.6), 0, 0.8 + hash(seg + 99) * (ROOM - 1.6));
-    const d = tgt.sub(pos.current);
+    const seg = Math.floor(Date.now() / 7000) + seed * 1000;
+    const d = tgt.current.set(0.8 + hash(seg) * (ROOM - 1.6), 0, 0.8 + hash(seg + 99) * (ROOM - 1.6)).sub(pos.current);
     const dist = d.length();
     const acting = action && Date.now() - action.at < 2200;
     if (acting) play(action!.name);
@@ -517,10 +517,10 @@ export type SceneProps = {
   decor: boolean;
   selected: string | null;
   ghost: PlacedItem | null;
-  petAction: { name: string; at: number } | null;
+  petAction: { name: string; at: number; i?: number } | null;
   onFloor: (x: number, z: number) => void;
   onItem: (it: PlacedItem) => void;
-  onPet: () => void;
+  onPet: (i: number) => void;
   frameUrls: (string | null)[];
   onFrame: (i: number) => void;
   room: number;
@@ -535,9 +535,8 @@ export default function HouseScene(p: SceneProps) {
   // só o cômodo atual aparece (coordenadas locais)
   const wItems = useMemo(() => items.filter((it) => (it.room ?? 0) === p.room), [items, p.room]);
   const wGhost = p.ghost;
-  const petSad = p.home.pet ? Date.now() - p.home.pet.lastFed > 14 * 3600_000 : false;
   return (
-    <Canvas shadows orthographic dpr={[1, 1.75]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true }}>
+    <Canvas shadows orthographic dpr={[1, 1.4]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance", stencil: false }}>
       <CameraRig />
       <ambientLight intensity={night ? 0.35 : 0.55} color={night ? "#9fb0ff" : "#fff4e6"} />
       <hemisphereLight args={[night ? "#8090ff" : "#fff1dc", "#6b4a3a", night ? 0.35 : 0.6]} />
@@ -588,8 +587,17 @@ export default function HouseScene(p: SceneProps) {
             <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
-        {p.home.pet && <PetModel kind={p.home.pet.kind} sad={petSad} onTap={p.onPet} action={p.petAction} />}
-        <ContactShadows position={[ROOM / 2, 0.005, ROOM / 2]} scale={ROOM} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
+        {p.home.pets.map((pet, i) => (
+          <PetModel
+            key={i + pet.kind}
+            seed={i}
+            kind={pet.kind}
+            sad={Date.now() - pet.lastFed > 14 * 3600_000}
+            onTap={() => p.onPet(i)}
+            action={p.petAction && (p.petAction.i ?? 0) === i ? p.petAction : null}
+          />
+        ))}
+        <ContactShadows key={p.room + ":" + wItems.map((i) => i.uid + i.x + i.z).join()} frames={1} position={[ROOM / 2, 0.005, ROOM / 2]} scale={ROOM} opacity={0.35} blur={2.4} far={1.5} resolution={512} />
       </Suspense>
     </Canvas>
   );
