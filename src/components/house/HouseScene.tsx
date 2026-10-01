@@ -304,8 +304,9 @@ function Character({
       const a = (seat.r * Math.PI) / 2;
       return new THREE.Vector3(seat.x + Math.cos(a) * side, 0, seat.z - Math.sin(a) * side);
     }
-    return new THREE.Vector3(av.x, 0, av.z);
-  }, [seat, av.x, av.z, who]);
+    const [ox, oz] = roomOff(av.room);
+    return new THREE.Vector3(av.x + ox, 0, av.z + oz);
+  }, [seat, av.x, av.z, av.room, who]);
 
   useLayoutEffect(() => {
     if (firstRef.current) {
@@ -397,7 +398,7 @@ function PetModel({ kind, sad, onTap, action }: { kind: string; sad: boolean; on
     if (!g) return;
     // passeio igual nos dois aparelhos: posição derivada do relógio
     const seg = Math.floor(Date.now() / 7000);
-    const tgt = new THREE.Vector3(0.8 + hash(seg) * (ROOM - 1.6), 0, 1.4 + hash(seg + 99) * (ROOM - 2.2));
+    const tgt = new THREE.Vector3(0.8 + hash(seg) * (HOUSE - 1.6), 0, 1.4 + hash(seg + 99) * (HOUSE - 2.2));
     const d = tgt.sub(pos.current);
     const dist = d.length();
     const acting = action && Date.now() - action.at < 2200;
@@ -429,9 +430,9 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const cam = camera as THREE.OrthographicCamera;
-    cam.position.set(ROOM / 2 + 10, 9.5, ROOM / 2 + 10);
-    cam.lookAt(ROOM / 2, 0.5, ROOM / 2);
-    cam.zoom = Math.min(size.width, size.height * 1.25) / (ROOM * 1.6);
+    cam.position.set(HOUSE / 2 + 10, 9.5, HOUSE / 2 + 10);
+    cam.lookAt(HOUSE / 2, 0.5, HOUSE / 2);
+    cam.zoom = Math.min(size.width, size.height * 1.25) / (HOUSE * 1.45);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
   return null;
