@@ -271,7 +271,23 @@ export function QuemSouEu({ me }: { me: Me }) {
 
   useEffect(() => setGuessing(false), [state.round, state.phase]);
 
+  // animação mostrando a sua carta no começo da rodada
+  const [reveal, setReveal] = useState(false);
+  useEffect(() => {
+    if (state.phase !== "play" || !state.round) return;
+    setReveal(true);
+    const t = window.setTimeout(() => setReveal(false), 3200);
+    return () => window.clearTimeout(t);
+  }, [state.round, state.phase === "play"]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // aviso de troca de vez
+  const [turnFlash, setTurnFlash] = useState(0);
+  useEffect(() => {
+    if (state.phase === "play") setTurnFlash(Date.now());
+  }, [state.turn]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const start = (theme: string) => {
+    if (!peerOnline) return;
     const local = loadUsed();
     const used: Record<string, string[]> = { ...local };
     for (const [k, v] of Object.entries(state.used ?? {})) used[k] = Array.from(new Set([...(local[k] ?? []), ...v]));
@@ -326,11 +342,23 @@ export function QuemSouEu({ me }: { me: Me }) {
             Cada um recebe um personagem secreto. Façam perguntas de sim ou não no chat e abaixem as cartas até descobrir.
           </p>
           <p className="mt-1 text-[11px] text-white/40">As cartas nunca se repetem até acabar o tema.</p>
-          {!peerOnline && <p className="mt-2 text-[11px] text-amber-300">Esperando {other === "gu" ? "bb gu" : "bb li"} entrar no jogo...</p>}
+          {peerOnline ? (
+            <p className="mt-2 text-[11px] text-emerald-300">{other === "gu" ? "bb gu" : "bb li"} está aqui! Escolham um tema.</p>
+          ) : (
+            <p className="mt-2 flex items-center justify-center gap-2 text-[11px] text-amber-300">
+              <span className="h-2 w-2 animate-ping rounded-full bg-amber-300" />
+              Esperando {other === "gu" ? "bb gu" : "bb li"} entrar no jogo pra começar
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           {THEMES.map((t) => (
-            <button key={t.id} onClick={() => start(t.id)} className="rounded-2xl bg-gradient-to-br from-sky-600/80 to-rose-600/80 p-3 text-left active:scale-95">
+            <button
+              key={t.id}
+              disabled={!peerOnline}
+              onClick={() => start(t.id)}
+              className="qse-pop rounded-2xl bg-gradient-to-br from-sky-600/80 to-rose-600/80 p-3 text-left shadow-lg transition active:scale-95 disabled:opacity-35 disabled:grayscale"
+            >
               <p className="text-sm font-bold">{t.name}</p>
               <p className="text-[11px] text-white/70">{t.desc}</p>
             </button>
@@ -347,7 +375,22 @@ export function QuemSouEu({ me }: { me: Me }) {
   const myTurn = state.turn === me;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
+      {reveal && secret && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-sm" onClick={() => setReveal(false)}>
+          <p className="qse-pop mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">Seu personagem é</p>
+          <div className="qse-reveal w-40 rounded-xl [perspective:800px]">
+            <GameCard card={secret} color="#f59e0b" />
+          </div>
+          <p className="qse-pop mt-5 text-2xl font-black" style={{ animationDelay: ".8s" }}>{secret.name}</p>
+          <p className="qse-pop mt-2 text-xs text-white/50" style={{ animationDelay: "1.1s" }}>Não deixa {other === "gu" ? "ele" : "ela"} ver!</p>
+        </div>
+      )}
+      {!reveal && turnFlash > 0 && Date.now() - turnFlash < 1500 && state.phase === "play" && (
+        <div key={turnFlash} className="qse-pop pointer-events-none absolute inset-x-0 top-1/3 z-10 mx-auto w-fit rounded-2xl bg-black/80 px-5 py-3 text-lg font-black shadow-2xl">
+          {myTurn ? "Sua vez!" : `Vez de ${state.turn === "gu" ? "bb gu" : "bb li"}`}
+        </div>
+      )}
       <div className="flex items-center gap-2 px-3 py-2 text-xs">
         <span className="rounded-full bg-white/10 px-2 py-0.5">{theme?.name}</span>
         <span className="text-white/60">
@@ -372,6 +415,7 @@ export function QuemSouEu({ me }: { me: Me }) {
           style={{ background: `linear-gradient(180deg, ${color}33, ${color}66)`, boxShadow: `inset 0 -6px 0 ${color}` }}
         >
           {state.cards.map((c, i) => (
+            <div key={state.round + "-" + i} className="qse-deal" style={{ animationDelay: `${i * 35}ms` }}>
             <GameCard
               key={state.round + "-" + i}
               card={c}
@@ -380,6 +424,7 @@ export function QuemSouEu({ me }: { me: Me }) {
               highlight={state.phase === "end" && i === state.secret[other]}
               onClick={state.phase === "play" ? () => toggle(i) : undefined}
             />
+            </div>
           ))}
         </div>
       </div>
