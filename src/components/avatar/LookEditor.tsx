@@ -33,13 +33,13 @@ function Swatches({ value, colors, onPick }: { value: string; colors: string[]; 
   );
 }
 
-export function LookEditor({ look, onChange, compact = false, animName }: { look: Look; onChange: (l: Look) => void; compact?: boolean; animName?: string }) {
+export function LookEditor({ look, onChange, compact = false, landscape = false, animName }: { look: Look; onChange: (l: Look) => void; compact?: boolean; landscape?: boolean; animName?: string }) {
   const [tab, setTab] = useState("blusa");
   const t = TABS.find((x) => x.id === tab)!;
   const set = (k: keyof Look, v: string) => onChange({ ...look, [k]: v });
   return (
-    <div className={`flex h-full min-h-0 ${compact ? "flex-col" : "flex-col sm:flex-row"} gap-3`}>
-      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-pink-500/20 via-fuchsia-500/10 to-transparent ${compact ? "h-56" : "h-64 sm:h-auto sm:w-1/2"}`}>
+    <div className={`flex h-full min-h-0 ${landscape ? "flex-row" : compact ? "flex-col" : "flex-col sm:flex-row"} gap-3`}>
+      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-gradient-to-b from-pink-500/20 via-fuchsia-500/10 to-transparent ${landscape ? "h-full w-[38%]" : compact ? "h-56" : "h-64 sm:h-auto sm:w-1/2"}`}>
         <Suspense fallback={null}>
           <DollPreview look={look} animName={animName} />
         </Suspense>

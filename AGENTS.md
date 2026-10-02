@@ -14,3 +14,4 @@
 - 3D people share the serializable Look model (src/lib/look.ts, sanitized server-side); Nossa Casa uses the lightweight blocky HouseDoll matching its original tiny-character style, while Desfile uses the detailed articulated Doll.
 - Nossa Casa renders without realtime shadow maps (static contact shadows + blob shadows); why: shadow passes were the main mobile frame-rate cost.
 - Turn-based 3D games (futebol, desfile) sync only inputs/results and simulate deterministically on both devices; one side is authority for writes; why: avoids per-frame network traffic.
+- Chat alerts for bb gu use payloadless Web Push (public/push-sw.js, VAPID key derived from SESSION_SECRET, subscriptions in push_subs) plus in-page polling; why: mobile browsers suspend background tabs, and the push carries no message content.

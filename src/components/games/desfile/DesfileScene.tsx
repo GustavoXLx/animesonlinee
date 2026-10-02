@@ -347,8 +347,10 @@ export default function DesfileScene(p: ShowProps) {
     <Canvas dpr={[1, 1.5]} camera={{ position: [0, 3, 12], fov: 42 }} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }}>
       <color attach="background" args={["#07060c"]} />
       <fog attach="fog" args={["#07060c", 12, 30]} />
-      <ambientLight intensity={0.35} />
-      <hemisphereLight args={["#f5d0fe", "#0b0b12", 0.4]} />
+      <ambientLight intensity={0.4} />
+      <hemisphereLight args={["#f5d0fe", "#0b0b12", 0.45]} />
+      <directionalLight position={[0, 4, END_Z + 6]} intensity={0.8} color="#fff5f8" />
+      <directionalLight position={[0, 2.5, START_Z - 2]} intensity={0.6} color="#a78bfa" />
       <Environment resolution={64}>
         <Lightformer intensity={2} position={[0, 5, 5]} scale={[10, 2, 1]} />
         <Lightformer intensity={1.5} color="#f472b6" position={[-5, 2, 0]} rotation-y={Math.PI / 2} scale={[10, 1, 1]} />

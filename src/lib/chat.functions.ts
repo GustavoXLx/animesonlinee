@@ -285,8 +285,18 @@ export const sendMessage = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+    if (data.author === "li") await pushTo("gu").catch(() => {});
     return { row };
   });
+
+async function pushTo(who: "gu" | "li") {
+  const db = await admin();
+  const { data: subs } = await db.from("push_subs").select("endpoint").eq("who", who).limit(10);
+  if (!subs?.length) return;
+  const { sendPushes } = await import("@/lib/push.server");
+  const dead = await sendPushes(subs.map((s) => s.endpoint));
+  if (dead.length) await db.from("push_subs").delete().in("endpoint", dead);
+}
 
 /** Marca como vistas as mensagens da outra pessoa (visto azul). */
 export const markSeen = createServerFn({ method: "POST" })
@@ -1125,4 +1135,34 @@ export const judgeFashion = createServerFn({ method: "POST" })
     } catch {
       return { verdict: null, error: "Os jurados se enrolaram, tente de novo." };
     }
+  });
+
+/** Chave pública dos avisos (Web Push). */
+export const getPushKey = createServerFn({ method: "GET" }).handler(async () => {
+  const { vapidPublicKey } = await import("@/lib/push.server");
+  return { key: vapidPublicKey() };
+});
+
+/** Registra este aparelho para receber avisos (só bb gu). */
+export const savePushSub = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; endpoint: string }) => ({
+    token: String(d.token ?? "").slice(0, 120),
+    endpoint: String(d.endpoint ?? "").slice(0, 1000),
+  }))
+  .handler(async ({ data }) => {
+    const who = verifyDev(data.token);
+    if (who !== "gu" || !/^https:\/\//.test(data.endpoint)) return { ok: false };
+    const db = await admin();
+    await db.from("push_subs").upsert({ endpoint: data.endpoint, who }, { onConflict: "endpoint" });
+    return { ok: true };
+  });
+
+/** Envia um aviso de teste para este perfil. */
+export const testPush = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string }) => ({ token: String(d.token ?? "").slice(0, 120) }))
+  .handler(async ({ data }) => {
+    const who = verifyDev(data.token);
+    if (who !== "gu") return { ok: false };
+    await pushTo("gu");
+    return { ok: true };
   });

@@ -6,6 +6,7 @@ import { LookEditor } from "@/components/avatar/LookEditor";
 import { DEFAULT_LOOKS, describeLook, sanitizeLook, type Look } from "@/lib/look";
 import { judgeFashion, type FashionVerdict } from "@/lib/chat.functions";
 import { FASHION_THEMES } from "./themes";
+import { LandscapeGate, enterLandscape } from "@/components/games/Landscape";
 import { FINAL_AT, INTRO, SHOW_LEN, SLOT } from "./DesfileScene";
 
 const DesfileScene = lazy(() => import("./DesfileScene"));
@@ -31,6 +32,14 @@ const DRESS_SECS = 150;
 const other = (w: Me): Me => (w === "gu" ? "li" : "gu");
 
 export function Desfile({ me }: { me: Me }) {
+  return (
+    <LandscapeGate>
+      <DesfileInner me={me} />
+    </LandscapeGate>
+  );
+}
+
+function DesfileInner({ me }: { me: Me }) {
   const { state, setState, peerOnline, sendEvent, onEvent } = useGameChannel<St>("desfile", me, init);
   const host = me === "gu";
   const judge = useServerFn(judgeFashion);
@@ -161,7 +170,7 @@ export function Desfile({ me }: { me: Me }) {
         <p className="text-sm text-white/60">
           Placar: {NAME.gu} {state.wins.gu} x {state.wins.li} {NAME.li}
         </p>
-        <button disabled={!peerOnline} onClick={newRound} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-8 py-3 text-lg font-black shadow-xl shadow-pink-500/30 transition hover:scale-105 disabled:opacity-40">
+        <button disabled={!peerOnline} onClick={() => { void enterLandscape(); newRound(); }} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-8 py-3 text-lg font-black shadow-xl shadow-pink-500/30 transition hover:scale-105 disabled:opacity-40">
           Sortear tema
         </button>
         {!peerOnline && <p className="text-sm text-amber-300">Esperando {NAME[other(me)]} entrar…</p>}
@@ -202,7 +211,7 @@ export function Desfile({ me }: { me: Me }) {
         ) : (
           <>
             <div className="min-h-0 flex-1">
-              <LookEditor look={draft} onChange={(l) => !submitted && setDraft(l)} />
+              <LookEditor landscape look={draft} onChange={(l) => !submitted && setDraft(l)} />
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <p className="flex-1 text-xs text-white/60">{partnerDone ? `${NAME[other(me)]} já está pronto(a)!` : `${NAME[other(me)]} está se arrumando…`}</p>
