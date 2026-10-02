@@ -396,7 +396,12 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       if (state.held) drawItem(gfx, state.held, 0, 0, 0.78);
       if (state.bench?.length) state.bench.forEach((item, i) => drawItem(gfx, item, (i - (state.bench?.length ?? 1) / 2) * 11 + 5, 0, 0.47));
       const process = state.process;
-      if (process?.itemIn) {
+      if (state.prep?.hits && state.prep.needed) {
+        const ratio = Phaser.Math.Clamp(state.prep.hits / state.prep.needed, 0, 1);
+        drawItem(gfx, state.prep.item, 0, -2, 0.62);
+        gfx.fillStyle(0x2b2528, 0.8).fillRoundedRect(-18, 14, 36, 5, 2);
+        gfx.fillStyle(COLORS.accent, 1).fillRoundedRect(-18, 14, 36 * ratio, 5, 2);
+      } else if (process?.itemIn) {
         drawItem(gfx, process.itemIn, 0, 0, 0.62);
         const duration = COOK_DURATIONS[process.itemIn];
         if (duration && process.startedAt) {
