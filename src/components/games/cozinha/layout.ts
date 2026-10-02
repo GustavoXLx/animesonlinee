@@ -4,77 +4,59 @@ export const COLS = 15;
 export const ROWS = 9;
 export const TILE = 56;
 
-// Grid de estações: perímetro cheio de estações força o caminho pelo meio.
+// Cozinha compacta em estilo top-down cooperativo: cada jogador circula por
+// corredores largos e precisa cruzar a cozinha para buscar, preparar, cozinhar e servir.
 export const STATIONS: StationDef[] = [
-  // parede/contador topo
-  { id: "w0", type: "parede", x: 0, y: 0 },
-  { id: "f_pao", type: "geladeira", x: 1, y: 0, ingredient: "pao" },
-  { id: "f_carne", type: "geladeira", x: 2, y: 0, ingredient: "carne" },
-  { id: "f_queijo", type: "geladeira", x: 3, y: 0, ingredient: "queijo" },
-  { id: "f_tomate", type: "geladeira", x: 4, y: 0, ingredient: "tomate" },
-  { id: "c_top1", type: "balcao", x: 5, y: 0 },
-  { id: "tabua1", type: "tabua", x: 6, y: 0 },
-  { id: "tabua2", type: "tabua", x: 7, y: 0 },
-  { id: "c_top2", type: "balcao", x: 8, y: 0 },
-  { id: "f_fruta", type: "geladeira", x: 9, y: 0, ingredient: "fruta" },
-  { id: "f_massa", type: "geladeira", x: 10, y: 0, ingredient: "massa" },
-  { id: "f_molho", type: "geladeira", x: 11, y: 0, ingredient: "molho" },
-  { id: "c_top3", type: "balcao", x: 12, y: 0 },
-  { id: "c_top4", type: "balcao", x: 13, y: 0 },
-  { id: "w1", type: "parede", x: 14, y: 0 },
+  // paredes do perímetro
+  ...Array.from({ length: 15 }, (_, x) => ({ id: `wall-top-${x}`, type: "parede" as const, x, y: 0 })),
+  ...Array.from({ length: 15 }, (_, x) => ({ id: `wall-bottom-${x}`, type: "parede" as const, x, y: 8 })),
+  ...Array.from({ length: 7 }, (_, i) => ({ id: `wall-left-${i + 1}`, type: "parede" as const, x: 0, y: i + 1 })),
+  ...Array.from({ length: 7 }, (_, i) => ({ id: `wall-right-${i + 1}`, type: "parede" as const, x: 14, y: i + 1 })),
 
-  // laterais: entrega e bancadas de passagem
-  { id: "wl1", type: "parede", x: 0, y: 1 },
-  { id: "wl2", type: "parede", x: 0, y: 2 },
-  { id: "wl3", type: "parede", x: 0, y: 3 },
-  { id: "entrega", type: "entrega", x: 0, y: 4 },
-  { id: "wl5", type: "parede", x: 0, y: 5 },
-  { id: "wl6", type: "parede", x: 0, y: 6 },
-  { id: "wl7", type: "parede", x: 0, y: 7 },
+  // ingredientes — dois pontos de coleta para dividir tarefas
+  { id: "f_pao", type: "geladeira", x: 1, y: 1, ingredient: "pao" },
+  { id: "f_carne", type: "geladeira", x: 2, y: 1, ingredient: "carne" },
+  { id: "f_queijo", type: "geladeira", x: 3, y: 1, ingredient: "queijo" },
+  { id: "f_tomate", type: "geladeira", x: 4, y: 1, ingredient: "tomate" },
+  { id: "f_fruta", type: "geladeira", x: 10, y: 1, ingredient: "fruta" },
+  { id: "f_massa", type: "geladeira", x: 11, y: 1, ingredient: "massa" },
+  { id: "f_molho", type: "geladeira", x: 12, y: 1, ingredient: "molho" },
+  { id: "f_massacup", type: "geladeira", x: 13, y: 1, ingredient: "massa_cupcake" },
 
-  { id: "wr1", type: "parede", x: 14, y: 1 },
-  { id: "c_r2", type: "balcao", x: 14, y: 2 },
-  { id: "wr3", type: "parede", x: 14, y: 3 },
-  { id: "c_r4", type: "balcao", x: 14, y: 4 },
-  { id: "wr5", type: "parede", x: 14, y: 5 },
-  { id: "c_r6", type: "balcao", x: 14, y: 6 },
-  { id: "wr7", type: "parede", x: 14, y: 7 },
+  // preparo esquerdo
+  { id: "tabua1", type: "tabua", x: 3, y: 3 },
+  { id: "tabua2", type: "tabua", x: 4, y: 3 },
+  { id: "c_prep1", type: "balcao", x: 2, y: 3 },
+  { id: "c_prep2", type: "balcao", x: 5, y: 3 },
 
-  // duas ilhas centrais, com corredores largos para os dois jogadores
-  { id: "ic1", type: "balcao", x: 4, y: 3 },
-  { id: "ic2", type: "montagem", x: 5, y: 3 },
-  { id: "ic3", type: "balcao", x: 6, y: 3 },
-  { id: "ic4", type: "montagem", x: 7, y: 3 },
-  { id: "ic5", type: "balcao", x: 8, y: 3 },
-  { id: "ic6", type: "balcao", x: 4, y: 5 },
-  { id: "ic7", type: "tabua", x: 5, y: 5 },
-  { id: "ic8", type: "balcao", x: 6, y: 5 },
-  { id: "ic9", type: "tabua", x: 7, y: 5 },
-  { id: "ic10", type: "balcao", x: 8, y: 5 },
+  // ilha central: montagem e passagem
+  { id: "montagem1", type: "montagem", x: 6, y: 4 },
+  { id: "montagem2", type: "montagem", x: 8, y: 4 },
+  { id: "c_mid1", type: "balcao", x: 6, y: 3 },
+  { id: "c_mid2", type: "balcao", x: 8, y: 3 },
+  { id: "c_mid3", type: "balcao", x: 6, y: 5 },
+  { id: "c_mid4", type: "balcao", x: 8, y: 5 },
 
-  // base
-  { id: "w2", type: "parede", x: 0, y: 8 },
-  { id: "fogao1", type: "fogao", x: 1, y: 8 },
-  { id: "fogao2", type: "fogao", x: 2, y: 8 },
-  { id: "forno1", type: "forno", x: 3, y: 8 },
-  { id: "forno2", type: "forno", x: 4, y: 8 },
-  { id: "liq1", type: "liquidificador", x: 5, y: 8 },
-  { id: "montagem1", type: "montagem", x: 6, y: 8 },
-  { id: "montagem2", type: "montagem", x: 7, y: 8 },
-  { id: "lixeira", type: "lixeira", x: 8, y: 8 },
-  { id: "f_massacup", type: "geladeira", x: 9, y: 8, ingredient: "massa_cupcake" },
-  { id: "f_cobertura", type: "geladeira", x: 10, y: 8, ingredient: "cobertura" },
-  { id: "c_bot", type: "balcao", x: 11, y: 8 },
-  { id: "c_bot2", type: "balcao", x: 12, y: 8 },
-  { id: "c_bot3", type: "balcao", x: 13, y: 8 },
-  { id: "w3", type: "parede", x: 14, y: 8 },
+  // preparo/cozinha direita
+  { id: "fogao1", type: "fogao", x: 10, y: 3 },
+  { id: "fogao2", type: "fogao", x: 11, y: 3 },
+  { id: "forno1", type: "forno", x: 12, y: 3 },
+  { id: "forno2", type: "forno", x: 13, y: 3 },
+  { id: "liq1", type: "liquidificador", x: 10, y: 5 },
+  { id: "c_cook1", type: "balcao", x: 11, y: 5 },
+  { id: "c_cook2", type: "balcao", x: 12, y: 5 },
+  { id: "lixeira", type: "lixeira", x: 13, y: 5 },
+
+  // entrega no centro da parede direita: objetivo final compartilhado
+  { id: "entrega", type: "entrega", x: 13, y: 7 },
+  { id: "c_delivery1", type: "balcao", x: 10, y: 7 },
+  { id: "c_delivery2", type: "balcao", x: 11, y: 7 },
+  { id: "c_delivery3", type: "balcao", x: 12, y: 7 },
 ];
 
 export function buildSolidGrid(): boolean[][] {
   const solid: boolean[][] = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
-  for (const s of STATIONS) {
-    solid[s.y][s.x] = true;
-  }
+  for (const s of STATIONS) solid[s.y][s.x] = true;
   return solid;
 }
 
