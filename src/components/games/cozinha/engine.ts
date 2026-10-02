@@ -223,7 +223,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     if(s.type==="fogao"||s.type==="forno"||s.type==="entrega") box.postFX.addGlow(s.type==="entrega"?0x8ff0bf:0xffb65b,2,1,false,.45,5);
     const g=this.add.graphics().setDepth(4);
 
+    // Micro-details that give each station a manufactured, usable feel.
     if(s.type==="geladeira"){
+
      g.fillStyle(0xe9f8ff,.95).fillRoundedRect(x-17,y-16,34,32,6);
      g.fillStyle(0xb8dce8,.65).fillRoundedRect(x-13,y-12,26,21,4);
      g.fillStyle(0x6d9baa,.8).fillRoundedRect(x+9,y-7,2,11,1);
