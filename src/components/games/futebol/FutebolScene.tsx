@@ -572,7 +572,8 @@ function Game(p: SceneProps) {
   solRef.current = sol;
   const tRef = useRef(0);
   const excite = useRef(0);
-  const confetti = useRef(0);\n  const kickImpact = useRef(0);\n  const lastImpact = useRef<Solved | null>(null);
+  const confetti = useRef(0);
+  const kickImpact = useRef(0);
   const firedFor = useRef<Solved | null>(null);
 
   const ball = useRef<THREE.Mesh>(null);
@@ -622,7 +623,8 @@ function Game(p: SceneProps) {
       camMode = s.cam;
       if (s.cam === "live" && t > RUN + sol.flight + 0.2 && firedFor.current !== sol) {
         firedFor.current = sol;
-        kickImpact.current++;\n        if (sol.result === "goal") {
+        if (tk >= 0.32 && tk < 0.48) kickImpact.current++;
+        if (sol.result === "goal") {
           excite.current = 1;
           confetti.current++;
         } else excite.current = 0.35;
@@ -818,7 +820,8 @@ function Game(p: SceneProps) {
       <Crowd excite={excite} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.28} scale={38} blur={2.4} far={8} resolution={512} />
       <Goal solRef={solRef} timeRef={tRef} />
-      <Confetti trigger={confetti} />\n      <KickImpact trigger={kickImpact} spot={p.spot} />
+      <Confetti trigger={confetti} />
+      <KickImpact trigger={kickImpact} spot={p.spot} />
 
       <mesh ref={ball} castShadow>
         <sphereGeometry args={[BALL_R, 40, 28]} />
@@ -884,7 +887,8 @@ function Game(p: SceneProps) {
 
 export default function FutebolScene(props: SceneProps) {
   useEffect(() => {
-    useGLTF.preload(PLAYER_ASSET);
+    useGLTF.preload(charUrl(props.kickerModel));
+    useGLTF.preload(charUrl(props.keeperModel));
   }, [props.kickerModel, props.keeperModel]);
   return (
     <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }} camera={{ position: [0, 2, 17], fov: 50, near: 0.1, far: 300 }}>
