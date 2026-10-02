@@ -13,3 +13,4 @@
 - [x] Cozinha a Dois: refazer para celular deitado, visual top-down profissional sem emojis, controles fluidos e melhor leitura das receitas
 - [x] Cozinha a Dois: validar tela, carregamento e desempenho no preview; partida real entre dois celulares ainda depende de teste do casal
 - [x] Cozinha a Dois: tela cheia nativa, sem cabeçalho externo nem botão de chat sobre os controles
+- [x] Desfile: tela cheia nativa, mantendo o chat do jogo disponível
