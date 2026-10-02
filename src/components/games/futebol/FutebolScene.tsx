@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Lightformer, Line, useAnimations, useGLTF } from "@react-three/drei";
+import { Environment, Lightformer, Line, Outlines, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { BALL_R, GOAL_H, GOAL_W, RUN, sample, solve, wallLayout, type Mode, type Shot, type Solved } from "./sim";
@@ -121,11 +121,24 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
   const gltf = useGLTF(charUrl(model));
   const { obj, scale } = useMemo(() => {
     const o = skClone(gltf.scene);
-    o.traverse((m) => {
-      if ((m as THREE.Mesh).isMesh) {
-        (m as THREE.Mesh).castShadow = true;
-        (m as THREE.Mesh).receiveShadow = true;
-      }
+    o.traverse((node) => {
+      if (!(node as THREE.Mesh).isMesh) return;
+      const mesh = node as THREE.Mesh;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mesh.material = materials.map((source) => {
+        const material = source.clone() as THREE.MeshStandardMaterial;
+        material.roughness = Math.min(0.72, Math.max(0.38, material.roughness || 0.55));
+        material.metalness = Math.min(0.18, material.metalness || 0);
+        material.envMapIntensity = 1.15;
+        if ("clearcoat" in material) {
+          (material as THREE.MeshPhysicalMaterial).clearcoat = 0.08;
+          (material as THREE.MeshPhysicalMaterial).clearcoatRoughness = 0.32;
+        }
+        return material;
+      });
     });
     const box = new THREE.Box3().setFromObject(o);
     const h = box.max.y - box.min.y || 1;
@@ -154,6 +167,7 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
     <group ref={groupRef}>
       <group ref={inner} scale={scale}>
         <primitive object={obj} />
+        <Outlines thickness={0.012} color="#101827" screenspace opacity={0.28} />
       </group>
     </group>
   );
