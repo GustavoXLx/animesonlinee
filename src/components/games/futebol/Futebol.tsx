@@ -229,15 +229,9 @@ export function Futebol({ me }: { me: Me }) {
             <span className="text-[10px] text-white/45">Arraste o alvo dentro do gol</span>
           </div>
           {state.mode === "falta" && (
-            <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/45 px-3 py-2 backdrop-blur">
-              <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-white/45">2 • EFEITO</span>
-              {[
-                [-0.75, "↖ Curva esquerda"],
-                [0, "• Reto"],
-                [0.75, "Curva direita ↗"],
-              ].map(([v, label]) => (
-                <button key={String(v)} onClick={() => setCurve(Number(v))} className={`rounded-full px-3 py-1.5 text-[10px] font-black transition ${Math.abs(curve - Number(v)) < 0.1 ? "bg-pink-500 text-white" : "bg-white/10 text-white/65 hover:bg-white/15"}`}>{label}</button>
-              ))}
+            <div className="rounded-full border border-white/10 bg-black/45 px-4 py-2 text-center backdrop-blur">
+              <span className="text-[10px] font-black uppercase tracking-widest text-pink-300">2 • EFEITO</span>
+              <span className="ml-2 text-[10px] text-white/45">Arraste a mira para escolher onde a bola vai passar</span>
             </div>
           )}
           <div className="flex w-full max-w-md flex-col gap-2">
@@ -256,7 +250,7 @@ export function Futebol({ me }: { me: Me }) {
               </button>
             </div>
           </div>
-          <p className="text-[10px] text-white/35">Dica: potência média + efeito costuma ser mais fácil de controlar.</p>
+          <p className="text-[10px] text-white/35">Dica: arraste a mira dentro do gol para escolher altura e canto. Use a força para definir a velocidade.</p>
         </div>
       )}
 
