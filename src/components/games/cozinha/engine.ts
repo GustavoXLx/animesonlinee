@@ -312,6 +312,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const collar=this.add.triangle(0,-8,-7,0,7,0,0xfff7e8,.95);
    const apron=this.add.rectangle(0,7,19,19,0xfff0d4,.9).setStrokeStyle(1,0x8f7160,.65);
    const pocket=this.add.rectangle(0,12,10,6,0xd8bea1,.55).setStrokeStyle(1,0x8f7160,.45);
+   const pocketLine=this.add.line(0,9,0,0,0,7,0x8f7160,.45).setLineWidth(1);
    const button1=this.add.circle(0,0,1.5,0xffffff,.9);
    const button2=this.add.circle(0,5,1.5,0xffffff,.9);
    const armL=this.add.rectangle(-17,5,8,20,outfit).setAngle(10);
@@ -326,7 +327,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const hat=this.add.ellipse(0,-29,29,12,0xffffff).setStrokeStyle(2,0x6d6264,.8);
    const hatTop=this.add.rectangle(0,-35,18,10,0xffffff).setStrokeStyle(1,0x6d6264,.6);
    const hatBand=this.add.rectangle(0,-27,21,3,0xe7d8c8,.85);
-   c.add([shadow,legL,legR,shoeL,shoeR,body,neck,collar,apron,pocket,button1,button2,armL,armR,gloveL,gloveR,head,earL,earR,hairShape,hat,hatTop,hatBand]);
+   c.add([shadow,legL,legR,shoeL,shoeR,body,neck,collar,apron,pocket,pocketLine,button1,button2,armL,armR,gloveL,gloveR,head,earL,earR,hairShape,hat,hatTop,hatBand]);
    c.add([this.add.circle(-5,-17,1.8,0x29252a),this.add.circle(5,-17,1.8,0x29252a)]);
    const cheekL=this.add.circle(-8,-12,3,0xef9e98,.22);
    const cheekR=this.add.circle(8,-12,3,0xef9e98,.22);
@@ -550,10 +551,16 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    this.pulse+=dt;
    const moving=speed>18;
    const swing=moving?Math.sin(this.pulse*.018)*.55:Math.sin(this.pulse*.004)*.04;
+   const bob=moving?Math.abs(Math.sin(this.pulse*.018))*1.2:Math.sin(this.pulse*.004)*.45;
    p.legL.angle=-swing*18;p.legR.angle=swing*18;
    p.armL.angle=10+swing*10;p.armR.angle=-10-swing*10;
-   p.body.y=2+(moving?Math.abs(Math.sin(this.pulse*.018))*1.2:0);
-   p.hat.y=-29+(moving?Math.abs(Math.sin(this.pulse*.018))*.8:0);
+   p.body.y=2+bob;
+   p.head.y=-16+bob*.55;
+   p.hat.y=-29+bob*.55;
+   p.hatTop.y=-35+bob*.55;
+   p.hatBand.y=-27+bob*.55;
+   p.shadow.scaleX=1+(moving?Math.abs(Math.sin(this.pulse*.018))*.08:0);
+   p.shadow.scaleY=1-(moving?Math.abs(Math.sin(this.pulse*.018))*.05:0);
    view.setDepth(Math.floor(view.y));
   }
 
