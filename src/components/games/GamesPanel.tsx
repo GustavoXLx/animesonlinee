@@ -23,6 +23,7 @@ import { Stop } from "./Stop";
 import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
+import { Futebol } from "./futebol/Futebol";
 import { GameChat } from "./GameChat";
 import { SPECTRA_EXTRA } from "./sintoniaExtra";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
@@ -41,7 +42,8 @@ type GameKey =
   | "leilao"
   | "stop"
   | "quemsoueu"
-  | "embraza";
+  | "embraza"
+  | "futebol";
 
 const GAMES: {
   key: GameKey;
@@ -50,6 +52,13 @@ const GAMES: {
   icon: React.ComponentType<{ size?: number }>;
   gradient: string;
 }[] = [
+  {
+    key: "futebol",
+    name: "Pênaltis & Faltas 3D",
+    desc: "goleiro de verdade, barreira, efeito e replay",
+    icon: Trophy,
+    gradient: "from-green-500 to-emerald-700",
+  },
   {
     key: "headball",
     name: "Head Ball ⚽",
@@ -188,6 +197,7 @@ export function GamesPanel({
           {active === "ppt" && <PPT me={me} />}
           {active === "gartic" && <Gartic me={me} />}
           {active === "headball" && <HeadBall me={me} />}
+          {active === "futebol" && <Futebol me={me} />}
           {active === "lig4" && <Lig4 me={me} />}
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}
