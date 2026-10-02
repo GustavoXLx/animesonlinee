@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { ActMsg,HeldItem,Me,PosMsg,Stage,WorldSnapshot } from "./types";
 import { STATIONS,COLS,ROWS,TILE,buildSolidGrid } from "./layout";
-import { ITEM_LABEL } from "./recipes";
+import { ITEM_LABEL, COOK_DURATIONS } from "./recipes";
 
 export interface EngineHooks{
  me:Me;isHost:boolean;getWorld:()=>WorldSnapshot;getStage:()=>Stage;
@@ -454,6 +454,30 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    item.setVisible(true);
   }
 
+  updateProcessFx(){
+   for(const g of this.processFx)g.destroy();
+   this.processFx=[];
+   const world=hooks.getWorld();
+   for(const s of STATIONS){
+    if(!["fogao","forno","liquidificador"].includes(s.type))continue;
+    const p=world.stations[s.id]?.process;
+    if(!p?.itemIn||!p.startedAt)continue;
+    const d=COOK_DURATIONS[p.itemIn];
+    if(!d)continue;
+    const elapsed=Math.max(0,Date.now()-p.startedAt);
+    const ratio=Math.min(1,elapsed/d.ready);
+    const x=(s.x+.5)*TILE,y=(s.y+.5)*TILE;
+    const g=this.add.graphics().setDepth(115);
+    g.lineStyle(5,0x241d20,.42).strokeCircle(x,y-25,10);
+    g.lineStyle(5,p.burnt?0xe24f45:p.ready?0x65d99b:0xffc85b,.95);
+    g.beginPath();g.arc(x,y-25,10,-Math.PI/2,-Math.PI/2+Math.PI*2*ratio,false);g.strokePath();
+    if(p.ready&&!p.burnt){
+      g.fillStyle(0x65d99b,.18).fillCircle(x,y-25,7);
+    }
+    this.processFx.push(g);
+   }
+  }
+
   updateFocus(){
    this.focusRing.clear();
    if(!this.nearest){this.stationLabel.setVisible(false);return;}
@@ -497,6 +521,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const held=hooks.getWorld().heldBy[hooks.me];
    if(held!==this.lastHeld){this.lastHeld=held;hooks.onHeldChanged(held);}
    this.updateHeldVisual(this.player,held);
+   this.updateProcessFx();
    this.updateChef(this.player,Math.hypot(this.vx,this.vy),dt);
    this.updateFocus();
 
