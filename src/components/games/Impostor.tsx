@@ -288,12 +288,8 @@ function clueFor(seed:number, theme:Theme, themeIdx:number, player:Player, round
   }
   const secret = theme.items[wordIndex(seed, themeIdx)];
   const bank = CPU_CLUES[secret] ?? theme.clues;
-  const used = new Set<string>();
-  for (let i=0;i<PLAYERS.length;i++) {
-    const candidate = bank[(hash(seed, 4000 + themeIdx * 71 + PLAYERS.indexOf(player) * 19 + round * 37 + i) % bank.length)];
-    if (!used.has(candidate)) { used.add(candidate); return candidate; }
-  }
-  return bank[round % bank.length];
+  const offset = hash(seed, 4000 + themeIdx * 71 + PLAYERS.indexOf(player) * 19) % bank.length;
+  return bank[(offset + round) % bank.length];
 }
 
 function resetState(): ImpState {
