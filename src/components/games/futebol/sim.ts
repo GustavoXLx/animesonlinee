@@ -1,7 +1,6 @@
 // Simulação determinística dos chutes: os dois aparelhos calculam exatamente o mesmo resultado.
 export type Mode = "penalti" | "falta";
 export type Dive = { x: -1 | 0 | 1; high: boolean };
-export type Foot = "direita" | "esquerda";
 export type Shot = {
   mode: Mode;
   sx: number; // posição da bola
@@ -9,8 +8,7 @@ export type Shot = {
   tx: number; // mira no plano do gol (z = 0)
   ty: number;
   power: number; // 0..1
-  curve: number; // -1..1 (efeito, já ajustado pelo pé)
-  foot: Foot; // pé de batida (corrida e curva natural)
+  curve: number; // -1..1 (efeito)
   seed: number;
   dive: Dive | null; // só no pênalti (goleiro humano)
 };
@@ -46,19 +44,15 @@ export function wallLayout(sx: number, sz: number) {
   const cz = sz + uz * 9.15;
   const px = -uz;
   const pz = ux;
-  // ~0.58m ombro a ombro, sem sobreposição
-  const men: V3[] = [-1.5, -0.5, 0.5, 1.5].map((k) => [cx + px * k * 0.58, 0, cz + pz * k * 0.58]);
+  const men: V3[] = [-1.5, -0.5, 0.5, 1.5].map((k) => [cx + px * k * 0.52, 0, cz + pz * k * 0.52]);
   return { cx, cz, ux, uz, px, pz, men, face: Math.atan2(-ux, -uz) };
 }
 
-/** Marcação determinística da falta: 18-30m do gol, ângulo variado, seeded por rodada. */
 export function footSpot(seed: number, round: number) {
   const r = rng(seed * 31 + round * 977 + 7);
-  const ang = (r() - 0.5) * 2 * 0.95; // até ~54° de cada lado
-  const dist = 18 + r() * 12; // 18..30m
-  const x = Math.sin(ang) * dist;
-  const z = Math.cos(ang) * dist + 3; // soma um pouco de profundidade mínima
-  return { x: +x.toFixed(2), z: +Math.max(18, Math.min(30, z)).toFixed(2) };
+  const x = (r() - 0.5) * 26;
+  const z = 18.5 + r() * 9;
+  return { x: +x.toFixed(2), z: +z.toFixed(2) };
 }
 
 export type Solved = {
@@ -88,8 +82,7 @@ export function solve(s: Shot): Solved {
   const dirz = (0 - s.sz) / dist;
   const perpx = -dirz;
   const perpz = dirx;
-  // efeito realista: até ~1.5-2.5m de curva lateral numa cobrança de 20-25m
-  const bend = s.curve * 1.3 * (dist / 20);
+  const bend = s.curve * 2.4 * (dist / 20);
   const flightAt = (u: number): V3 => {
     const bx = s.sx + (ex - s.sx) * u;
     const bz = s.sz + (0 - s.sz) * u;
@@ -153,7 +146,7 @@ export function solve(s: Shot): Solved {
       } else result = "goal";
     } else {
       const k0 = -(s.sx >= 0 ? 1 : -1) * 0.45;
-      const reach = 2.3 - s.power * 0.95 - Math.abs(s.curve) * 0.4 + (r() - 0.5) * 0.6;
+      const reach = 2.55 - s.power * 1.05 - Math.abs(s.curve) * 0.45 + (r() - 0.5) * 0.7;
       const dx = ex - k0;
       const dy = ey - 1.0;
       const d = Math.hypot(dx, dy);
@@ -221,13 +214,11 @@ export function solve(s: Shot): Solved {
 export function timeline(sol: Solved) {
   const live = RUN + sol.end;
   const showReplay = sol.result === "goal" || sol.result === "save" || sol.result === "post";
-  // replays curtos: ~1.6s cada, foco no instante do impacto
-  const repLen = 1.3;
-  const span = repLen * SLOWMO; // janela de jogo coberta por replay
-  const from = Math.max(RUN - 0.2, RUN + sol.flight - span * 0.55);
-  const to = from + span;
+  const from = RUN - 0.6;
+  const to = RUN + sol.flight + 0.9;
+  const repLen = (to - from) / SLOWMO;
   const reps = showReplay ? 2 : 0;
-  return { live, from, to, repLen, reps, total: live + 0.6 + reps * repLen + 0.3 };
+  return { live, from, to, repLen, reps, total: live + 0.6 + reps * repLen + 0.6 };
 }
 
 /** Converte o tempo real em tempo de jogo + qual câmera usar. */

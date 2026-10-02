@@ -259,8 +259,8 @@ function DesfileInner({ me }: { me: Me }) {
         </div>
       )}
       {done && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md animate-scale-in space-y-3 rounded-3xl border border-white/10 bg-neutral-950/90 p-5">
+        <div className="absolute inset-0 overflow-y-auto overscroll-contain bg-black/70 p-4 backdrop-blur-sm" style={{ touchAction: "pan-y" }}>
+          <div className="mx-auto my-auto w-full max-w-md animate-scale-in space-y-3 rounded-3xl border border-white/10 bg-neutral-950/90 p-5">
             <p className="text-center text-xs uppercase tracking-[0.3em] text-white/50">{state.theme}</p>
             <p className="text-center text-3xl font-black text-yellow-300">{NAME[v.winner]} venceu!</p>
             {(["gu", "li"] as Me[]).map((w) => (
