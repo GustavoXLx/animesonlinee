@@ -474,6 +474,43 @@ function Stadium() {
   );
 }
 
+function KickImpact({ trigger, spot }: { trigger: MutableRefObject<number>; spot: { x: number; z: number } }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const N = 36;
+  const parts = useMemo(() => Array.from({ length: N }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3(), life: 0 })), []);
+  const last = useRef(0);
+  const m = useMemo(() => new THREE.Matrix4(), []);
+  const sc = useMemo(() => new THREE.Vector3(), []);
+  useFrame((_, raw) => {
+    const dt = Math.min(raw, 0.04);
+    const im = ref.current;
+    if (!im) return;
+    if (trigger.current !== last.current) {
+      last.current = trigger.current;
+      parts.forEach((p) => {
+        p.p.set(spot.x + (Math.random() - 0.5) * 0.28, 0.04, spot.z + (Math.random() - 0.5) * 0.28);
+        p.v.set((Math.random() - 0.5) * 2.6, 0.35 + Math.random() * 1.8, (Math.random() - 0.5) * 2.6);
+        p.life = 1;
+      });
+    }
+    parts.forEach((p, i) => {
+      if (p.life > 0) {
+        p.v.y -= 3.5 * dt;
+        p.p.addScaledVector(p.v, dt);
+        p.life = Math.max(0, p.life - dt * 2.8);
+      }
+      sc.setScalar(p.life * 0.045);
+      m.compose(p.p, new THREE.Quaternion(), sc);
+      im.setMatrixAt(i, m);
+    });
+    im.instanceMatrix.needsUpdate = true;
+  });
+  return <instancedMesh ref={ref} args={[undefined, undefined, N]} frustumCulled={false}>
+    <sphereGeometry args={[1, 6, 6]} />
+    <meshBasicMaterial color="#d9f99d" transparent opacity={0.9} />
+  </instancedMesh>;
+}
+
 function Confetti({ trigger }: { trigger: MutableRefObject<number> }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const N = 260;
@@ -535,7 +572,7 @@ function Game(p: SceneProps) {
   solRef.current = sol;
   const tRef = useRef(0);
   const excite = useRef(0);
-  const confetti = useRef(0);
+  const confetti = useRef(0);\n  const kickImpact = useRef(0);\n  const lastImpact = useRef<Solved | null>(null);
   const firedFor = useRef<Solved | null>(null);
 
   const ball = useRef<THREE.Mesh>(null);
@@ -585,7 +622,7 @@ function Game(p: SceneProps) {
       camMode = s.cam;
       if (s.cam === "live" && t > RUN + sol.flight + 0.2 && firedFor.current !== sol) {
         firedFor.current = sol;
-        if (sol.result === "goal") {
+        kickImpact.current++;\n        if (sol.result === "goal") {
           excite.current = 1;
           confetti.current++;
         } else excite.current = 0.35;
@@ -771,10 +808,17 @@ function Game(p: SceneProps) {
         </mesh>
       ))}
       <Stadium />
+      <group position={[0, 0.012, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40.32, 33]} /><meshBasicMaterial color="#ffffff" transparent opacity={0.025} /></mesh>
+        <mesh position={[0, 0.006, 16.5]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40.32, 0.045]} /><meshBasicMaterial color="#f8fafc" /></mesh>
+        <mesh position={[-20.16, 0.006, 8.25]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}><planeGeometry args={[16.5, 0.045]} /><meshBasicMaterial color="#f8fafc" /></mesh>
+        <mesh position={[20.16, 0.006, 8.25]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}><planeGeometry args={[16.5, 0.045]} /><meshBasicMaterial color="#f8fafc" /></mesh>
+        <mesh position={[0, 0.008, 11]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.16, 24]} /><meshBasicMaterial color="#ffffff" /></mesh>
+      </group>
       <Crowd excite={excite} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.28} scale={38} blur={2.4} far={8} resolution={512} />
       <Goal solRef={solRef} timeRef={tRef} />
-      <Confetti trigger={confetti} />
+      <Confetti trigger={confetti} />\n      <KickImpact trigger={kickImpact} spot={p.spot} />
 
       <mesh ref={ball} castShadow>
         <sphereGeometry args={[BALL_R, 40, 28]} />
@@ -787,7 +831,7 @@ function Game(p: SceneProps) {
       {Array.from({ length: 14 }, (_, i) => (
         <mesh key={i} ref={(m) => void (m && (trail.current[i] = m))} visible={false}>
           <sphereGeometry args={[BALL_R * 0.8, 10, 8]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.22} depthWrite={false} />
+          <meshBasicMaterial color="#bbf7d0" transparent opacity={0.26} depthWrite={false} />
         </mesh>
       ))}
 
