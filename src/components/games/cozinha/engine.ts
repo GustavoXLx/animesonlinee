@@ -506,6 +506,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     c.add(this.add.ellipse(0,-1,25,5,0x6f3a29).setStrokeStyle(1,0x4d2a24,.7));
     c.add(this.add.rectangle(0,2,24,3,0xf5cf4d).setStrokeStyle(1,0xd49c25,.45));
     c.add(this.add.ellipse(0,7,25,7,0x78a852).setStrokeStyle(1,0x4d7039,.6));
+    c.add(this.add.ellipse(-4,7,7,2,0xa9d36b,.6));
+    c.add(this.add.ellipse(6,7,6,1.8,0xc5e184,.45));
     c.add(this.add.ellipse(-6,-8,7,2,0xffe9b0,.25));
     if(item==="sanduiche")c.add(this.add.rectangle(0,-1,21,3,0xe5c9a2));
     c.add(this.add.circle(7,4,1.5,0xffffff,.32));
@@ -517,6 +519,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     c.add(this.add.arc(0,-2,18,0,Math.PI*2,false,0xc94c3f,.95));
     for(const [x,y] of [[-6,-3],[2,1],[7,-4],[-1,-5]])c.add(this.add.circle(x,y,2.2,0xd95a42).setStrokeStyle(.5,0x9f3935,.5));
     c.add(this.add.ellipse(-5,-6,7,2,0xffffff,.25));
+    c.add(this.add.circle(-7,0,1.5,0xffdf8c,.7));
+    c.add(this.add.circle(5,3,1.3,0xffdf8c,.65));
     c.add(this.add.arc(0,0,13,.2,2.8,false,0xffe8a0,.35).setStrokeStyle(1,0xfff2bc,.35));
    }else if(item==="cupcake"){
     addPlate();
@@ -526,6 +530,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     c.add(this.add.circle(-5,-4,5.5,0xf7dbe5,.85));c.add(this.add.circle(5,-4,5.5,0xe99fc0,.8));
     c.add(this.add.circle(0,-8,3,0xffe8f0,.7));
     c.add(this.add.circle(0,-13,2,0xd96a9e,.8));
+    c.add(this.add.ellipse(-4,-5,4,1.5,0xffffff,.22));
+    c.add(this.add.ellipse(4,-3,3,1.2,0xffffff,.18));
    }else if(item==="suco"){
     c.add(this.add.rectangle(0,2,17,19,0xf0a84e).setStrokeStyle(1.5,0x794c28,.7));
     c.add(this.add.rectangle(0,-2,13,10,0xffcf70,.5));
