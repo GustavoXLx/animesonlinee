@@ -190,12 +190,17 @@ export function Impostor({ me }: { me: Me }) {
     setState((prev) => ({ ...prev, ready:{ ...prev.ready, [me]:!prev.ready[me] } }));
   };
 
-  const start = () => {
-    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !bothReady) return;
-    const seed = Math.floor(Math.random() * 0x7fffffff) + 1;
-    const ti = themeIndex(seed);
-    setState({ ...resetState(), phase:"cards", seed, themeIndex:ti });
-  };
+  useEffect(() => {
+    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !state.ready.gu || !state.ready.li) return;
+    const timer = window.setTimeout(() => {
+      setState((prev) => {
+        if (prev.phase !== "lobby" || !prev.ready.gu || !prev.ready.li) return prev;
+        const seed = Math.floor(Math.random() * 0x7fffffff) + 1;
+        return { ...resetState(), phase:"cards", seed, themeIndex:themeIndex(seed) };
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [me, peerOnline, state.phase, state.ready.gu, state.ready.li]);
 
   useEffect(() => {
     if (me !== "gu" || state.phase !== "cards") return;
