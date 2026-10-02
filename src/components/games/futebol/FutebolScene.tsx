@@ -121,7 +121,7 @@ function useBallTex() {
 function ProceduralGrass() {
   const mat = useMemo(() => new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 } },
-    vertexShader: \`
+    vertexShader: `
       varying vec2 vUv;
       varying float vWave;
       uniform float uTime;
@@ -135,8 +135,8 @@ function ProceduralGrass() {
         vWave = wave;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
       }
-    \`,
-    fragmentShader: \`
+    `,
+    fragmentShader: `
       varying vec2 vUv;
       varying float vWave;
       uniform float uTime;
@@ -173,7 +173,7 @@ function ProceduralGrass() {
         col += vWave * vec3(0.5, 0.9, 0.35);
         gl_FragColor = vec4(col, 1.0);
       }
-    \`,
+    `,
     side: THREE.DoubleSide
   }), []);
   useFrame(({ clock }) => { mat.uniforms.uTime.value = clock.elapsedTime; });
@@ -375,8 +375,8 @@ function Vignette() {
   return <mesh ref={ref} position={[0, 0, -0.65]} renderOrder={20}>
     <planeGeometry args={[2.2, 2.2]} />
     <shaderMaterial transparent depthWrite={false} depthTest={false}
-      vertexShader={\`varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}\`}
-      fragmentShader={\`varying vec2 vUv; void main(){vec2 p=vUv-0.5; float d=length(p)*1.35; float a=smoothstep(0.42,0.78,d)*0.62; gl_FragColor=vec4(0.005,0.012,0.008,a);}\`}
+      vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}`}
+      fragmentShader={`varying vec2 vUv; void main(){vec2 p=vUv-0.5; float d=length(p)*1.35; float a=smoothstep(0.42,0.78,d)*0.62; gl_FragColor=vec4(0.005,0.012,0.008,a);}`}
     />
   </mesh>;
 }
