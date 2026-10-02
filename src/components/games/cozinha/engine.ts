@@ -549,6 +549,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     c.add(this.add.rectangle(0,2,24,3,0xf5cf4d).setStrokeStyle(1,0xd49c25,.45));
     c.add(this.add.ellipse(0,7,25,7,0x78a852).setStrokeStyle(1,0x4d7039,.6));
     c.add(this.add.ellipse(-4,7,7,2,0xa9d36b,.6));
+    c.add(this.add.ellipse(-7,5,4,1.2,0xd5ee9a,.65));c.add(this.add.ellipse(7,6,3,1.1,0xd5ee9a,.55));
     c.add(this.add.ellipse(6,7,6,1.8,0xc5e184,.45));
     c.add(this.add.ellipse(-6,-8,7,2,0xffe9b0,.25));
     if(item==="sanduiche")c.add(this.add.rectangle(0,-1,21,3,0xe5c9a2));
