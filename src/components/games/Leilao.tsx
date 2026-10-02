@@ -186,10 +186,10 @@ export function Leilao({ me }: { me: Me }) {
 
   if (state.phase === "idle") {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center gap-4">
-        <Gavel size={40} className="text-amber-400" />
+      <div className="relative h-full flex flex-col items-center justify-center overflow-hidden p-5 text-center bg-[#100b05]"><div className="relative z-10 w-full max-w-lg rounded-[30px] border border-amber-300/15 bg-white/[0.045] p-6 shadow-2xl backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-400/10 ring-1 ring-amber-300/20"><Gavel size={34} className="text-amber-400" /></div>
         <div>
-          <p className="font-bold text-lg">Leilão</p>
+          <p className="mt-3 text-[10px] font-black uppercase tracking-[0.35em] text-amber-200/60">Duelo de estratégia</p><p className="font-black text-3xl">Leilão</p>
           <p className="text-xs text-white/60 mt-2 max-w-xs">
             Cada rodada tem 1 item. Um oferece um valor, o outro pode cobrir o lance ou apertar em
             "deixar levar". Cada um monta um time de {TEAM_SIZE} itens ({TEAM_SIZE} vs {TEAM_SIZE}).
@@ -197,7 +197,7 @@ export function Leilao({ me }: { me: Me }) {
             fim, a IA dá nota item por item.
           </p>
         </div>
-        {isHost ? (
+        <div className="mt-4 grid grid-cols-3 gap-2 text-left">{[["R$100","orçamento"],[String(TEAM_SIZE),"itens"],["IA","jurada"]].map(([v,l]) => <div key={l} className="rounded-2xl border border-white/8 bg-black/20 px-2 py-3"><p className="text-sm font-black text-amber-300">{v}</p><p className="text-[9px] text-white/35">{l}</p></div>)}</div>{isHost ? (
           <button
             onClick={start}
             className="px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 font-bold"
