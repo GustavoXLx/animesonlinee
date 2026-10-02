@@ -315,7 +315,15 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
 
   const endMessage = useMemo(() => END_MESSAGES[Math.floor(Math.random() * END_MESSAGES.length)], [state.stage === "fim"]);
   const isDish = (item: HeldItem): item is Dish => item === "hamburguer" || item === "sanduiche" || item === "pizza" || item === "cupcake" || item === "suco";
-  const actionLabel = held && focus === "entrega" && isDish(held) ? "ENTREGAR" : held ? "Colocar" : focus ? "Pegar" : "Ação";
+  const actionLabel = held && focus === "entrega" && isDish(held)
+    ? "ENTREGAR"
+    : focus?.startsWith("tabua") && !held
+      ? "CORTAR"
+      : held
+        ? "COLOCAR"
+        : focus
+          ? "PEGAR"
+          : "AÇÃO";
 
   // ============ telas ============
   if (state.stage === "espera") {
