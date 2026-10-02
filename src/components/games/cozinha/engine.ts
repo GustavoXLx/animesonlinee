@@ -49,6 +49,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   keys!:any;
   vx=0;vy=0;facing:PosMsg["facing"]="down";nearest:string|null=null;lastSend=0;lastHeld:HeldItem=null;
   pulse=0;
+  rushSteam:Phaser.GameObjects.Graphics[]=[];
+  rushActive=false;
 
   constructor(){super("kitchen");}
 
@@ -237,6 +239,12 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   }
 
   blocked(x:number,y:number){
+   const world=hooks.getWorld();
+   const rush=world.timeLeft<90000;
+   if(rush){
+    const steamY=5.9*TILE;
+    if(Math.abs(y-steamY)<30 && x>11*TILE && x<16*TILE) return true;
+   }
    const gx=Math.floor(x/TILE),gy=Math.floor(y/TILE);
    if(gx<1||gy<1||gx>=COLS-1||gy>=ROWS-1)return true;
    for(const [dx,dy] of [[0,0],[11,0],[-11,0],[0,11],[0,-11]])if(solid[Math.floor((y+dy)/TILE)]?.[Math.floor((x+dx)/TILE)])return true;
@@ -252,7 +260,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    x+=joy.x;y+=joy.y;
    const len=Math.hypot(x,y);
    if(len>1){x/=len;y/=len;}
-   const targetX=x*235,targetY=y*235;
+   const rush=hooks.getWorld().timeLeft<90000;
+   const targetSpeed=rush && this.player.y>5.2*TILE && this.player.y<6.6*TILE ? 188 : 235;
+   const targetX=x*targetSpeed,targetY=y*targetSpeed;
    const t=Math.min(1,dt/1000*16);
    this.vx=Phaser.Math.Linear(this.vx,targetX,t);
    this.vy=Phaser.Math.Linear(this.vy,targetY,t);
@@ -386,6 +396,27 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
 
   update(_time:number,dt:number){
    if(hooks.getStage()!=="jogando")return;
+   const rush=hooks.getWorld().timeLeft<90000;
+   if(rush!==this.rushActive){
+    this.rushActive=rush;
+    if(rush){
+     for(let i=0;i<7;i++){
+      const steam=this.add.graphics().setDepth(95);
+      steam.fillStyle(0xffffff,.16).fillCircle(0,0,5);
+      steam.setPosition((12+i*.58)*TILE,6.35*TILE);
+      this.rushSteam.push(steam);
+     }
+    }else{
+     this.rushSteam.forEach(v=>v.destroy());
+     this.rushSteam=[];
+    }
+   }
+   if(rush){
+    this.rushSteam.forEach((steam,i)=>{
+     steam.y=6.35*TILE-Math.sin(this.pulse*.003+i)*8-(this.pulse*.018+i*0.7)%26;
+     steam.alpha=.08+.1*Math.sin(this.pulse*.006+i);
+    });
+   }
    this.move(dt);
    this.nearestStation();
    if(Phaser.Input.Keyboard.JustDown(this.keys?.Q))thr=true;
