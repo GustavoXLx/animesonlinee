@@ -32,7 +32,10 @@ export function Futebol({ me }: { me: Me }) {
   const [aim, setAim] = useState({ x: 2.2, y: 1.2 });
   const [curve, setCurve] = useState(0);
   const [power, setPower] = useState(0);
-  const [charging, setCharging] = useState(false);\n  const powerRaf = useRef(0);\n  const powerRef = useRef(0);\n  const powerBarRef = useRef<HTMLDivElement>(null);
+  const [charging, setCharging] = useState(false);
+  const powerRaf = useRef(0);
+  const powerRef = useRef(0);
+  const powerBarRef = useRef<HTMLDivElement>(null);
   const [waitingKeeper, setWaitingKeeper] = useState(false);
   const [myDive, setMyDive] = useState<Dive | null>(null);
   const [overlay, setOverlay] = useState<{ txt: string; good: boolean } | null>(null);
@@ -46,6 +49,8 @@ export function Futebol({ me }: { me: Me }) {
   useEffect(() => {
     setMyDive(null);
     setPower(0);
+    powerRef.current = 0;
+    if (powerBarRef.current) powerBarRef.current.style.width = "0%";
     setCurve(0);
     setAim({ x: state.mode === "falta" ? (spot.x >= 0 ? -2.3 : 2.3) : 2.2, y: state.mode === "falta" ? 1.9 : 1.1 });
     setWaitingKeeper(false);
@@ -96,7 +101,6 @@ export function Futebol({ me }: { me: Me }) {
       const x = ((performance.now() - t0) / 1100) % 2;
       const value = x < 1 ? x : 2 - x;
       powerRef.current = value;
-      setPower(value);
       if (powerBarRef.current) powerBarRef.current.style.width = (value * 100) + "%";
       powerRaf.current = requestAnimationFrame(loop);
     };
