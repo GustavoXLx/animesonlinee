@@ -476,7 +476,7 @@ function Game(p: SceneProps) {
     // batedor
     const kg = kicker.current;
     if (kg) {
-      const start = tmp.set(sx, 0, sz).addScaledVector(dir.d, -2.7).addScaledVector(dir.perp, 1.25);
+      const start = tmp.set(sx, 0, sz).addScaledVector(dir.d, -2.3).addScaledVector(dir.perp, 1.1);
       const plant = new THREE.Vector3(sx, 0, sz).addScaledVector(dir.d, -0.42).addScaledVector(dir.perp, 0.32);
       const face = Math.atan2(dir.d.x, dir.d.z);
       if (!sol || t <= 0.05) {
@@ -561,7 +561,7 @@ function Game(p: SceneProps) {
       target.set(sx * 0.5, 1.0, sz * 0.5);
       fov = 55;
     } else {
-      want.set(sx, 0, sz).addScaledVector(dir.d, -6.4).addScaledVector(dir.perp, -1.5);
+      want.set(sx, 0, sz).addScaledVector(dir.d, -7.6).addScaledVector(dir.perp, -2.4);
       want.y = p.mode === "falta" ? 3.0 : 2.5;
       target.set(0, 1.25, 0);
       if (sol && tk > 0) {
