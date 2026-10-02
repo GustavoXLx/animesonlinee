@@ -226,7 +226,7 @@ function DesfileInner({ me }: { me: Me }) {
           </div>
         ) : (
           <>
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl">
               <LookEditor landscape look={draft} onChange={(l) => !submitted && setDraft(l)} />
             </div>
             <div className="flex shrink-0 items-center gap-2 pb-[env(safe-area-inset-bottom)]">
