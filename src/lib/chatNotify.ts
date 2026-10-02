@@ -21,7 +21,7 @@ const inFrame = () => {
 async function swReg() {
   if (!("serviceWorker" in navigator) || inFrame()) return null;
   try {
-    return await navigator.serviceWorker.register("/sw.js");
+    return await navigator.serviceWorker.register("/push-sw.js");
   } catch {
     return null;
   }

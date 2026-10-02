@@ -145,11 +145,15 @@ function Home() {
         )}
       </header>
 
-      {notifier.canRequest && notifier.permission !== "granted" && (
+      {notifier.canRequest && (notifier.permission !== "granted" || !notifier.subscribed) && (
         <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-neutral-900 px-3 py-2.5">
           <Bell size={17} className="shrink-0 text-fuchsia-400" />
           <p className="min-w-0 flex-1 text-xs text-white/70">
-            {notifier.permission === "denied" ? "Avisos bloqueados neste navegador." : "Ative os avisos de novos episódios."}
+            {notifier.permission === "denied"
+              ? "Avisos bloqueados neste navegador."
+              : notifier.permission === "granted"
+                ? "Conclua a ativação dos avisos."
+                : "Ative os avisos de novos episódios."}
           </p>
           <button
             onClick={async () => {
@@ -159,6 +163,10 @@ function Home() {
                 window.open(window.location.href, "_blank", "noopener,noreferrer");
               } else if (result === "denied") {
                 setNotificationHint("Os avisos estão bloqueados nas configurações deste site.");
+              } else if (result === "ios-install") {
+                setNotificationHint("No iPhone: toque em Compartilhar → Adicionar à Tela de Início, abra o AniStream por lá e toque em Ativar.");
+              } else if (result === "need-chat") {
+                setNotificationHint("Entre uma vez no seu perfil e volte aqui para concluir.");
               } else if (result === "unsupported") {
                 setNotificationHint("Este navegador não aceita avisos do site.");
               } else {
