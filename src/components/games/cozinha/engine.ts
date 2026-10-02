@@ -381,6 +381,14 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const hatBand=this.add.rectangle(0,-27,21,3,0xe7d8c8,.85);
    c.add([shadow,legL,legR,shoeL,shoeR,body,neck,collar,apron,pocket,pocketLine,button1,button2,armL,armR,gloveL,gloveR,head,earL,earR,hairShape,hat,hatTop,hatBand]);
    c.add([this.add.circle(-5,-17,1.8,0x29252a),this.add.circle(5,-17,1.8,0x29252a)]);
+   const nose=this.add.triangle(0,-13,-2,0,2,0,0xd89479,.65);
+   const eyeHiL=this.add.circle(-4.4,-17.6,.55,0xffffff,.9);
+   const eyeHiR=this.add.circle(5.6,-17.6,.55,0xffffff,.9);
+   const hatFold=this.add.arc(0,-34,15,.15,2.9,false,0xd8d2ce,.45).setStrokeStyle(1,0xb9b0ad,.35);
+   const apronSeam=this.add.line(0,17,0,0,0,-8,0x9c806c,.3).setLineWidth(1);
+   const shoeHiL=this.add.ellipse(-10,28,5,1.5,0xffffff,.14);
+   const shoeHiR=this.add.ellipse(8,28,5,1.5,0xffffff,.14);
+   c.add([nose,eyeHiL,eyeHiR,hatFold,apronSeam,shoeHiL,shoeHiR]);
    const cheekL=this.add.circle(-8,-12,3,0xef9e98,.22);
    const cheekR=this.add.circle(8,-12,3,0xef9e98,.22);
    const mouth=this.add.arc(0,-10,6,0.15,Math.PI-0.15,false,0x6b3d3c,.9).setStrokeStyle(1,0x6b3d3c,.8);
