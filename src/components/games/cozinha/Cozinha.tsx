@@ -452,7 +452,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
         onPointerUp={handleJoyEnd}
         onPointerCancel={handleJoyEnd}
         onPointerLeave={handleJoyEnd}
-        className="absolute left-5 bottom-5 w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none md:hidden backdrop-blur-sm grid place-items-center"
+        className="absolute left-[max(1.25rem,env(safe-area-inset-left))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none backdrop-blur-sm grid place-items-center"
       ><div ref={joyKnobRef} className="w-11 h-11 rounded-full bg-foreground/65 shadow-lg pointer-events-none transition-transform duration-75" /></div>
 
       {/* botão de ação (mobile) */}
@@ -460,7 +460,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
         onPointerDown={handleActDown}
         onPointerUp={handleActUp}
         onPointerCancel={handleActUp}
-        className="absolute right-5 bottom-5 w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
+        className="absolute right-[max(1.25rem,env(safe-area-inset-right))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
       >
         {actionLabel}
       </button>
