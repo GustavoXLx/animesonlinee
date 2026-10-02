@@ -117,6 +117,109 @@ function useBallTex() {
   }, []);
 }
 
+/* ---------------- gramado procedural ---------------- */
+function ProceduralGrass() {
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: \`
+      varying vec2 vUv;
+      varying float vWave;
+      uniform float uTime;
+      void main() {
+        vUv = uv;
+        vec3 p = position;
+        float wave = sin(p.x * 0.32 + uTime * 0.65) * 0.008
+          + cos(p.y * 0.27 - uTime * 0.42) * 0.006
+          + sin((p.x + p.y) * 0.12 + uTime * 0.25) * 0.004;
+        p.z += wave;
+        vWave = wave;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }
+    \`,
+    fragmentShader: \`
+      varying vec2 vUv;
+      varying float vWave;
+      uniform float uTime;
+      float hash(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0,0.0)), f.x),
+          mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), f.x), f.y);
+      }
+      float fbm(vec2 p) {
+        float v = 0.0;
+        float a = 0.5;
+        for (int i=0; i<4; i++) { v += noise(p) * a; p *= 2.02; a *= 0.5; }
+        return v;
+      }
+      void main() {
+        vec2 p = vUv * 42.0;
+        float broad = fbm(p * 0.16);
+        float micro = fbm(p * 2.8);
+        float blades = noise(p * 9.0 + vec2(uTime * 0.08, -uTime * 0.05));
+        float stripe = 0.035 * sin(vUv.y * 22.0 * 3.14159);
+        vec3 dark = vec3(0.035, 0.20, 0.055);
+        vec3 mid = vec3(0.055, 0.34, 0.085);
+        vec3 light = vec3(0.12, 0.43, 0.12);
+        vec3 col = mix(dark, mid, smoothstep(0.18, 0.58, broad));
+        col = mix(col, light, smoothstep(0.62, 0.9, micro) * 0.32);
+        col += vec3(0.015, 0.045, 0.012) * blades;
+        col += stripe * vec3(0.55, 0.75, 0.45);
+        col += vWave * vec3(0.5, 0.9, 0.35);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    \`,
+    side: THREE.DoubleSide
+  }), []);
+  useFrame(({ clock }) => { mat.uniforms.uTime.value = clock.elapsedTime; });
+  return <mesh position={[0, -0.008, 28]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <planeGeometry args={[80, 80, 96, 96]} />
+    <primitive object={mat} attach="material" />
+  </mesh>;
+}
+
+function GrassDebris({ trigger, spot }: { trigger: MutableRefObject<number>; spot: { x: number; z: number } }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const last = useRef(0);
+  const particles = useMemo(() => Array.from({ length: 42 }, () => ({
+    p: new THREE.Vector3(), v: new THREE.Vector3(), life: 0, rot: Math.random() * 6.28
+  })), []);
+  const matrix = useMemo(() => new THREE.Matrix4(), []);
+  const quat = useMemo(() => new THREE.Quaternion(), []);
+  const scale = useMemo(() => new THREE.Vector3(), []);
+  useFrame((_, raw) => {
+    const dt = Math.min(raw, 0.04);
+    const mesh = ref.current;
+    if (!mesh) return;
+    if (trigger.current !== last.current) {
+      last.current = trigger.current;
+      particles.forEach((p) => {
+        p.p.set(spot.x + (Math.random() - 0.5) * 0.18, 0.025, spot.z + (Math.random() - 0.5) * 0.18);
+        p.v.set((Math.random() - 0.5) * 2.1, 0.35 + Math.random() * 1.4, (Math.random() - 0.5) * 2.1);
+        p.life = 0.7 + Math.random() * 0.5;
+        p.rot = Math.random() * 6.28;
+      });
+    }
+    particles.forEach((p, i) => {
+      if (p.life > 0) { p.v.y -= 4.8 * dt; p.p.addScaledVector(p.v, dt); p.life = Math.max(0, p.life - dt); }
+      scale.setScalar(Math.max(0, p.life) * 0.045);
+      quat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot + p.life * 5);
+      matrix.compose(p.p, quat, scale);
+      mesh.setMatrixAt(i, matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return <instancedMesh ref={ref} args={[undefined, undefined, 42]} frustumCulled={false}>
+    <planeGeometry args={[1, 0.35]} />
+    <meshBasicMaterial color="#8bcf4a" transparent opacity={0.82} side={THREE.DoubleSide} depthWrite={false} />
+  </instancedMesh>;
+}
+
 /* ---------------- pessoas ---------------- */
 function FootballKit({ model, skin = "default" }: { model: string; skin?: "default" | "neymar" }) {
   const neymar = skin === "neymar";
@@ -262,6 +365,22 @@ function Person({
     </group>
   );
 }
+function Vignette() {
+  const { camera } = useThree();
+  const ref = useRef<THREE.Mesh>(null);
+  useEffect(() => {
+    if (ref.current) camera.add(ref.current);
+    return () => { if (ref.current) camera.remove(ref.current); };
+  }, [camera]);
+  return <mesh ref={ref} position={[0, 0, -0.65]} renderOrder={20}>
+    <planeGeometry args={[2.2, 2.2]} />
+    <shaderMaterial transparent depthWrite={false} depthTest={false}
+      vertexShader={\`varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}\`}
+      fragmentShader={\`varying vec2 vUv; void main(){vec2 p=vUv-0.5; float d=length(p)*1.35; float a=smoothstep(0.42,0.78,d)*0.62; gl_FragColor=vec4(0.005,0.012,0.008,a);}\`}
+    />
+  </mesh>;
+}
+
 /* ---------------- cenário ---------------- */
 function Goal({ solRef, timeRef }: { solRef: MutableRefObject<Solved | null>; timeRef: MutableRefObject<number> }) {
   const back = useRef<THREE.Mesh>(null);
@@ -565,7 +684,6 @@ function Confetti({ trigger }: { trigger: MutableRefObject<number> }) {
 function Game(p: SceneProps) {
   const { camera } = useThree();
   const cam = camera as THREE.PerspectiveCamera;
-  const grass = useGrass();
   const ballTex = useBallTex();
   const sol = useMemo(() => (p.shot ? solve(p.shot) : null), [p.shot]);
   const solRef = useRef<Solved | null>(null);
@@ -646,6 +764,9 @@ function Game(p: SceneProps) {
         ball.current.rotation.x -= spin * dt * (camMode === "live" ? 1 : 0.45);
         ball.current.rotation.y += (p.shot?.curve ?? 0) * 12 * dt;
       }
+    }
+    if (sol && tk > 0 && bp[1] < BALL_R + 0.07 && Math.abs(tk - sol.flight * 0.72) < 0.06) {
+      kickImpact.current++;
     }
     if (shadow.current) {
       shadow.current.position.set(bp[0], 0.012, bp[2]);
@@ -808,10 +929,7 @@ function Game(p: SceneProps) {
 
   return (
     <>
-      <mesh position={[0, -0.01, 28]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial map={grass} roughness={0.9} />
-      </mesh>
+      <ProceduralGrass />
       {Array.from({ length: 12 }, (_, i) => (
         <mesh key={"turf-" + i} position={[0, 0.002, -8 + i * 6.5]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[68, 6.5]} />
@@ -827,6 +945,7 @@ function Game(p: SceneProps) {
         <mesh position={[0, 0.008, 11]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.16, 24]} /><meshBasicMaterial color="#ffffff" /></mesh>
       </group>
       <Crowd excite={excite} />
+      <GrassDebris trigger={kickImpact} spot={p.spot} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.28} scale={38} blur={2.4} far={8} resolution={512} />
       <Goal solRef={solRef} timeRef={tRef} />
       <Confetti trigger={confetti} />
@@ -867,6 +986,7 @@ function Game(p: SceneProps) {
         <planeGeometry args={[18, 7]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
+      <Vignette />
       <group ref={reticle}>
         <mesh>
           <ringGeometry args={[0.2, 0.26, 32]} />
@@ -903,8 +1023,8 @@ export default function FutebolScene(props: SceneProps) {
     <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }} camera={{ position: [0, 2, 17], fov: 50, near: 0.1, far: 300 }}>
       <color attach="background" args={["#0d1426"]} />
       <fog attach="fog" args={["#0d1426", 45, 110]} />
-      <hemisphereLight args={["#dcecff", "#18351b", 0.72]} />
-      <ambientLight intensity={0.18} />
+      <hemisphereLight args={["#dcecff", "#102b14", 0.82]} />
+      <ambientLight intensity={0.24} />
       <directionalLight
         position={[12, 26, 22]}
         intensity={2.7}
