@@ -56,7 +56,8 @@ function Home() {
   const [genre, setGenre] = useState<string | null>(null);
   const [secret, setSecret] = useState<false | "gate" | "decoy">(false);
   const site = useSiteState();
-  const hasNotif = useChatNotifier(!secret);
+  const notifier = useChatNotifier(!secret);
+  const [notificationHint, setNotificationHint] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +120,7 @@ function Home() {
             </button>
             <span aria-label="Notificações" className="relative p-2 rounded-full">
               <Bell size={20} />
-              {hasNotif && (
+              {notifier.unread && (
                 <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-neutral-950" />
               )}
             </span>
@@ -143,6 +144,36 @@ function Home() {
           </form>
         )}
       </header>
+
+      {notifier.canRequest && notifier.permission === "default" && (
+        <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-neutral-900 px-3 py-2.5">
+          <Bell size={17} className="shrink-0 text-fuchsia-400" />
+          <p className="min-w-0 flex-1 text-xs text-white/70">Ative os avisos de novos episódios.</p>
+          <button
+            onClick={async () => {
+              const result = await notifier.requestPermission();
+              if (result === "open-in-new-tab") {
+                setNotificationHint("Abra o site em uma aba própria para permitir avisos.");
+                window.open(window.location.href, "_blank", "noopener,noreferrer");
+              } else if (result === "denied") {
+                setNotificationHint("Os avisos estão bloqueados nas configurações deste site.");
+              } else if (result === "unsupported") {
+                setNotificationHint("Este navegador não aceita avisos do site.");
+              } else {
+                setNotificationHint(null);
+              }
+            }}
+            className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black"
+          >
+            Ativar
+          </button>
+        </div>
+      )}
+      {notificationHint && (
+        <p className="mx-4 mt-2 rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] text-white/60">
+          {notificationHint}
+        </p>
+      )}
 
       {!q && <Hero />}
 
