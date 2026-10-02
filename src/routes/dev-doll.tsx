@@ -48,7 +48,7 @@ function Page() {
 
   const cols = 6;
   const headY = 0.83;
-  const cam: [number, number, number] = view === "body" ? [0, 0.5, 1.9] : [0, headY - 0.02, 0.85];
+  const cam: [number, number, number] = view === "body" ? [0, 0.5, 1.9] : [0, headY + 0.1, 1.6];
   const fov = view === "body" ? 30 : 26;
   const camRotY = view === "head34" ? 0.5 : 0;
 
@@ -59,7 +59,7 @@ function Page() {
         {looks.map((l, i) => (
           <div key={i} style={{ background: "#0f0f1e", borderRadius: 6, overflow: "hidden" }}>
             <div style={{ height: 170, position: "relative" }}>
-              <Canvas dpr={1} camera={{ position: cam, fov }} onCreated={({ camera }) => { camera.lookAt(0, view === "body" ? 0.45 : headY, 0); camera.rotateY(camRotY); }}>
+              <Canvas dpr={1} camera={{ position: cam, fov }} onCreated={({ camera }) => { camera.lookAt(0, view === "body" ? 0.45 : headY + 0.12, 0); camera.rotateY(camRotY); }}>
                 <ambientLight intensity={0.7} />
                 <directionalLight position={[2, 3, 2]} intensity={1.6} />
                 <directionalLight position={[-2, 1, -1]} intensity={0.5} />

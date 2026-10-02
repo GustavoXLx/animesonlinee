@@ -451,7 +451,7 @@ function Hair({ l }: { l: Look }) {
   // topo até a linha do cabelo (acima das sobrancelhas) + casca nas laterais/nuca aberta para o rosto
   const base = (len = 1.8, _tilt = 0, rr = 1.07) => (
     <>
-      <mesh geometry={capSph(R * rr, 1.08)} material={m} rotation={[-0.2, 0, 0]} />
+      <mesh geometry={capSph(R * rr, 1.24)} material={m} rotation={[-0.16, 0, 0]} />
       <mesh geometry={shellSph(R * (rr + 0.01), len)} material={m} />
     </>
   );
