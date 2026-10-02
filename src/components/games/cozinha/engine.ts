@@ -188,49 +188,78 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     if(s.type==="liquidificador")color=0x8d75b7;
     const box=this.stationBox(x,y,TILE-8,TILE-10,color);
     if(s.type==="fogao"||s.type==="forno"||s.type==="entrega") box.postFX.addGlow(s.type==="entrega"?0x8ff0bf:0xffb65b,2,1,false,.45,5);
-    const g=this.add.graphics();
+    const g=this.add.graphics().setDepth(4);
+
     if(s.type==="geladeira"){
-     g.fillStyle(0xd9f2fa,.8).fillRoundedRect(x-16,y-13,32,27,5);
-     g.lineStyle(2,0x487d91,.8).strokeRoundedRect(x-16,y-13,32,27,5);
+     g.fillStyle(0xe9f8ff,.95).fillRoundedRect(x-17,y-16,34,32,6);
+     g.fillStyle(0xb8dce8,.65).fillRoundedRect(x-13,y-12,26,21,4);
+     g.fillStyle(0x6d9baa,.8).fillRoundedRect(x+9,y-7,2,11,1);
+     g.lineStyle(2,0x487d91,.8).strokeRoundedRect(x-17,y-16,34,32,6);
      g.fillStyle(itemColor(s.ingredient??"")).fillCircle(x,y+3,7);
-     g.lineStyle(2,0xffffff,.55).lineBetween(x-10,y-3,x+10,y-3);
+     g.fillStyle(0xffffff,.35).fillCircle(x-2,y+1,2);
+     g.lineStyle(2,0xffffff,.55).lineBetween(x-10,y-3,x+7,y-3);
     }else if(s.type==="tabua"){
-     g.fillStyle(0x6f432b).fillRoundedRect(x-17,y-9,34,18,4);
-     g.fillStyle(0xb9824d).fillCircle(x-9,y-3,2);g.fillCircle(x+5,y+4,2);
+     g.fillStyle(0x5b3827).fillRoundedRect(x-18,y-10,36,20,5);
+     g.fillStyle(0xb9824d).fillRoundedRect(x-15,y-8,30,16,4);
+     for(let i=0;i<4;i++)g.lineStyle(1,0x7b4c31,.3).lineBetween(x-10+i*7,y-6,x-7+i*7,y+5);
+     g.fillStyle(0xffffff,.22).fillCircle(x-8,y-3,2);
+     g.fillStyle(0x7a452e,.5).fillCircle(x+7,y+4,2);
+     g.fillStyle(0xf3d7b3,.9).fillEllipse(x+2,y-1,9,5);
     }else if(s.type==="fogao"){
-     g.fillStyle(0x20252a).fillCircle(x,y,15);
-     g.lineStyle(3,0x9ca8ad,.7).strokeCircle(x,y,14);
-     g.lineStyle(2,0x40484e,.9).strokeCircle(x,y,7);
+     g.fillStyle(0x171a1d).fillCircle(x,y,16);
+     g.lineStyle(2,0x78848b,.8).strokeCircle(x,y,15);
+     g.lineStyle(2,0x343a3f,.95).strokeCircle(x,y,9);
+     g.fillStyle(0x3b4247).fillCircle(x,y,5);
+     g.lineStyle(2,0xff8f35,.7).strokeCircle(x,y,5);
+     g.fillStyle(0xffc65c,.35).fillCircle(x,y,3);
     }else if(s.type==="forno"){
-     g.fillStyle(0x1e2225).fillRoundedRect(x-17,y-14,34,28,5);
-     g.fillStyle(0x39434a).fillRoundedRect(x-11,y-8,22,13,3);
-     g.fillStyle(0xffbd5a,.85).fillCircle(x,y-1,3);
+     g.fillStyle(0x181c1f).fillRoundedRect(x-18,y-15,36,30,5);
+     g.fillStyle(0x30383d).fillRoundedRect(x-13,y-9,26,17,4);
+     g.fillStyle(0x101316,.85).fillRoundedRect(x-10,y-7,20,13,3);
+     g.fillStyle(0xffb347,.75).fillEllipse(x,y,10,5);
+     g.fillStyle(0xffe19a,.35).fillCircle(x-3,y-1,3);
+     g.fillStyle(0xc7d1d5,.75).fillCircle(x+10,y-11,2);
+     g.fillStyle(0xc7d1d5,.55).fillCircle(x+4,y-11,2);
     }else if(s.type==="montagem"){
-     g.fillStyle(0xfff0c7).fillRoundedRect(x-18,y-11,36,22,4);
-     g.lineStyle(2,0xa57a38,.5).strokeRoundedRect(x-18,y-11,36,22,4);
-     g.fillStyle(0xf1d37c).fillCircle(x,y,7);
+     g.fillStyle(0xfff4d5,.95).fillRoundedRect(x-19,y-12,38,24,5);
+     g.lineStyle(2,0xa57a38,.6).strokeRoundedRect(x-19,y-12,38,24,5);
+     g.fillStyle(0xf0c96a,.75).fillCircle(x,y,8);
+     g.fillStyle(0xffffff,.7).fillEllipse(x-3,y-3,5,3);
+     g.lineStyle(2,0xd09b42,.45).lineBetween(x-11,y+7,x+11,y+7);
     }else if(s.type==="entrega"){
-     g.fillStyle(0xb8efd3,.2).fillRoundedRect(x-19,y-13,38,26,6);
-     g.lineStyle(3,0xd8ffea,.85).strokeRoundedRect(x-19,y-13,38,26,6);
-     g.fillStyle(0xd8ffea,.8).fillCircle(x,y,7);
+     g.fillStyle(0xeffff6,.9).fillRoundedRect(x-20,y-14,40,28,7);
+     g.fillStyle(0x8fe8bd,.2).fillRoundedRect(x-16,y-10,32,20,5);
+     g.lineStyle(2,0xc9ffe5,.95).strokeRoundedRect(x-20,y-14,40,28,7);
+     g.fillStyle(0xd8ffea,.9).fillCircle(x,y,8);
+     g.lineStyle(2,0x5fae89,.7).strokeCircle(x,y,8);
+     g.lineStyle(2,0x4d9b78,.8).lineBetween(x-4,y,x-1,y+3);g.lineBetween(x-1,y+3,x+5,y-4);
     }else if(s.type==="liquidificador"){
-     g.fillStyle(0xe6d9ff,.85).fillRoundedRect(x-12,y-4,24,14,4);
-     g.fillStyle(0xc4b1e8,.9).fillRoundedRect(x-8,y-15,16,13,4);
-     g.lineStyle(2,0x5b4b76,.7).strokeRoundedRect(x-8,y-15,16,13,4);
+     g.fillStyle(0x332c46,.8).fillRoundedRect(x-14,y+3,28,10,4);
+     g.fillStyle(0xe6d9ff,.9).fillRoundedRect(x-10,y-14,20,19,5);
+     g.fillStyle(0xbaa9df,.9).fillRoundedRect(x-7,y-11,14,13,4);
+     g.lineStyle(2,0x5b4b76,.75).strokeRoundedRect(x-10,y-14,20,19,5);
+     g.fillStyle(0x8ce0c3,.55).fillCircle(x,y-4,5);
+     g.fillStyle(0xffffff,.35).fillCircle(x-2,y-6,2);
     }else if(s.type==="lixeira"){
-     g.fillStyle(0x2e3438).fillRoundedRect(x-13,y-10,26,21,4);
-     g.fillStyle(0x889197).fillRect(x-16,y-14,32,4);
+     g.fillStyle(0x252b2f).fillRoundedRect(x-14,y-10,28,22,4);
+     g.fillStyle(0x747f84).fillRoundedRect(x-17,y-14,34,5,3);
+     g.fillStyle(0x485156).fillRoundedRect(x-10,y-6,20,15,3);
+     g.fillStyle(0x8f9ba0,.35).fillRect(x-6,y-3,3,8);g.fillRect(x+3,y-3,3,8);
     }else if(s.type==="balcao"){
-     g.fillStyle(0xe7bd83).fillRoundedRect(x-17,y-10,34,20,5);
-     g.fillStyle(0xf7dfae,.8).fillRoundedRect(x-13,y-6,26,4,2);
+     g.fillStyle(0xe5b978).fillRoundedRect(x-18,y-11,36,22,5);
+     g.fillStyle(0xf6dca7,.9).fillRoundedRect(x-14,y-7,28,5,2);
+     g.fillStyle(0xa97646,.35).fillRect(x-10,y+2,20,2);
     }
+
     this.add.text(x,y+22,s.label??"",{
      fontFamily:"Arial",fontSize:"7px",fontStyle:"bold",color:"#2e2528",stroke:"#f4dfb7",strokeThickness:2
-    }).setOrigin(.5).setDepth(3);
+    }).setOrigin(.5).setDepth(5);
 
     if(s.type==="fogao"||s.type==="forno"){
-      const flame=this.add.circle(x,y-20,3,0xffc45b,.55).setDepth(4);
-      this.tweens.add({targets:flame,scale:{from:0.7,to:1.25},alpha:{from:.3,to:.8},duration:520,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:(s.x+s.y)*70});
+      const flame=this.add.circle(x,y-21,3,0xffc45b,.55).setDepth(6);
+      this.tweens.add({targets:flame,scale:{from:0.7,to:1.3},alpha:{from:.25,to:.9},duration:520,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:(s.x+s.y)*70});
+      const heat=this.add.arc(x,y-25,12,180,360,false,0xffc45b,.18).setDepth(5);
+      this.tweens.add({targets:heat,alpha:{from:.08,to:.35},scale:{from:.8,to:1.2},duration:700,yoyo:true,repeat:-1});
     }
    }
   }
