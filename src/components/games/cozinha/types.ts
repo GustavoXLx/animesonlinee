@@ -54,6 +54,7 @@ export interface StationState {
   held: HeldItem; // for balcao/tabua(single)/montagem base holder/entrega staging
   process?: ProcessState; // fogao/forno/liquidificador
   bench?: Exclude<HeldItem, null>[]; // montagem ingredients stacked
+  prep?: { item: Exclude<HeldItem, null>; hits: number; needed: number }; // preparo manual em etapas
 }
 
 export interface Order {
