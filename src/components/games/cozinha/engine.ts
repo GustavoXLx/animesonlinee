@@ -118,6 +118,20 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    sign.add(this.add.text(68,8,"SERVICE", {fontFamily:"Arial",fontSize:"9px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2}).setOrigin(.5));
    sign.postFX.addBloom(0xffd36e,1,1,.35,.12,2);
 
+   for(let i=0;i<5;i++){
+    const lamp=this.add.container(120+i*180,76).setDepth(4);
+    const cord=this.add.graphics().lineStyle(2,0x3b3034,.75).lineBetween(0,-18,0,0);
+    const shade=this.add.graphics();shade.fillStyle(0x3b3034).fillTriangle(-13,0,13,0,8,10);shade.fillStyle(0xffd98a,.18).fillCircle(0,12,17);
+    lamp.add([cord,shade]);
+    lamp.postFX.addGlow(0xffd98a,2,1,false,.35,4);
+   }
+   const plant=this.add.container(34,ROWS*TILE-54).setDepth(5);
+   plant.add(this.add.graphics().fillStyle(0x6a4a34).fillRoundedRect(-10,7,20,10,4));
+   const leaves=this.add.graphics();
+   for(let i=0;i<5;i++) leaves.fillStyle(i%2?0x5f9b65:0x79b978,.9).fillEllipse(-8+i*4,2-(i%2)*5,10,17);
+   plant.add(leaves);
+   this.add.text(COLS*TILE-24,ROWS*TILE-24,"TABLE 02",{fontFamily:"Arial",fontSize:"8px",fontStyle:"bold",color:"#fff2d2aa",letterSpacing:2}).setOrigin(1,.5).setDepth(6);
+
    this.add.text(22,19,"KITCHEN // SERVICE",{
     fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
    }).setDepth(6);
@@ -142,6 +156,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    g.lineStyle(5,0x6e4938,.42).strokeRect(TILE+3,TILE+3,(COLS-2)*TILE-6,(ROWS-2)*TILE-6);
 
    const runner=this.add.graphics().setDepth(1);
+   const shine=this.add.graphics().setDepth(1);
+   shine.fillStyle(0xffffff,.045).fillEllipse(9*TILE,3.2*TILE,9*TILE,2.2*TILE);
+   shine.fillStyle(0xffffff,.025).fillEllipse(4*TILE,9*TILE,5*TILE,1.4*TILE);
    runner.fillStyle(0x8d6a49,.13).fillRoundedRect(6*TILE,6*TILE,6*TILE,2*TILE,18);
    runner.lineStyle(2,0xffffff,.08).strokeRoundedRect(6*TILE+2,6*TILE+2,6*TILE-4,2*TILE-4,16);
   }
@@ -235,6 +252,10 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const hatTop=this.add.rectangle(0,-35,17,9,0xffffff).setStrokeStyle(1,0x6d6264,.6);
    c.add([shadow,legL,legR,body,apron,armL,armR,head,hairShape,hat,hatTop]);
    c.add([this.add.circle(-5,-17,1.8,0x29252a),this.add.circle(5,-17,1.8,0x29252a)]);
+   const cheekL=this.add.circle(-8,-12,3,0xef9e98,.22);
+   const cheekR=this.add.circle(8,-12,3,0xef9e98,.22);
+   const mouth=this.add.arc(0,-10,6,0.15,Math.PI-0.15,false,0x6b3d3c,.9).setStrokeStyle(1,0x6b3d3c,.8);
+   c.add([cheekL,cheekR,mouth]);
    const badge=this.add.circle(0,3,4,me==="gu"?C.pink:C.blue).setStrokeStyle(1,0xffffff,.6);
    c.add(badge);
    const item=this.add.container(0,-39).setDepth(5);item.setVisible(false);c.add(item);
