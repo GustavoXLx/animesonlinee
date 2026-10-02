@@ -148,12 +148,58 @@ function hash(seed:number,salt:number){let x=(seed^Math.imul(salt,0x45d9f3b))>>>
 function roleFor(seed:number){return PLAYERS[hash(seed,71)%PLAYERS.length];}
 function themeFor(seed:number){return hash(seed,113)%THEMES.length;}
 function wordFor(seed:number,themeIndex:number){const t=THEMES[themeIndex];return t.items[hash(seed,991+themeIndex)%t.items.length];}
+const IMPOSTOR_CLUES: Record<string,string[]> = {
+  Comidas:["Eu associaria a algo que costuma aparecer numa refeição.","É o tipo de coisa que muita gente reconhece de primeira.","Tem várias versões e cada pessoa pode ter uma preferência."],
+  Países:["Eu pensaria em algo que aparece bastante em viagens.","É algo que pode ser reconhecido por referências culturais.","Tem características que fazem muita gente lembrar dele."],
+  Animais:["Eu associaria a algo que você encontra na natureza ou em casa.","É algo que costuma ter comportamentos bem marcantes.","Dá para reconhecer por características do próprio jeito de viver."],
+  Cidades:["Eu ligaria isso a um lugar que muita gente conhece.","É algo que pode ser lembrado por experiências ou imagens.","Tem uma identidade própria que chama atenção."],
+  Esportes:["Eu pensaria em algo ligado a competição e entretenimento.","É algo que muita gente acompanha ou pratica.","Tem regras e características que fazem parte da experiência."],
+  Tecnologia:["Eu associaria a algo presente no dia a dia moderno.","É algo que pode ter várias funções dependendo do uso.","É uma coisa que muita gente já teve contato."],
+  Casa:["Eu pensaria em algo que faz parte da rotina doméstica.","É algo que costuma ter uma função bem prática.","Dá para encontrar em diferentes tipos de ambientes."],
+  Viagem:["Eu associaria a algo que aparece durante uma viagem.","É uma coisa que pode fazer parte do planejamento ou do percurso.","Muita gente já teve contato com isso em algum deslocamento."],
+  Natureza:["Eu pensaria em algo ligado a uma paisagem.","É algo que pode ser lembrado por uma experiência ao ar livre.","Tem características que ficam bem marcadas na memória."],
+  Música:["Eu associaria a algo ligado a uma experiência musical.","É algo que pode aparecer em diferentes apresentações.","Tem uma relação forte com som e entretenimento."],
+  Moda:["Eu pensaria em algo ligado ao visual e ao estilo.","É algo que pode mudar bastante conforme a ocasião.","Tem vários modelos e preferências pessoais."],
+  Festas:["Eu associaria a algo que aparece em momentos de comemoração.","É algo ligado a encontros e celebrações.","Pode mudar bastante dependendo da ocasião."],
+  Doces:["Eu pensaria em algo que muita gente escolhe como sobremesa.","É algo que pode ter várias versões e sabores.","Normalmente está ligado a uma experiência bem gostosa."],
+};
+
+const CLUE_STYLES = [
+  (clue:string) => clue,
+  (clue:string) => `Uma coisa que me chama atenção é que ${clue.charAt(0).toLowerCase()+clue.slice(1)}`,
+  (clue:string) => `Eu ligaria isso ao fato de que ${clue.charAt(0).toLowerCase()+clue.slice(1)}`,
+];
+
+const SAFE_WORD_REPLACEMENTS: Record<string,string> = {
+  "Paris é a capital":"é um país europeu muito associado à cultura",
+  "Roma é a capital":"é um país europeu com forte tradição cultural",
+  "a Torre Eiffel é um símbolo famoso":"tem um ponto turístico muito conhecido",
+  "a Torre Eiffel é um cartão-postal":"tem um cartão-postal reconhecido no mundo todo",
+  "o Cristo Redentor é um cartão-postal":"tem um cartão-postal conhecido internacionalmente",
+  "o Big Ben é um símbolo":"tem um monumento muito reconhecido",
+  "a folha de bordo aparece na bandeira":"tem símbolos nacionais bem marcantes",
+  "fica no nordeste da África":"fica em uma região historicamente muito conhecida",
+  "é o maior país da América do Sul":"ocupa uma área enorme do continente",
+};
+
 function clueFor(seed:number,themeIndex:number,player:Player,round:number){
   const word=wordFor(seed,themeIndex);
-  if(roleFor(seed)===player){const variants=["Vou por uma característica que combine com isso.","Eu pensaria em algo ligado a isso.",HINTS[word]??"Pense em uma característica geral do que os outros receberam."];return variants[round];}
-  const bank=CLUES[word]??["é bastante conhecido","tem características marcantes","tem diferentes versões"];
-  const offset=hash(seed,500+PLAYERS.indexOf(player)*31)%bank.length;
-  return bank[(offset+round)%bank.length];
+  const themeName=THEMES[themeIndex]?.name??"";
+  if(roleFor(seed)===player){
+    const variants=IMPOSTOR_CLUES[themeName]??[
+      "Eu associaria a algo que tem características bem conhecidas.",
+      "É algo que muita gente reconheceria por contexto.",
+      "Tem mais de uma forma de ser percebido ou lembrado.",
+    ];
+    return variants[round];
+  }
+  const rawBank=CLUES[word]??["é bastante conhecido","tem características marcantes","tem diferentes versões"];
+  const bank=rawBank.map(clue=>SAFE_WORD_REPLACEMENTS[clue]??clue);
+  const playerIndex=PLAYERS.indexOf(player);
+  const baseIndex=hash(seed,500+playerIndex*31)%bank.length;
+  const styleIndex=(playerIndex+round)%CLUE_STYLES.length;
+  const clue=bank[(baseIndex+round)%bank.length];
+  return CLUE_STYLES[styleIndex](clue);
 }
 function emptyState():ImpState{return{phase:"lobby",seed:0,themeIndex:0,round:0,ready:{gu:false,li:false},seenCard:{gu:false,li:false},clues:{gu:[],li:[],cpu1:[],cpu2:[],cpu3:[]},clueSubmitted:{gu:false,li:false},votes:{gu:null,li:null,cpu1:null,cpu2:null,cpu3:null},voteDone:[],aiVotes:{cpu1:null,cpu2:null,cpu3:null},aiAnalysis:{gu:0,li:0,cpu1:0,cpu2:0,cpu3:0},aiStatus:"idle"};
 }
