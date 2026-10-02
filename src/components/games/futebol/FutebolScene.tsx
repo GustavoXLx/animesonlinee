@@ -309,7 +309,7 @@ function Stadium() {
             <cylinderGeometry args={[0.3, 0.45, 24, 10]} />
             <meshStandardMaterial color="#6b7280" metalness={0.6} roughness={0.4} />
           </mesh>
-          <mesh position={[0, 24.5, 0]} lookAt={() => undefined}>
+          <mesh position={[0, 24.5, 0]}>
             <boxGeometry args={[5, 2.2, 0.6]} />
             <meshStandardMaterial color="#fff" emissive="#fffbe8" emissiveIntensity={3} />
           </mesh>
