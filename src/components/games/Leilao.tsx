@@ -248,9 +248,9 @@ export function Leilao({ me }: { me: Me }) {
             <p className="text-center text-xs text-white/50 mt-3">
               Item {state.slot + 1} · {lot.pos}
             </p>
-            <div className="mt-3 rounded-3xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-400/20 p-6 text-center">
+            <div key={state.slot} className="lei-drop mt-3 rounded-3xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-400/20 p-6 text-center">
               <p className="text-2xl font-black">{lot.item}</p>
-              <p className="mt-2 text-sm text-white/70">
+              <p key={state.bid?.amount ?? 0} className={`mt-2 text-sm text-white/70 ${state.bid ? "lei-bid" : ""}`}>
                 {state.bid
                   ? `Lance atual: R$${state.bid.amount} · ${label(state.bid.by)}`
                   : "Sem lances ainda"}
@@ -335,7 +335,8 @@ export function Leilao({ me }: { me: Me }) {
 
         {state.phase === "won" && (
           <div className="mt-5 space-y-4">
-            <div className="rounded-3xl bg-white/5 p-6 text-center animate-in fade-in zoom-in duration-300">
+            {state.wonBy && <Confetti />}
+            <div className="lei-pop rounded-3xl bg-white/5 p-6 text-center">
               <Sparkles className="mx-auto text-amber-400 mb-2 animate-pulse" />
               {state.wonBy ? (
                 <>
@@ -374,8 +375,9 @@ export function Leilao({ me }: { me: Me }) {
 
         {state.phase === "done" && (
           <div className="mt-4 space-y-3">
+            {state.result && state.result.winner !== "empate" && <Confetti />}
             {state.result && (
-              <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 text-center">
+              <div className="lei-pop rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 p-4 text-center">
                 <Trophy className="mx-auto text-amber-400 mb-1" />
                 <p className="font-black text-lg">
                   {state.result.winner === "empate"
@@ -392,8 +394,8 @@ export function Leilao({ me }: { me: Me }) {
                   <div className="flex items-center justify-between">
                     <p className="font-bold">{label(m)}</p>
                     {state.result && (
-                      <p className="font-black text-amber-400">
-                        {m === "gu" ? state.result.guScore : state.result.liScore}/10
+                      <p className="font-black text-amber-400 lei-pop">
+                        {m === "gu" ? state.result.guScore : state.result.liScore}/{TEAM_SIZE * 10}
                       </p>
                     )}
                   </div>
@@ -406,7 +408,7 @@ export function Leilao({ me }: { me: Me }) {
                         x.item.toLowerCase().includes(it.item.toLowerCase()),
                       );
                       return (
-                        <li key={`${it.item}-${i}`}>
+                        <li key={`${it.item}-${i}`} className="lei-row" style={{ animationDelay: `${i * 120}ms` }}>
                           <div className="flex items-baseline justify-between gap-2">
                             <span>
                               <span className="text-white/40 text-[11px] mr-1">{it.pos}</span>
@@ -442,6 +444,27 @@ export function Leilao({ me }: { me: Me }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function Confetti() {
+  const bits = Array.from({ length: 28 }, (_, i) => i);
+  const colors = ["#fbbf24", "#f97316", "#ec4899", "#a78bfa", "#34d399"];
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
+      {bits.map((i) => (
+        <span
+          key={i}
+          className="lei-confetti"
+          style={{
+            left: `${(i * 37) % 100}%`,
+            background: colors[i % colors.length],
+            animationDelay: `${(i % 7) * 90}ms`,
+            animationDuration: `${1.4 + (i % 5) * 0.25}s`,
+          }}
+        />
+      ))}
     </div>
   );
 }
