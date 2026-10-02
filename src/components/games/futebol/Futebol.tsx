@@ -141,16 +141,16 @@ export function Futebol({ me }: { me: Me }) {
       <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[#06120d] p-5 text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,197,94,.24),transparent_34%),radial-gradient(circle_at_85%_75%,rgba(16,185,129,.12),transparent 30%)]" />
         <div className="relative z-10 w-full max-w-4xl">
-          <div className="text-[10px] font-black uppercase tracking-[0.35em] text-emerald-300/70">⚽ FUTEBOL 3D</div>
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.35em] text-emerald-300/70"><span className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-emerald-300/25 bg-emerald-300/10 text-[11px] font-black">F</span> FUTEBOL 3D</div>
           <h3 className="mt-2 text-4xl font-black italic sm:text-6xl">DUELO DE CRAQUES</h3>
           <p className="mx-auto mt-2 max-w-xl text-xs text-white/50 sm:text-sm">Escolha a disputa e enfrente seu parceiro em uma série de cobranças.</p>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             {[
-              ["penalti","PÊNALTIS","⚡","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
-              ["falta","FALTAS","🎯","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
+              ["penalti","PÊNALTIS","P","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
+              ["falta","FALTAS","↗","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
             ].map(([k,n,icon,d,tag]) => (
               <button key={k} onClick={() => start(k as Mode)} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
-                <div className="flex items-start justify-between"><span className="text-3xl">{icon}</span><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-200">{tag}</span></div>
+                <div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl font-black text-white/80">{icon}</span><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-200">{tag}</span></div>
                 <p className="mt-5 text-xl font-black">{n}</p><p className="mt-1 text-xs leading-relaxed text-white/50">{d}</p>
                 <div className="mt-4 text-[10px] font-bold text-white/35">● 2 jogadores • online</div>
               </button>
