@@ -18,7 +18,25 @@ type Sig =
 const ICE: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
   { urls: "stun:stun.cloudflare.com:3478" },
+  { urls: ["stun:stun2.l.google.com:19302", "stun:global.stun.twilio.com:3478"] },
 ];
+
+/** Espera juntar os caminhos de rede (com limite), assim a oferta já vai completa. */
+function waitGather(p: RTCPeerConnection, ms = 2500) {
+  return new Promise<void>((res) => {
+    if (p.iceGatheringState === "complete") return res();
+    const t = setTimeout(done, ms);
+    function done() {
+      clearTimeout(t);
+      p.removeEventListener("icegatheringstatechange", chk);
+      res();
+    }
+    function chk() {
+      if (p.iceGatheringState === "complete") done();
+    }
+    p.addEventListener("icegatheringstatechange", chk);
+  });
+}
 
 /** Toque suave gerado na hora (sem arquivos). */
 function useRinger() {
@@ -94,6 +112,12 @@ export function VoiceCall({
   const audioEl = useRef<HTMLAudioElement | null>(null);
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryIv = useRef<ReturnType<typeof setInterval> | null>(null);
+  const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopRetry = () => {
+    if (retryIv.current) clearInterval(retryIv.current);
+    retryIv.current = null;
+  };
   const isCaller = useRef(false);
   const speakerRef = useRef(false);
   const ringer = useRinger();
@@ -117,6 +141,8 @@ export function VoiceCall({
       ringer.stop();
       if (ringTimer.current) clearTimeout(ringTimer.current);
       if (dropTimer.current) clearTimeout(dropTimer.current);
+      if (watchdog.current) clearTimeout(watchdog.current);
+      stopRetry();
       pc.current?.getSenders().forEach((s) => s.track?.stop());
       pc.current?.close();
       pc.current = null;
@@ -174,15 +200,15 @@ export function VoiceCall({
       const st = p.connectionState;
       if (st === "connected") {
         if (dropTimer.current) clearTimeout(dropTimer.current);
+        if (watchdog.current) clearTimeout(watchdog.current);
+        stopRetry();
         if (statusRef.current !== "active") setSecs((v) => (statusRef.current === "reconnecting" ? v : 0));
         set("active");
       } else if (st === "disconnected" || st === "failed") {
         set("reconnecting");
         if (isCaller.current) {
           try {
-            const o = await p.createOffer({ iceRestart: true });
-            await p.setLocalDescription(o);
-            send({ t: "offer", sdp: o });
+            await sendOffer(p, true);
           } catch {
             /* tenta de novo no próximo evento */
           }
@@ -198,6 +224,37 @@ export function VoiceCall({
     };
     pc.current = p;
     return p;
+  };
+
+  /** Envia a oferta e reenvia até chegar a resposta (mensagens podem se perder). */
+  const sendOffer = async (p: RTCPeerConnection, restart = false) => {
+    const o = await p.createOffer(restart ? { iceRestart: true } : undefined);
+    await p.setLocalDescription(o);
+    await waitGather(p);
+    const sdp = p.localDescription ?? o;
+    send({ t: "offer", sdp: { type: sdp.type, sdp: sdp.sdp } });
+    stopRetry();
+    let n = 0;
+    retryIv.current = setInterval(() => {
+      if (pc.current !== p || p.connectionState === "connected" || ++n > 12) return stopRetry();
+      if (p.signalingState === "have-local-offer") send({ t: "offer", sdp: { type: sdp.type, sdp: sdp.sdp } });
+    }, 2500);
+  };
+
+  /** Se não conectar logo, tenta outro caminho; se não der, encerra com aviso. */
+  const armWatchdog = () => {
+    if (watchdog.current) clearTimeout(watchdog.current);
+    watchdog.current = setTimeout(async () => {
+      const p = pc.current;
+      if (!p || statusRef.current !== "connecting") return;
+      if (isCaller.current) await sendOffer(p, true).catch(() => {});
+      watchdog.current = setTimeout(() => {
+        if (statusRef.current === "connecting") {
+          send({ t: "hangup" });
+          cleanup("não conectou, tente de novo");
+        }
+      }, 20_000);
+    }, 12_000);
   };
 
   const flushIce = async () => {
@@ -243,11 +300,10 @@ export function VoiceCall({
         ringer.stop();
         if (ringTimer.current) clearTimeout(ringTimer.current);
         set("connecting");
+        armWatchdog();
         try {
           const p = makePc(local.current ?? (await getMic()));
-          const o = await p.createOffer();
-          await p.setLocalDescription(o);
-          send({ t: "offer", sdp: o });
+          await sendOffer(p);
         } catch {
           send({ t: "hangup" });
           cleanup("sem microfone");
@@ -255,15 +311,31 @@ export function VoiceCall({
         return;
       }
       if (m.t === "offer" && pc.current) {
-        await pc.current.setRemoteDescription(m.sdp);
-        await flushIce();
-        const a = await pc.current.createAnswer();
-        await pc.current.setLocalDescription(a);
-        send({ t: "answer", sdp: a });
+        const p = pc.current;
+        try {
+          // oferta repetida: só reenvia a mesma resposta
+          if (p.remoteDescription?.sdp === m.sdp.sdp && p.localDescription?.type === "answer") {
+            send({ t: "answer", sdp: { type: "answer", sdp: p.localDescription.sdp } });
+            return;
+          }
+          stopRetry();
+          await p.setRemoteDescription(m.sdp);
+          await flushIce();
+          const a = await p.createAnswer();
+          await p.setLocalDescription(a);
+          await waitGather(p, 2000);
+          const ld = p.localDescription ?? a;
+          send({ t: "answer", sdp: { type: ld.type, sdp: ld.sdp } });
+        } catch {
+          /* espera a próxima oferta */
+        }
         return;
       }
       if (m.t === "answer" && pc.current) {
-        await pc.current.setRemoteDescription(m.sdp).catch(() => {});
+        const p = pc.current;
+        if (p.signalingState !== "have-local-offer") return;
+        await p.setRemoteDescription(m.sdp).catch(() => {});
+        stopRetry();
         await flushIce();
         return;
       }
@@ -330,8 +402,16 @@ export function VoiceCall({
     try {
       const s = await getMic();
       set("connecting");
-      makePc(s);
+      armWatchdog();
+      const p = makePc(s);
       send({ t: "accept" });
+      // reenvia o "atendi" até a oferta chegar
+      stopRetry();
+      let n = 0;
+      retryIv.current = setInterval(() => {
+        if (pc.current !== p || p.remoteDescription || ++n > 10) return stopRetry();
+        send({ t: "accept" });
+      }, 2000);
     } catch {
       send({ t: "decline" });
       cleanup("permita o microfone para atender");
