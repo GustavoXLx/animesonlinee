@@ -32,7 +32,7 @@ export function Futebol({ me }: { me: Me }) {
   const [aim, setAim] = useState({ x: 2.2, y: 1.2 });
   const [curve, setCurve] = useState(0);
   const [power, setPower] = useState(0);
-  const [charging, setCharging] = useState(false);
+  const [charging, setCharging] = useState(false);\n  const powerRaf = useRef(0);\n  const powerRef = useRef(0);\n  const powerBarRef = useRef<HTMLDivElement>(null);
   const [waitingKeeper, setWaitingKeeper] = useState(false);
   const [myDive, setMyDive] = useState<Dive | null>(null);
   const [overlay, setOverlay] = useState<{ txt: string; good: boolean } | null>(null);
@@ -88,18 +88,20 @@ export function Futebol({ me }: { me: Me }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.shot]);
 
-  // barra de força
+  // barra de força: animação visual fora do React para evitar re-render a cada frame.
   useEffect(() => {
     if (!charging) return;
     const t0 = performance.now();
-    let raf = 0;
     const loop = () => {
       const x = ((performance.now() - t0) / 1100) % 2;
-      setPower(x < 1 ? x : 2 - x);
-      raf = requestAnimationFrame(loop);
+      const value = x < 1 ? x : 2 - x;
+      powerRef.current = value;
+      setPower(value);
+      if (powerBarRef.current) powerBarRef.current.style.width = (value * 100) + "%";
+      powerRaf.current = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    powerRaf.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(powerRaf.current);
   }, [charging]);
 
   const fire = async () => {
@@ -160,8 +162,14 @@ export function Futebol({ me }: { me: Me }) {
             <div className="mt-3 grid grid-cols-2 gap-2">
               {(["default", "neymar"] as const).map((skin) => (
                 <button key={skin} onClick={() => selectSkin(skin)} className={mySkin === skin ? "rounded-2xl border border-amber-300/50 bg-amber-300/10 p-3 text-left ring-1 ring-amber-300/20" : "rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:bg-white/[0.06]"}>
-                  <p className="text-xs font-black">{skin === "neymar" ? "Neymar — 10" : "Craque clássico"}</p>
-                  <p className="mt-1 text-[9px] text-white/40">{skin === "neymar" ? "Visual inspirado no craque" : "Uniforme padrão"}</p>
+                  <div className="flex items-center gap-3">
+                    <div className={skin === "neymar" ? "relative h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-yellow-300/30 bg-gradient-to-b from-yellow-300/30 to-green-900/60" : "relative h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-slate-300/20 to-slate-950/60"}>
+                      <div className={skin === "neymar" ? "absolute left-1/2 top-2 h-5 w-5 -translate-x-1/2 rounded-full bg-amber-700 ring-2 ring-black/20 after:absolute after:-inset-1 after:rounded-full after:bg-amber-950/80 after:-z-10" : "absolute left-1/2 top-2 h-5 w-5 -translate-x-1/2 rounded-full bg-amber-700"} />
+                      <div className={skin === "neymar" ? "absolute left-1/2 top-7 h-6 w-8 -translate-x-1/2 rounded-t-lg bg-yellow-300" : "absolute left-1/2 top-7 h-6 w-8 -translate-x-1/2 rounded-t-lg bg-slate-100"} />
+                      <div className={skin === "neymar" ? "absolute left-1/2 top-[3.1rem] h-4 w-7 -translate-x-1/2 rounded-b-md bg-green-900" : "absolute left-1/2 top-[3.1rem] h-4 w-7 -translate-x-1/2 rounded-b-md bg-slate-900"} />
+                    </div>
+                    <div><p className="text-xs font-black">{skin === "neymar" ? "Neymar — 10" : "Craque clássico"}</p><p className="mt-1 text-[9px] text-white/40">{skin === "neymar" ? "Visual inspirado no craque" : "Uniforme padrão"}</p></div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -171,7 +179,7 @@ export function Futebol({ me }: { me: Me }) {
               ["penalti","PÊNALTIS","goal","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
               ["falta","FALTAS","crosshair","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
             ].map(([k,n,icon,d,tag]) => (
-              <button key={k} onClick={() => start(k as Mode)} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
+              <button key={k} onClick={() => start(k as Mode)} disabled={!connected} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
                 <div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl font-black text-white/80">{icon === "goal" ? <Goal className="h-5 w-5" /> : <Crosshair className="h-5 w-5" />}</span><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-200">{tag}</span></div>
                 <p className="mt-5 text-xl font-black">{n}</p><p className="mt-1 text-xs leading-relaxed text-white/50">{d}</p>
                 <div className="mt-4 text-[10px] font-bold text-white/35">● 2 jogadores • online</div>
@@ -183,7 +191,7 @@ export function Futebol({ me }: { me: Me }) {
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">{NAME.li}</p><p className="text-[9px] uppercase text-white/35">Jogador 2</p></div>
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">5</p><p className="text-[9px] uppercase text-white/35">Rodadas</p></div>
           </div>
-          <div className={connected ? "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[10px] font-bold text-emerald-200" : "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-[10px] font-bold text-amber-200"}><span className={connected ? "h-2 w-2 rounded-full bg-emerald-400 animate-pulse" : "h-2 w-2 rounded-full bg-amber-400"} />{connected ? "Os dois jogadores estão na sala" : "Você pode começar; aguardando " + NAME[other(me)] + " entrar…"}</div>
+          <div className={connected ? "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[10px] font-bold text-emerald-200" : "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-[10px] font-bold text-amber-200"}><span className={connected ? "h-2 w-2 rounded-full bg-emerald-400 animate-pulse" : "h-2 w-2 rounded-full bg-amber-400"} />{connected ? "Os dois jogadores estão conectados — partida liberada" : "Aguardando " + NAME[other(me)] + " entrar na sala…"}</div>
         </div>
       </div>
     );
@@ -265,7 +273,7 @@ export function Futebol({ me }: { me: Me }) {
             </div>
             <div className="flex items-center gap-3">
               <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500 transition-[width]" style={{ width: `${power * 100}%` }} />
+                <div ref={powerBarRef} className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${power * 100}%` }} />
                 <div className="absolute inset-y-0 left-[55%] w-px bg-white/50" />
                 <div className="absolute inset-y-0 left-[85%] w-px bg-white/50" />
               </div>
