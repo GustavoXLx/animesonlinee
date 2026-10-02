@@ -208,6 +208,7 @@ export function Leilao({ me }: { me: Me }) {
           <p className="text-xs text-white/50">bb gu vai sortear o tema...</p>
         )}
       </div>
+      </div>
     );
   }
 
