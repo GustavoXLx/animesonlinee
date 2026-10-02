@@ -162,8 +162,8 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
 
   const [draft, setDraft] = useState<Look | null>(null);
   const looks: Record<Who, Look> = {
-    gu: me === "gu" && draft ? draft : sanitizeLook(home.looks?.gu ?? DEFAULT_LOOKS.gu, "gu"),
-    li: me === "li" && draft ? draft : sanitizeLook(home.looks?.li ?? DEFAULT_LOOKS.li, "li"),
+    gu: me === "gu" && draft ? draft : sanitizeLook(home?.looks?.gu ?? DEFAULT_LOOKS.gu, "gu"),
+    li: me === "li" && draft ? draft : sanitizeLook(home?.looks?.li ?? DEFAULT_LOOKS.li, "li"),
   };
 
   const run = async (action: HomeAction) => {
