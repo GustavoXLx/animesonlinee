@@ -4,21 +4,21 @@ import { COOK_DURATIONS, DISH_LABEL, ITEM_LABEL, RECIPE_NEEDS } from "./recipes"
 import type { ActMsg, HeldItem, Me, PosMsg, StationDef, StationType, WorldSnapshot } from "./types";
 
 const COLORS = {
-  floorA: 0xe9d8c5,
-  floorB: 0xdfc9b2,
-  grout: 0xb99d82,
-  wall: 0x543d3f,
-  wallTop: 0x765255,
-  counter: 0x604747,
-  counterFront: 0x412f32,
-  counterTop: 0xf2dfc7,
+  floorA: 0xf1dfc7,
+  floorB: 0xe6cbb7,
+  grout: 0xc09d91,
+  wall: 0x4b3945,
+  wallTop: 0x725463,
+  counter: 0x5b4750,
+  counterFront: 0x3d3038,
+  counterTop: 0xf6e1cf,
   outline: 0x34262b,
   shadow: 0x21191d,
   cream: 0xfff6e9,
   accent: 0xe45b6f,
-  success: 0x5ca56c,
-  warning: 0xefad45,
-  danger: 0xc94a4a,
+  success: 0x55b96e,
+  warning: 0xf0b34b,
+  danger: 0xd94f52,
 };
 
 export interface EngineHooks {
@@ -88,8 +88,8 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       this.events.once("shutdown", () => this.scale.off("resize", this.fitKitchenToScreen, this));
       this.drawRoom();
       this.drawStations();
-      this.highlightGfx = this.add.rectangle(0, 0, TILE - 4, TILE - 4, COLORS.cream, 0.08)
-        .setStrokeStyle(3, COLORS.cream, 0.95).setVisible(false).setDepth(8);
+      this.highlightGfx = this.add.rectangle(0, 0, TILE - 6, TILE - 6, COLORS.accent, 0.12)
+        .setStrokeStyle(4, COLORS.accent, 0.95).setVisible(false).setDepth(8);
       this.drawHudFrame();
       this.sprites.gu = this.makeAvatar(hooks.outfits.gu, "bb gu");
       this.sprites.li = this.makeAvatar(hooks.outfits.li, "bb li");
@@ -232,9 +232,11 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       hat.fillRoundedRect(-11, -32, 22, 12, 4);
       hat.lineStyle(1.5, 0xb9aaa0, 0.8).strokeEllipse(0, -33, 30, 15);
       const heldLayer = this.add.graphics().setName("held");
+      const arms = this.add.graphics().setName("arms");
+      arms.lineStyle(5, numColor(outfit.outfit), 1).lineBetween(-13, 3, -21, 10).lineBetween(13, 3, 21, 10);
       const nameTag = this.add.text(0, 25, name, { fontSize: "9px", fontStyle: "bold", color: "#fff8ef", backgroundColor: "#35282ecc", padding: { x: 4, y: 2 } }).setOrigin(0.5);
       const bubble = this.add.text(0, -46, "", { fontSize: "9px", color: "#382930", backgroundColor: "#fff8eff2", padding: { x: 5, y: 3 }, wordWrap: { width: 120 } }).setOrigin(0.5, 1).setVisible(false);
-      c.add([shadow, legs, body, head, hat, heldLayer, nameTag, bubble]);
+      c.add([shadow, legs, body, arms, head, hat, heldLayer, nameTag, bubble]);
       return c;
     }
 
@@ -264,7 +266,7 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         if (Math.abs(dx) > Math.abs(dy)) localFacing = dx > 0 ? "right" : "left";
         else localFacing = dy > 0 ? "down" : "up";
       } else { dx = 0; dy = 0; }
-      const speed = 160;
+      const speed = 180;
       const nx = localX + dx * speed * dt; const ny = localY + dy * speed * dt;
       const blocked = (px: number, py: number) => {
         const r = 13;
@@ -279,7 +281,10 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       const stDef = stationAt(ft.x, ft.y);
       const nextFocus = stDef && stDef.type !== "parede" ? stDef.id : null;
       if (nextFocus !== focusStation) { focusStation = nextFocus; hooks.onStationFocus(focusStation); }
-      if (stDef && stDef.type !== "parede") this.highlightGfx?.setVisible(true).setPosition(ft.x * TILE + TILE / 2, ft.y * TILE + TILE / 2);
+      if (stDef && stDef.type !== "parede") {
+        this.highlightGfx?.setVisible(true).setPosition(ft.x * TILE + TILE / 2, ft.y * TILE + TILE / 2);
+        this.highlightGfx?.setScale(1 + Math.sin(this.walkT / 110) * 0.06);
+      }
       else this.highlightGfx?.setVisible(false);
       return len > 0.08;
     }
@@ -350,6 +355,13 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         const step = walking ? Math.sin(this.walkT / 80) * 4 : 0;
         legs.lineBetween(-7, 15, -7 + step, 23).lineBetween(7, 15, 7 - step, 23);
       }
+      const arms = c.getByName("arms") as PhaserType.GameObjects.Graphics | null;
+      if (arms) {
+        arms.clear();
+        arms.lineStyle(5, hooks.outfits[c === this.sprites.gu ? "gu" : "li"].outfit ? numColor(hooks.outfits[c === this.sprites.gu ? "gu" : "li"].outfit) : COLORS.accent, 1);
+        const reach = held ? 16 : 8;
+        arms.lineBetween(-13, 3, -reach, 10).lineBetween(13, 3, reach, 10);
+      }
       const heldLayer = c.getByName("held") as PhaserType.GameObjects.Graphics | null;
       if (heldLayer) { heldLayer.clear(); if (held) drawItem(heldLayer, held, 0, -42, 0.86); }
     }
@@ -405,13 +417,17 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         g.fillStyle(0xfff7ed, 1).fillRoundedRect(0, 0, 140, 43, 5);
         g.lineStyle(2, 0x9f7c71, 0.65).strokeRoundedRect(0, 0, 140, 43, 5);
         drawItem(g, o.dish, 20, 21, 0.7);
-        const title = this.add.text(39, 6, DISH_LABEL[o.dish], { fontSize: "10px", fontStyle: "bold", color: "#3c2c31" });
+        const title = this.add.text(39, 5, DISH_LABEL[o.dish], { fontSize: "10px", fontStyle: "bold", color: "#3c2c31" });
         const steps = RECIPE_NEEDS[o.dish].map((n) => ITEM_LABEL[n]?.split(" ")[0]).join(" + ");
         const detail = this.add.text(39, 21, steps, { fontSize: "7px", color: "#6e565d" });
         const ratio = Phaser.Math.Clamp(1 - (Date.now() - o.bornAt) / o.patienceMs, 0, 1);
+        const urgent = ratio < 0.25;
+        g.fillStyle(urgent ? 0xffe1dc : 0xfff7ed, 1).fillRoundedRect(0, 0, 140, 43, 5);
+        g.lineStyle(2, urgent ? COLORS.danger : 0x9f7c71, urgent ? 0.95 : 0.65).strokeRoundedRect(0, 0, 140, 43, 5);
         g.fillStyle(0xd6c8bd, 1).fillRoundedRect(39, 34, 91, 4, 2);
         g.fillStyle(ratio > 0.5 ? COLORS.success : ratio > 0.2 ? COLORS.warning : COLORS.danger, 1).fillRoundedRect(39, 34, 91 * ratio, 4, 2);
         card.add([g, title, detail]); group.add(card);
+        if (urgent) card.setScale(1 + Math.sin(Date.now() / 120) * 0.025);
       });
     }
 
