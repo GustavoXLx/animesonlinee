@@ -36,7 +36,7 @@ export function SecretGate({
   usePanicExit(leave);
   useIdleLock(leave);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (busy) return;
     const submittedPassword = new FormData(e.currentTarget).get("password");
@@ -85,7 +85,7 @@ export function SecretGate({
             autoComplete="current-password"
             value={pw}
             onInput={(e) => {
-              setPw(e.target.value);
+              setPw(e.currentTarget.value);
               setErr(false);
             }}
             placeholder="Código"
