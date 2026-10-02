@@ -347,7 +347,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     const mote=this.add.circle(0,0,1.2,0xfff0cf,.11).setDepth(18);
     mote.x=(1.5+(i*2.73)%14.5)*TILE;
     mote.y=(1.8+(i*1.91)%9.4)*TILE;
-    this.tweens.add({targets:mote,y:mote.y-7-Math.random()*8,x:mote.x+(i%2?3:-3),alpha:{from:.02,to:.12},duration:2200+(i%4)*500,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:i*130});
+    this.tweens.add({targets:mote,y:mote.y-7-(i%5)*1.8,x:mote.x+(i%2?3:-3),alpha:{from:.02,to:.12},duration:2200+(i%4)*500,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:i*130});
    }
   }
 
