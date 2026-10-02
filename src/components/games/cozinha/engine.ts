@@ -60,6 +60,7 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
   const remoteBuf: PosMsg[] = [];
   let remoteDisplay = { x: (hooks.me === "gu" ? 9.5 : 5.5) * TILE, y: 6.5 * TILE, facing: "up" as PosMsg["facing"], holding: null as HeldItem };
   const joy = { vx: 0, vy: 0 };
+  const velocity = { x: 0, y: 0 };
   let actionPressed = false;
   let focusStation: string | null = null;
   let lastSeenWorldVersion = -1;
@@ -117,7 +118,7 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
           const px = x * TILE;
           const py = y * TILE;
           g.fillStyle((x + y) % 2 ? COLORS.floorA : COLORS.floorB, 1).fillRect(px, py, TILE, TILE);
-          g.lineStyle(1, COLORS.grout, 0.45).strokeRect(px, py, TILE, TILE);
+          g.lineStyle(1, COLORS.grout, 0.28).strokeRect(px, py, TILE, TILE);
           if ((x * 7 + y * 3) % 9 === 0) g.fillStyle(COLORS.cream, 0.12).fillCircle(px + 12, py + 14, 3);
         }
       }
@@ -268,8 +269,19 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         if (Math.abs(dx) > Math.abs(dy)) localFacing = dx > 0 ? "right" : "left";
         else localFacing = dy > 0 ? "down" : "up";
       } else { dx = 0; dy = 0; }
-      const speed = 180;
-      const nx = localX + dx * speed * dt; const ny = localY + dy * speed * dt;
+      const maxSpeed = 205;
+      const accel = 1450;
+      const friction = 1050;
+      const targetX = dx * maxSpeed;
+      const targetY = dy * maxSpeed;
+      const step = (current: number, target: number) => {
+        const delta = target - current;
+        const limit = (Math.abs(target) > 0.01 ? accel : friction) * dt;
+        return current + Phaser.Math.Clamp(delta, -limit, limit);
+      };
+      velocity.x = step(velocity.x, targetX);
+      velocity.y = step(velocity.y, targetY);
+      const nx = localX + velocity.x * dt; const ny = localY + velocity.y * dt;
       const blocked = (px: number, py: number) => {
         const r = 13;
         return [[px-r,py-r],[px+r,py-r],[px-r,py+r],[px+r,py+r]].some(([x,y]) => {
@@ -288,7 +300,7 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         this.highlightGfx?.setScale(1 + Math.sin(this.walkT / 110) * 0.06);
       }
       else this.highlightGfx?.setVisible(false);
-      return len > 0.08;
+      return Math.hypot(velocity.x, velocity.y) > 18;
     }
 
     tryAction() {
@@ -421,12 +433,12 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         const x = i * 150;
         const card = this.add.container(x, 0);
         const g = this.add.graphics();
-        g.fillStyle(0xfff7ed, 1).fillRoundedRect(0, 0, 140, 43, 5);
+        g.fillStyle(0xfff7ed, 1).fillRoundedRect(0, 0, 140, 49, 7);
         g.lineStyle(2, 0x9f7c71, 0.65).strokeRoundedRect(0, 0, 140, 43, 5);
         drawItem(g, o.dish, 20, 21, 0.7);
-        const title = this.add.text(39, 5, DISH_LABEL[o.dish], { fontSize: "10px", fontStyle: "bold", color: "#3c2c31" });
-        const steps = RECIPE_NEEDS[o.dish].map((n) => ITEM_LABEL[n]?.split(" ")[0]).join(" + ");
-        const detail = this.add.text(39, 21, steps, { fontSize: "7px", color: "#6e565d" });
+        const title = this.add.text(39, 5, DISH_LABEL[o.dish], { fontFamily: "Arial", fontSize: "11px", fontStyle: "bold", color: "#3c2c31" });
+        const steps = RECIPE_NEEDS[o.dish].map((n) => ITEM_LABEL[n] ?? n).join(" • ");
+        const detail = this.add.text(39, 21, steps, { fontFamily: "Arial", fontSize: "8px", color: "#6e565d", wordWrap: { width: 94 } });
         const ratio = Phaser.Math.Clamp(1 - (Date.now() - o.bornAt) / o.patienceMs, 0, 1);
         const urgent = ratio < 0.25;
         g.fillStyle(urgent ? 0xffe1dc : 0xfff7ed, 1).fillRoundedRect(0, 0, 140, 43, 5);
