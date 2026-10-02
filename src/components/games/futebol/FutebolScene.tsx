@@ -168,7 +168,6 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
     <group ref={groupRef}>
       <group ref={inner} scale={scale}>
         <primitive object={obj} />
-        <Outlines thickness={0.012} color="#101827" screenspace opacity={0.28} />
       </group>
     </group>
   );
@@ -234,50 +233,74 @@ function Goal({ solRef, timeRef }: { solRef: MutableRefObject<Solved | null>; ti
 }
 
 function Crowd({ excite }: { excite: MutableRefObject<number> }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
+  const bodyRef = useRef<THREE.InstancedMesh>(null);
+  const headRef = useRef<THREE.InstancedMesh>(null);
   const data = useMemo(() => {
-    const list: { x: number; y: number; z: number; ry: number; ph: number }[] = [];
-    // atrás do gol
-    for (let row = 0; row < 10; row++)
-      for (let i = 0; i < 70; i++) list.push({ x: -34 + i * 0.98 + (row % 2) * 0.4, y: 1.1 + row * 0.7, z: -9 - row * 0.9, ry: 0, ph: Math.random() * 6 });
-    // laterais
-    for (const s of [-1, 1])
-      for (let row = 0; row < 8; row++)
-        for (let i = 0; i < 46; i++) list.push({ x: s * (38 + row * 0.9), y: 1.1 + row * 0.7, z: -4 + i * 1.0, ry: (s * -Math.PI) / 2, ph: Math.random() * 6 });
+    const list: { x: number; y: number; z: number; ry: number; ph: number; s: number }[] = [];
+    for (let row = 0; row < 9; row++) {
+      for (let i = 0; i < 68; i++) {
+        list.push({ x: -33.2 + i * 0.99 + (row % 2) * 0.28, y: 1.0 + row * 0.68, z: -8.2 - row * 0.82, ry: 0, ph: Math.random() * 6.28, s: 0.9 + Math.random() * 0.18 });
+      }
+    }
+    for (const side of [-1, 1]) {
+      for (let row = 0; row < 7; row++) {
+        for (let i = 0; i < 44; i++) {
+          list.push({ x: side * (37.2 + row * 0.92), y: 1.0 + row * 0.68, z: -2 + i * 1.05, ry: side * Math.PI / 2, ph: Math.random() * 6.28, s: 0.9 + Math.random() * 0.18 });
+        }
+      }
+    }
     return list;
   }, []);
   const m = useMemo(() => new THREE.Matrix4(), []);
   const q = useMemo(() => new THREE.Quaternion(), []);
   const e = useMemo(() => new THREE.Euler(), []);
   const v = useMemo(() => new THREE.Vector3(), []);
-  const one = useMemo(() => new THREE.Vector3(1, 1, 1), []);
+  const scale = useMemo(() => new THREE.Vector3(), []);
   useEffect(() => {
-    const im = ref.current!;
-    const palette = ["#ec4899", "#f472b6", "#3b82f6", "#60a5fa", "#f5f5f5", "#facc15", "#1f2937", "#a855f7"].map((c) => new THREE.Color(c));
-    data.forEach((_, i) => im.setColorAt(i, palette[(i * 7 + (i >> 3)) % palette.length]));
-    im.instanceColor!.needsUpdate = true;
+    const body = bodyRef.current;
+    const head = headRef.current;
+    if (!body || !head) return;
+    const palette = ["#ec4899", "#f472b6", "#3b82f6", "#60a5fa", "#f5f5f5", "#facc15", "#7c3aed", "#111827"].map((x) => new THREE.Color(x));
+    data.forEach((d, i) => {
+      body.setColorAt(i, palette[(i * 7 + (i >> 2)) % palette.length]);
+      head.setColorAt(i, new THREE.Color(i % 9 === 0 ? "#f1c7a8" : i % 5 === 0 ? "#8d5524" : "#d99a6c"));
+    });
+    body.instanceColor!.needsUpdate = true;
+    head.instanceColor!.needsUpdate = true;
   }, [data]);
   useFrame(({ clock }) => {
-    const im = ref.current;
-    if (!im) return;
-    const t = clock.elapsedTime;
+    const body = bodyRef.current;
+    const head = headRef.current;
+    if (!body || !head) return;
     const ex = excite.current;
     excite.current = Math.max(0, ex - 0.004);
     data.forEach((d, i) => {
-      const bob = Math.max(0, Math.sin(t * (2 + ex * 9) + d.ph)) * (0.04 + ex * 0.45);
+      const bob = Math.max(0, Math.sin(clock.elapsedTime * (2.2 + ex * 8) + d.ph)) * (0.025 + ex * 0.28);
       e.set(0, d.ry, 0);
       q.setFromEuler(e);
       v.set(d.x, d.y + bob, d.z);
-      m.compose(v, q, one);
-      im.setMatrixAt(i, m);
+      scale.set(d.s, d.s, d.s);
+      m.compose(v, q, scale);
+      body.setMatrixAt(i, m);
+      v.y += 0.62 * d.s;
+      scale.setScalar(d.s);
+      m.compose(v, q, scale);
+      head.setMatrixAt(i, m);
     });
-    im.instanceMatrix.needsUpdate = true;
+    body.instanceMatrix.needsUpdate = true;
+    head.instanceMatrix.needsUpdate = true;
   });
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, data.length]}>
-      <boxGeometry args={[0.55, 0.85, 0.35]} />
-      <meshStandardMaterial roughness={0.8} />
-    </instancedMesh>
+    <>
+      <instancedMesh ref={bodyRef} args={[undefined, undefined, data.length]} frustumCulled={false}>
+        <capsuleGeometry args={[0.19, 0.48, 4, 8]} />
+        <meshStandardMaterial roughness={0.82} />
+      </instancedMesh>
+      <instancedMesh ref={headRef} args={[undefined, undefined, data.length]} frustumCulled={false}>
+        <sphereGeometry args={[0.19, 10, 8]} />
+        <meshStandardMaterial roughness={0.9} />
+      </instancedMesh>
+    </>
   );
 }
 
@@ -293,8 +316,8 @@ function Stadium() {
   for (const s of [-1, 1])
     for (let row = 0; row < 8; row++)
       tiers.push(
-        <mesh key={s + "s" + row} position={[s * (38 + row * 0.9), 0.35 + row * 0.7, 19]} receiveShadow>
-          <boxGeometry args={[0.9, 0.7, 48]} />
+        <mesh key={s + "s" + row} position={[s * (38 + row * 0.92), 0.28 + row * 0.68, 19]} receiveShadow>
+          <boxGeometry args={[0.72, 0.46, 48]} />
           <meshStandardMaterial color={row % 2 ? "#3a3f4b" : "#2f343e"} />
         </mesh>,
       );
@@ -692,10 +715,11 @@ export default function FutebolScene(props: SceneProps) {
     <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }} camera={{ position: [0, 2, 17], fov: 50, near: 0.1, far: 300 }}>
       <color attach="background" args={["#0d1426"]} />
       <fog attach="fog" args={["#0d1426", 45, 110]} />
-      <hemisphereLight args={["#cfe3ff", "#2a4a2a", 0.55]} />
+      <hemisphereLight args={["#dcecff", "#18351b", 0.72]} />
+      <ambientLight intensity={0.18} />
       <directionalLight
         position={[12, 26, 22]}
-        intensity={2.1}
+        intensity={2.7}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -705,7 +729,8 @@ export default function FutebolScene(props: SceneProps) {
         shadow-camera-bottom={-10}
         shadow-bias={-0.0004}
       />
-      <directionalLight position={[-14, 18, -10]} intensity={0.7} color="#ffe9c4" />
+      <directionalLight position={[-18, 14, -8]} intensity={1.15} color="#ffe9c4" />
+      <directionalLight position={[18, 10, -18]} intensity={0.75} color="#cfe1ff" />
       <Environment resolution={128}>
         <Lightformer intensity={2} position={[0, 10, 10]} scale={[20, 6, 1]} />
         <Lightformer intensity={1.2} color="#ffd6e8" position={[-10, 4, 0]} rotation-y={Math.PI / 2} scale={[20, 2, 1]} />
