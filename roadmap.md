@@ -7,3 +7,4 @@
 
 - [x] Leilão: notas melhores + penalidade time incompleto + animações
 - [x] Sintonia: mais animações + muito mais temas
+- [ ] Safadeza: muito mais cartas + remover da aba Jogos
