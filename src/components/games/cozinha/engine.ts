@@ -161,7 +161,6 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    menu.add(this.add.text(22,19,"KITCHEN // SERVICE",{
     fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
    }).setDepth(6));
-  }
 
    const vignette=this.add.graphics().setDepth(20);
    vignette.fillStyle(0x0b090c,.18);
@@ -171,6 +170,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const counterGlow=this.add.graphics().setDepth(3);
    counterGlow.fillStyle(0xffe1a0,.08).fillRoundedRect(TILE+4,3*TILE-3,(COLS-2)*TILE-8,5,2);
    counterGlow.fillStyle(0xffffff,.045).fillRoundedRect(TILE+8,3*TILE+2,(COLS-2)*TILE-16,2,1);
+  }
 
   drawFloor(){
    const g=this.add.graphics();
