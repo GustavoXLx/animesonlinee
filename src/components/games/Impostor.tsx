@@ -325,7 +325,8 @@ export function Impostor({ me }: { me: Me }) {
     if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !(state.ready ?? { gu:false, li:false }).gu || !(state.ready ?? { gu:false, li:false }).li) return;
     const timer = window.setTimeout(() => {
       setState((prev) => {
-        if (prev.phase !== "lobby" || !prev.ready.gu || !prev.ready.li) return prev;
+        const currentReady = prev.ready ?? { gu:false, li:false };
+        if (prev.phase !== "lobby" || !currentReady.gu || !currentReady.li) return prev;
         const seed = Math.floor(Math.random() * 0x7fffffff) + 1;
         return { ...resetState(), phase:"cards", seed, themeIndex:themeIndex(seed) };
       });
