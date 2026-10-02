@@ -49,7 +49,7 @@ import { getBios, setBio } from "@/lib/chat.functions";
 import { Phone, Menu as MenuIcon } from "lucide-react";
 import { useSiteState, setSiteState } from "@/lib/siteState";
 import { usePanicExit, useAutoLock, isSpecialDay, isBirthdayDay } from "@/lib/panic";
-import { rememberWho, markNotifiedNow } from "@/lib/chatNotify";
+import { rememberWho, markNotifiedNow, pingFeed } from "@/lib/chatNotify";
 import { LiEffect } from "@/components/LiEffect";
 import { BirthdayEffect } from "@/components/BirthdayEffect";
 
@@ -618,6 +618,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
           },
         });
         row = res.row as Row;
+        pingFeed();
       } catch {
         /* falha no envio */
       }

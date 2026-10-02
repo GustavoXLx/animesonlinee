@@ -56,7 +56,7 @@ function Home() {
   const [genre, setGenre] = useState<string | null>(null);
   const [secret, setSecret] = useState<false | "gate" | "decoy">(false);
   const site = useSiteState();
-  useChatNotifier(!secret);
+  const hasNotif = useChatNotifier(!secret);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,9 +117,12 @@ function Home() {
             >
               <Search size={20} />
             </button>
-            <button aria-label="Notificações" className="p-2 rounded-full hover:bg-white/10">
+            <span aria-label="Notificações" className="relative p-2 rounded-full">
               <Bell size={20} />
-            </button>
+              {hasNotif && (
+                <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-neutral-950" />
+              )}
+            </span>
             <button aria-label="Menu" className="p-2 rounded-full hover:bg-white/10">
               <Menu size={20} />
             </button>

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 type GateSession = {
   unlocked?: boolean;
@@ -1011,4 +1011,56 @@ export const genPartyPrompts = createServerFn({ method: "POST" })
     } catch {
       return { prompts: [], error: "A IA não respondeu, tente outro tema." };
     }
+  });
+
+// ===== Aviso por aparelho (funciona mesmo com o chat trancado) =====
+function signDev(who: string, exp: number) {
+  return createHmac("sha256", process.env["SESSION_SECRET"]! + ":dev").update(`${who}.${exp}`).digest("hex").slice(0, 40);
+}
+function verifyDev(token: string): "gu" | "li" | null {
+  const [who, expS, sig] = String(token || "").split(".");
+  const exp = Number(expS);
+  if ((who !== "gu" && who !== "li") || !exp || exp < Date.now() || !sig) return null;
+  const good = signDev(who, exp);
+  if (good.length !== sig.length || !timingSafeEqual(Buffer.from(good), Buffer.from(sig))) return null;
+  return who;
+}
+
+/** Dentro do chat: entrega um token de aparelho (90 dias). */
+export const issueDeviceToken = createServerFn({ method: "POST" })
+  .inputValidator((d: { who: "gu" | "li" }) => ({ who: d.who === "li" ? "li" : "gu" }))
+  .handler(async ({ data }) => {
+    await gate();
+    const exp = Date.now() + 90 * 86400_000;
+    return { token: `${data.who}.${exp}.${signDev(data.who, exp)}` };
+  });
+
+/** Leve e sem sessão: só diz se há mensagens não vistas (texto só para bb gu). */
+export const peekDevice = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; since?: string | null }) => ({ token: String(d.token ?? "").slice(0, 120), since: d.since ?? null }))
+  .handler(async ({ data }) => {
+    const who = verifyDev(data.token);
+    if (!who) return { ok: false as const, unread: false, count: 0, last: null };
+    const db = await admin();
+    const other = who === "gu" ? "li" : "gu";
+    const { count } = await db
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("author", other)
+      .is("seen_at", null);
+    let last: { id: string; text: string; mediaType: string | null; createdAt: string } | null = null;
+    let newCount = 0;
+    if (who === "gu" && data.since) {
+      const { data: rows } = await db
+        .from("messages")
+        .select("id, text, media_type, created_at")
+        .eq("author", other)
+        .gt("created_at", data.since)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      newCount = rows?.length ?? 0;
+      const r = rows?.[0];
+      if (r) last = { id: r.id, text: r.text ?? "", mediaType: r.media_type ?? null, createdAt: r.created_at };
+    }
+    return { ok: true as const, unread: (count ?? 0) > 0, count: newCount, last };
   });
