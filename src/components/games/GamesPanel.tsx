@@ -220,7 +220,7 @@ export function GamesPanel({
             escolham o mesmo jogo pra começar · dá pra conversar dentro do jogo 💬
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
-            {GAMES.map((g) => (
+            {GAMES.filter((g) => g.key !== "embraza").map((g) => (
               <button
                 key={g.key}
                 onClick={() => setActive(g.key)}
