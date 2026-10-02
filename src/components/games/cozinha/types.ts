@@ -25,5 +25,5 @@ export interface SharedState {
   players:Record<Me,PlayerMeta>; world:WorldSnapshot;
 }
 export interface PosMsg { x:number;y:number;facing:"up"|"down"|"left"|"right";holding:HeldItem;t:number; }
-export interface ActMsg { seq:number; stationId:string; held:HeldItem; }
+export interface ActMsg { seq:number; kind:"interact"|"throw"; stationId:string; held:HeldItem; targetX?:number; targetY?:number; }
 export interface ChatMsg { text:string;t:number; }
