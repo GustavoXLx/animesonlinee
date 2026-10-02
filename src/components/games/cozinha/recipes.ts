@@ -167,7 +167,7 @@ export function applyAction(world: WorldSnapshot, stationId: string, held: HeldI
         const nextBench = [...bench, held];
         const match = matchesRecipe(nextBench);
         if (match === "pizza") {
-          return { world: withStation({ ...st, bench: [] }), held: null };
+          return { world: withStation({ ...st, bench: [] }), held: "pizza_crua" };
         }
         return { world: withStation({ ...st, bench: nextBench }), held: null };
       }
