@@ -187,6 +187,24 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subs: {
+        Row: {
+          created_at: string
+          endpoint: string
+          who: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          who: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          who?: string
+        }
+        Relationships: []
+      }
       site_state: {
         Row: {
           chat_open: boolean
