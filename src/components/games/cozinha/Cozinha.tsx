@@ -67,6 +67,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   const [showFps, setShowFps] = useState(false);
   const [held, setHeld] = useState<HeldItem>(null);
   const [focus, setFocus] = useState<string | null>(null);
+  const [engineError, setEngineError] = useState<string | null>(null);
   const [bubbles, setBubbles] = useState<{ who: Me; text: string; id: number }[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<EngineHandle | null>(null);
@@ -173,10 +174,14 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
     if (state.stage !== "jogando" && state.stage !== "pausa") return;
     let destroyed = false;
     let handle: EngineHandle | null = null;
+    setEngineError(null);
     (async () => {
-      if (!containerRef.current) return;
-      const mod = await import("./engine");
-      if (destroyed || !containerRef.current) return;
+      try {
+        if (!containerRef.current) return;
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        if (destroyed || !containerRef.current) return;
+        const mod = await import("./engine");
+        if (destroyed || !containerRef.current) return;
 
       const applyHostAction = (stationId: string, held: HeldItem, forPlayer: Me = "gu") => {
         const w = worldRef.current;
@@ -226,7 +231,14 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
         handle.destroy();
         return;
       }
-      engineRef.current = handle;
+        engineRef.current = handle;
+      } catch (error) {
+        if (!destroyed) {
+          const message = error instanceof Error ? error.message : "Erro desconhecido ao iniciar a cozinha.";
+          setEngineError(message);
+          console.error("Falha ao iniciar Cozinha a Dois:", error);
+        }
+      }
     })();
     return () => {
       destroyed = true;
