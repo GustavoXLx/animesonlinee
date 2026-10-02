@@ -136,36 +136,38 @@ export function Futebol({ me }: { me: Me }) {
 
   /* ---------- menu ---------- */
   if (!state.mode) {
+    const connected = peerOnline;
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-5 bg-gradient-to-b from-emerald-950 to-neutral-950 p-6 text-center">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Futebol 3D</p>
-          <h3 className="mt-1 text-3xl font-black">Escolha a disputa</h3>
-          <p className="mt-2 text-sm text-white/60">5 cobranças para cada. Empatou? Vai para as alternadas.</p>
+      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[#06120d] p-5 text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,197,94,.24),transparent_34%),radial-gradient(circle_at_85%_75%,rgba(16,185,129,.12),transparent 30%)]" />
+        <div className="relative z-10 w-full max-w-4xl">
+          <div className="text-[10px] font-black uppercase tracking-[0.35em] text-emerald-300/70">⚽ FUTEBOL 3D</div>
+          <h3 className="mt-2 text-4xl font-black italic sm:text-6xl">DUELO DE CRAQUES</h3>
+          <p className="mx-auto mt-2 max-w-xl text-xs text-white/50 sm:text-sm">Escolha a disputa e enfrente seu parceiro em uma série de cobranças.</p>
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            {[
+              ["penalti","PÊNALTIS","⚡","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
+              ["falta","FALTAS","🎯","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
+            ].map(([k,n,icon,d,tag]) => (
+              <button key={k} disabled={!connected} onClick={() => start(k as Mode)} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
+                <div className="flex items-start justify-between"><span className="text-3xl">{icon}</span><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-200">{tag}</span></div>
+                <p className="mt-5 text-xl font-black">{n}</p><p className="mt-1 text-xs leading-relaxed text-white/50">{d}</p>
+                <div className="mt-4 text-[10px] font-bold text-white/35">● 2 jogadores • online</div>
+              </button>
+            ))}
+          </div>
+          <div className="mx-auto mt-4 grid max-w-2xl grid-cols-3 gap-2">
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">{NAME.gu}</p><p className="text-[9px] uppercase text-white/35">Jogador 1</p></div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">{NAME.li}</p><p className="text-[9px] uppercase text-white/35">Jogador 2</p></div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">5</p><p className="text-[9px] uppercase text-white/35">Rodadas</p></div>
+          </div>
+          <div className={connected ? "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[10px] font-bold text-emerald-200" : "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-[10px] font-bold text-amber-200"}><span className={connected ? "h-2 w-2 rounded-full bg-emerald-400 animate-pulse" : "h-2 w-2 rounded-full bg-amber-400"} />{connected ? "Os dois jogadores estão na sala" : "Esperando " + NAME[other(me)] + " entrar…"}</div>
         </div>
-        <div className="grid w-full max-w-md gap-3">
-          {(
-            [
-              ["penalti", "Pênaltis", "Quem não bate vira goleiro e escolhe o canto."],
-              ["falta", "Faltas", "Barreira, mira, força e efeito na bola."],
-            ] as const
-          ).map(([k, n, d]) => (
-            <button
-              key={k}
-              disabled={!peerOnline}
-              onClick={() => start(k)}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:scale-[1.02] hover:bg-white/10 disabled:opacity-40"
-            >
-              <p className="text-xl font-bold">{n}</p>
-              <p className="text-sm text-white/60">{d}</p>
-            </button>
-          ))}
-        </div>
-        {!peerOnline && <p className="text-sm text-amber-300">Esperando {NAME[other(me)]} entrar no jogo…</p>}
       </div>
     );
   }
 
+  const dots = (w: Me) => {
   const dots = (w: Me) => {
     const mine = state.kicks.filter((k) => k.who === w);
     const n = Math.max(5, Math.ceil(state.kicks.length / 2) + 1);
