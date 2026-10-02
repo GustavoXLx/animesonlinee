@@ -209,6 +209,17 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    return g;
   }
 
+  stationAccents(){
+   const accents:Record<string,{color:number,detail:number}>= {
+    geladeira:{color:0x9dd7ee,detail:0xeaf9ff},tabua:{color:0xc58a55,detail:0xf1c995},fogao:{color:0xff8a3d,detail:0xffd27a},forno:{color:0xff633d,detail:0xffc36b},montagem:{color:0x9bb6d8,detail:0xf4f8ff},entrega:{color:0x7fcf9b,detail:0xe5ffe9},liquidificador:{color:0x82c7d8,detail:0xe6fbff},lixeira:{color:0x8f969d,detail:0xd9dde0},balcao:{color:0xd2a66d,detail:0xf6dfb4}
+   };
+   for(const s of STATIONS){const a=accents[s.type];if(!a)continue;const x=(s.x+.5)*TILE,y=(s.y+.5)*TILE;
+    const gl=this.add.ellipse(x,y+TILE*.34,TILE*.72,7,a.color,.13).setDepth(38);gl.setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({targets:gl,alpha:{from:.08,to:.2},duration:1200+(s.x%3)*180,yoyo:true,repeat:-1});
+    if(s.type!=="balcao"){const pin=this.add.circle(x+TILE*.34,y-TILE*.3,2,a.detail,.7).setDepth(82);this.tweens.add({targets:pin,alpha:{from:.35,to:.9},duration:900,yoyo:true,repeat:-1});}
+   }
+  }
+
   drawStations(){
    for(const s of STATIONS){
     if(s.type==="parede")continue;
