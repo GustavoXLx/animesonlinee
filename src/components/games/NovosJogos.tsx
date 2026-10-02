@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Backpack, Campfire, Car, Check, Compass, Flame, Lock, RotateCcw, Shield, Sparkles, TentTree, TreePine, WandSparkles } from "lucide-react";
+import { Campfire, Car, Compass, Flame, Lock, RotateCcw, Shield, Sparkles, TentTree, TreePine, WandSparkles } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 
 type Ready = { gu: boolean; li: boolean };
