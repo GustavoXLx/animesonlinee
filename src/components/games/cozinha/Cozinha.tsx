@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CookingPot, Gauge, Pause, Play, RotateCcw, X } from "lucide-react";
+import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
 import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld } from "./recipes";
@@ -322,62 +322,212 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
 
   // ============ telas ============
   if (!localReady) {
-    return (
-      <LandscapeGate><div className="fixed inset-0 h-dvh w-screen overflow-y-auto flex flex-col items-center justify-center gap-4 p-4 text-center bg-background">
-        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="absolute left-2 top-2 z-20 rounded-md bg-background/80 p-2 text-foreground border border-border">
-          <X size={18} />
-        </button>
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-primary">Cozinha a Dois</p>
-          <h3 className="mt-1 text-2xl font-black text-foreground">Prepare seu cozinheiro</h3>
-        </div>
-        <div className="flex flex-col gap-3 items-center">
-          <p className="text-xs text-muted-foreground">Uniforme</p>
-          <div className="flex gap-2 flex-wrap justify-center max-w-xs">
-            {OUTFIT_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setMeta((m) => ({ ...m, outfit: c }))}
-                aria-label="Escolher cor do uniforme"
-                className={`w-9 h-9 rounded-full border-2 ${meta.outfit === c ? "border-foreground" : "border-transparent"}`}
-                style={{ backgroundColor: `#${c.slice(2)}` }}
-              />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">Cabelo</p>
-          <div className="flex gap-2 flex-wrap justify-center max-w-xs">
-            {HAIR_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setMeta((m) => ({ ...m, hair: c }))}
-                aria-label="Escolher cor do cabelo"
-                className={`w-9 h-9 rounded-full border-2 ${meta.hair === c ? "border-foreground" : "border-transparent"}`}
-                style={{ backgroundColor: `#${c.slice(2)}` }}
-              />
-            ))}
-          </div>
-        </div>
-        <button onClick={() => { void enterLandscape(); setReady(); }} className="rounded-md bg-primary px-6 py-3 font-bold text-primary-foreground mt-2 inline-flex items-center gap-2">
-          <Check size={18} /> Entrar na cozinha
-        </button>
-      </div></LandscapeGate>
-    );
-  }
+    const outfitNames: Record<string, string> = {
+      "0xf59ac2": "Rosa chef",
+      "0x7dd0e8": "Azul céu",
+      "0xffd36e": "Amarelo sol",
+      "0x9ed6a3": "Verde menta",
+      "0xc3a6f2": "Lilás",
+      "0xff9e80": "Coral",
+    };
+    const hairNames: Record<string, string> = {
+      "0x3b2318": "Castanho",
+      "0x6b4423": "Chocolate",
+      "0xd4a24e": "Dourado",
+      "0x1a1a1a": "Preto",
+      "0xe0749b": "Rosa",
+      "0x9e9e9e": "Prateado",
+    };
 
-  if (state.stage === "espera" || !peerOnline) {
     return (
-      <LandscapeGate><div className="fixed inset-0 h-dvh w-screen flex flex-col items-center justify-center p-8 text-center bg-background">
-        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="absolute left-2 top-2 z-20 rounded-md bg-background/80 p-2 text-foreground border border-border">
-          <X size={18} />
-        </button>
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-          <CookingPot className="text-primary" />
+      <LandscapeGate>
+        <div className="fixed inset-0 h-dvh w-screen overflow-hidden bg-[#17131a] text-white">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl animate-pulse" />
+            <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl animate-pulse [animation-delay:700ms]" />
+            <div className="absolute left-1/3 -bottom-32 h-96 w-96 rounded-full bg-amber-300/10 blur-3xl animate-pulse [animation-delay:1200ms]" />
+            <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)", backgroundSize: "34px 34px" }} />
+          </div>
+
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Sair da cozinha"
+            className="absolute left-4 top-4 z-30 rounded-2xl border border-white/10 bg-black/30 p-2.5 text-white/80 backdrop-blur-md transition hover:bg-white/10 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+
+          <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col justify-center gap-4 px-4 py-5 md:px-8">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/80">
+                  <ChefHat size={14} />
+                  Cozinha a Dois
+                </div>
+                <h2 className="text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
+                  Monte sua dupla de chefs
+                </h2>
+                <p className="mt-1 max-w-xl text-xs text-white/55 sm:text-sm">
+                  Escolha seu estilo, confira seu parceiro e entre quando estiver pronto para o turno.
+                </p>
+              </div>
+              <div className="hidden items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-200 sm:flex">
+                <Wifi size={13} />
+                Sala online
+              </div>
+            </div>
+
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pb-1 lg:grid-cols-[1.15fr_.85fr] lg:overflow-visible">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-pink-400/10 blur-3xl" />
+                <div className="relative flex h-full min-h-[250px] flex-col">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Seu chef</p>
+                      <p className="mt-1 text-lg font-black">{NAME[me]}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-2.5 text-pink-200">
+                      <Sparkles size={18} />
+                    </div>
+                  </div>
+
+                  <div className="my-4 flex flex-1 items-center justify-center">
+                    <div className="relative">
+                      <div className="absolute -inset-8 rounded-full bg-pink-400/10 blur-2xl animate-pulse" />
+                      <div className="relative flex h-32 w-32 flex-col items-center justify-center rounded-[34px] border border-white/15 shadow-2xl transition duration-500 hover:scale-105" style={{ background: `linear-gradient(145deg, #${meta.outfit.slice(2)} 0%, #241b25 100%)` }}>
+                        <div className="absolute -top-5 h-14 w-20 rounded-full border-4 border-white/20 bg-black/25" style={{ boxShadow: `inset 0 0 0 8px #${meta.hair.slice(2)}` }} />
+                        <ChefHat size={35} className="relative mt-1 text-white drop-shadow-lg" />
+                        <span className="mt-1 text-[10px] font-black text-white/80">CHEF</span>
+                      </div>
+                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[10px] font-bold text-white/80 backdrop-blur">
+                        {outfitNames[meta.outfit] ?? "Seu uniforme"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
+                        <Shirt size={13} /> Uniforme
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {OUTFIT_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setMeta((m) => ({ ...m, outfit: c }))}
+                            aria-label={`Escolher ${outfitNames[c] ?? "uniforme"}`}
+                            className={`group relative h-10 rounded-xl border-2 transition duration-200 hover:-translate-y-0.5 hover:scale-105 ${meta.outfit === c ? "border-white shadow-lg shadow-white/10" : "border-white/5"}`}
+                            style={{ background: `linear-gradient(145deg, #${c.slice(2)}, #1d1720)` }}
+                          >
+                            {meta.outfit === c && <Check size={15} className="absolute right-1 top-1 text-white drop-shadow" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
+                        <Palette size={13} /> Cabelo
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {HAIR_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setMeta((m) => ({ ...m, hair: c }))}
+                            aria-label={`Escolher cabelo ${hairNames[c] ?? "personalizado"}`}
+                            className={`group relative h-10 rounded-xl border-2 transition duration-200 hover:-translate-y-0.5 hover:scale-105 ${meta.hair === c ? "border-white shadow-lg shadow-white/10" : "border-white/5"}`}
+                            style={{ background: `radial-gradient(circle at 50% 35%, #${c.slice(2)} 0 38%, #17131a 40% 100%)` }}
+                          >
+                            {meta.hair === c && <Check size={15} className="absolute right-1 top-1 text-white drop-shadow" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { void enterLandscape(); setReady(); }}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-3.5 text-sm font-black text-white shadow-xl shadow-pink-950/30 transition duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0"
+                  >
+                    <Check size={18} />
+                    Estou pronto para cozinhar
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex min-h-0 flex-col gap-4">
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Sua equipe</p>
+                      <p className="mt-1 text-lg font-black">Dupla de cozinha</p>
+                    </div>
+                    <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white/60">
+                      <Users size={13} /> 2 jogadores
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {([me, other(me)] as Me[]).map((player) => {
+                      const online = player === me || peerOnline;
+                      const ready = state.players[player].ready;
+                      const p = state.players[player];
+                      return (
+                        <div key={player} className={`relative overflow-hidden rounded-2xl border p-3 transition duration-300 ${ready ? "border-emerald-300/30 bg-emerald-300/10" : "border-white/10 bg-black/20"}`}>
+                          <div className="absolute -right-5 -top-5 h-16 w-16 rounded-full blur-2xl" style={{ backgroundColor: `#${p.outfit.slice(2)}55` }} />
+                          <div className="relative">
+                            <div className="mb-3 flex items-center justify-between">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-white/45">{player === me ? "Você" : "Parceiro"}</span>
+                              <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-400" : "bg-white/20"} `} />
+                            </div>
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10" style={{ background: `linear-gradient(145deg, #${p.outfit.slice(2)}, #241b25)` }}>
+                              <ChefHat size={23} className="text-white/90" />
+                            </div>
+                            <p className="mt-2 truncate text-center text-xs font-black">{NAME[player]}</p>
+                            <div className={`mt-2 rounded-lg px-2 py-1 text-center text-[9px] font-bold uppercase tracking-wider ${ready ? "bg-emerald-400/15 text-emerald-200" : "bg-white/5 text-white/35"}`}>
+                              {ready ? "Pronto" : online ? "Personalizando" : "Aguardando"}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <CookingPot size={18} className="text-amber-200" />
+                    <div>
+                      <p className="text-sm font-black">Como funciona</p>
+                      <p className="text-[10px] text-white/40">Coordene-se para servir mais rápido.</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      ["1", "Pegue", "ingredientes"],
+                      ["2", "Prepare", "as receitas"],
+                      ["3", "Sirva", "sem perder tempo"],
+                    ].map(([n, title, desc]) => (
+                      <div key={n} className="rounded-2xl border border-white/8 bg-black/15 p-3">
+                        <div className="mb-2 flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-[10px] font-black text-amber-100">{n}</div>
+                        <p className="text-[10px] font-black">{title}</p>
+                        <p className="mt-0.5 text-[9px] leading-tight text-white/40">{desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-auto rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-center text-[10px] text-white/40">
+                  {peerOnline ? "Seu parceiro está na sala. Quando os dois estiverem prontos, a cozinha começa." : "Compartilhe a sala com seu parceiro para começar a partida."}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="font-semibold text-foreground">esperando {NAME[other(me)]}...</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {state.players[me].ready ? "você já está pronto(a)!" : "escolha o look e aperte pronto"}
-        </p>
-      </div></LandscapeGate>
+      </LandscapeGate>
     );
   }
 
