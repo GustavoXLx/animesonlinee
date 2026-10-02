@@ -61,6 +61,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    this.drawBackdrop();
    this.drawFloor();
    this.drawStations();
+   this.ambientKitchenFx();
    this.player=this.chef(hooks.me,hooks.outfits[hooks.me]);
    this.add.existing(this.player);
    this.player.setPosition(hooks.me==="gu"?6.2*TILE:9.8*TILE,7.45*TILE);
@@ -308,6 +309,24 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
       const heat=this.add.arc(x,y-25,12,180,360,false,0xffc45b,.18).setDepth(5);
       this.tweens.add({targets:heat,alpha:{from:.08,to:.35},scale:{from:.8,to:1.2},duration:700,yoyo:true,repeat:-1});
     }
+   }
+  }
+
+  ambientKitchenFx(){
+   const g=this.add.graphics().setDepth(3);
+   // Soft pools of reflected light under the work line and warm appliances.
+   for(const [x,y,w,h,a] of [[2.2,3.2,2.6,.7,.055],[5.4,3.2,2.2,.55,.045],[8.7,3.2,2.8,.65,.05],[13.2,3.2,3,.7,.055]]){
+    g.fillStyle(0xffe4a4,a).fillEllipse(x*TILE,y*TILE,w*TILE,h*TILE);
+   }
+   // Small material seams on the counter edge add scale without clutter.
+   g.lineStyle(2,0xffffff,.07).lineBetween(1.2*TILE,3.08*TILE,(COLS-1.2)*TILE,3.08*TILE);
+   g.lineStyle(1,0x4b3530,.2).lineBetween(1.2*TILE,3.34*TILE,(COLS-1.2)*TILE,3.34*TILE);
+   // Tiny floating dust/steam motes: deliberately sparse for performance.
+   for(let i=0;i<12;i++){
+    const mote=this.add.circle(0,0,1.2,0xfff0cf,.11).setDepth(18);
+    mote.x=(1.5+(i*2.73)%14.5)*TILE;
+    mote.y=(1.8+(i*1.91)%9.4)*TILE;
+    this.tweens.add({targets:mote,y:mote.y-7-Math.random()*8,x:mote.x+(i%2?3:-3),alpha:{from:.02,to:.12},duration:2200+(i%4)*500,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:i*130});
    }
   }
 
