@@ -225,3 +225,8 @@
 .lei-bid { display: inline-block; animation: lei-bid .4s ease-out }
 .lei-row { animation: lei-row .4s ease-out both }
 .lei-confetti { position: absolute; top: -10px; width: 8px; height: 14px; border-radius: 2px; animation: lei-confetti 1.6s ease-in forwards }
+@keyframes sint-target { 0% { transform: translate(-50%,-50%) scaleY(0) } 70% { transform: translate(-50%,-50%) scaleY(1.2) } 100% { transform: translate(-50%,-50%) scaleY(1) } }
+@keyframes sint-glow { 0%,100% { text-shadow: 0 0 0 transparent } 50% { text-shadow: 0 0 14px #e879f9 } }
+.sint-target { animation: sint-target .6s ease-out both }
+.sint-glow { animation: sint-glow 1.4s ease-in-out infinite, lei-pop .5s both }
+.sint-knob { box-shadow: 0 0 0 6px rgb(217 70 239 / .25), 0 8px 20px rgb(0 0 0 / .4) }

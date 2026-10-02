@@ -5,5 +5,5 @@
 - [x] Nossa Casa + fila de músicas (iTunes)
 - [x] Esconder selo Lovable (CSS)
 
-- [ ] Leilão: notas melhores + penalidade time incompleto + animações
-- [ ] Sintonia: mais animações + muito mais temas
+- [x] Leilão: notas melhores + penalidade time incompleto + animações
+- [x] Sintonia: mais animações + muito mais temas
