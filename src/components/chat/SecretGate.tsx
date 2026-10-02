@@ -36,12 +36,14 @@ export function SecretGate({
   usePanicExit(leave);
   useIdleLock(leave);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (busy) return;
+    const submittedPassword = new FormData(e.currentTarget).get("password");
+    const password = typeof submittedPassword === "string" ? submittedPassword : pw;
     setBusy(true);
     try {
-      const res = await unlock({ data: { password: pw.trim() } });
+      const res = await unlock({ data: { password: password.trim() } });
       setPw("");
       if (res.ok && "decoy" in res && res.decoy) {
         setDecoy(true);
@@ -78,11 +80,12 @@ export function SecretGate({
           <input
             autoFocus
             type="password"
+            name="password"
             inputMode="text"
-            autoComplete="off"
+            autoComplete="current-password"
             value={pw}
-            onChange={(e) => {
-              setPw(e.target.value);
+            onInput={(e) => {
+              setPw(e.currentTarget.value);
               setErr(false);
             }}
             placeholder="Código"
