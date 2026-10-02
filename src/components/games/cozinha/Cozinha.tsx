@@ -317,7 +317,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   const isDish = (item: HeldItem): item is Dish => item === "hamburguer" || item === "sanduiche" || item === "pizza" || item === "cupcake" || item === "suco";
   const actionLabel = held && focus === "entrega" && isDish(held)
     ? "ENTREGAR"
-    : focus?.startsWith("tabua") && !held
+    : focus?.startsWith("cut-") && !held
       ? "CORTAR"
       : held
         ? "COLOCAR"
