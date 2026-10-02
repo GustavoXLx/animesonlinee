@@ -268,18 +268,30 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const c=this.add.container(0,0) as ChefView;
    const outfit=Number(m.outfit)||0xf59ac2;
    const hair=Number(m.hair)||0x3b2318;
-   const shadow=this.add.ellipse(0,20,32,11,C.shadow,.28);
-   const legL=this.add.rectangle(-6,18,8,22,0x33343a).setAngle(-3);
-   const legR=this.add.rectangle(6,18,8,22,0x33343a).setAngle(3);
-   const body=this.add.rectangle(0,2,28,27,outfit).setStrokeStyle(2,0x392c31,.9);
-   const apron=this.add.rectangle(0,7,18,18,0xfff0d4,.85).setStrokeStyle(1,0x8f7160,.6);
+   const shadow=this.add.ellipse(0,21,34,12,C.shadow,.3);
+   const legL=this.add.rectangle(-7,18,9,22,0x303238).setAngle(-4);
+   const legR=this.add.rectangle(7,18,9,22,0x303238).setAngle(4);
+   const shoeL=this.add.ellipse(-9,29,13,7,0x1d2024).setStrokeStyle(1,0x4c5157,.7);
+   const shoeR=this.add.ellipse(9,29,13,7,0x1d2024).setStrokeStyle(1,0x4c5157,.7);
+   const body=this.add.rectangle(0,2,30,28,outfit).setStrokeStyle(2,0x392c31,.9);
+   const collar=this.add.triangle(0,-8,-7,0,7,0,0xfff7e8,.95);
+   const apron=this.add.rectangle(0,7,19,19,0xfff0d4,.9).setStrokeStyle(1,0x8f7160,.65);
+   const pocket=this.add.rectangle(0,12,10,6,0xd8bea1,.55).setStrokeStyle(1,0x8f7160,.45);
+   const button1=this.add.circle(0,0,1.5,0xffffff,.9);
+   const button2=this.add.circle(0,5,1.5,0xffffff,.9);
    const armL=this.add.rectangle(-17,5,8,20,outfit).setAngle(10);
    const armR=this.add.rectangle(17,5,8,20,outfit).setAngle(-10);
+   const gloveL=this.add.circle(-21,15,4,0xffead6,.95);
+   const gloveR=this.add.circle(21,15,4,0xffead6,.95);
+   const neck=this.add.rectangle(0,-7,9,6,0xeebc9f);
    const head=this.add.circle(0,-16,14,0xf1c5a6).setStrokeStyle(2,0x392c31,.9);
+   const earL=this.add.circle(-13,-15,3.5,0xf1c5a6,.95);
+   const earR=this.add.circle(13,-15,3.5,0xf1c5a6,.95);
    const hairShape=this.add.arc(0,-20,24,0,Math.PI,true,hair,1);
-   const hat=this.add.ellipse(0,-29,28,11,0xffffff).setStrokeStyle(2,0x6d6264,.8);
-   const hatTop=this.add.rectangle(0,-35,17,9,0xffffff).setStrokeStyle(1,0x6d6264,.6);
-   c.add([shadow,legL,legR,body,apron,armL,armR,head,hairShape,hat,hatTop]);
+   const hat=this.add.ellipse(0,-29,29,12,0xffffff).setStrokeStyle(2,0x6d6264,.8);
+   const hatTop=this.add.rectangle(0,-35,18,10,0xffffff).setStrokeStyle(1,0x6d6264,.6);
+   const hatBand=this.add.rectangle(0,-27,21,3,0xe7d8c8,.85);
+   c.add([shadow,legL,legR,shoeL,shoeR,body,neck,collar,apron,pocket,button1,button2,armL,armR,gloveL,gloveR,head,earL,earR,hairShape,hat,hatTop,hatBand]);
    c.add([this.add.circle(-5,-17,1.8,0x29252a),this.add.circle(5,-17,1.8,0x29252a)]);
    const cheekL=this.add.circle(-8,-12,3,0xef9e98,.22);
    const cheekR=this.add.circle(8,-12,3,0xef9e98,.22);
@@ -288,7 +300,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const badge=this.add.circle(0,3,4,me==="gu"?C.pink:C.blue).setStrokeStyle(1,0xffffff,.6);
    c.add(badge);
    const item=this.add.container(0,-39).setDepth(5);item.setVisible(false);c.add(item);
-   c.parts={body,head,hat,armL,armR,legL,legR,item,shadow};
+   c.parts={body,head,hat,armL,armR,legL,legR,item,shadow,shoeL,shoeR,gloveL,gloveR};
    return c;
   }
 
