@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Lightformer, Line, Outlines, useAnimations, useGLTF } from "@react-three/drei";
+import { Environment, Lightformer, Line, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { BALL_R, GOAL_H, GOAL_W, RUN, sample, solve, wallLayout, type Mode, type Shot, type Solved } from "./sim";
