@@ -161,6 +161,15 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    }).setDepth(6);
   }
 
+   const vignette=this.add.graphics().setDepth(20);
+   vignette.fillStyle(0x0b090c,.18);
+   vignette.fillRect(0,0,COLS*TILE,7); vignette.fillRect(0,ROWS*TILE-7,COLS*TILE,7);
+   vignette.fillRect(0,0,7,ROWS*TILE); vignette.fillRect(COLS*TILE-7,0,7,ROWS*TILE);
+
+   const counterGlow=this.add.graphics().setDepth(3);
+   counterGlow.fillStyle(0xffe1a0,.08).fillRoundedRect(TILE+4,3*TILE-3,(COLS-2)*TILE-8,5,2);
+   counterGlow.fillStyle(0xffffff,.045).fillRoundedRect(TILE+8,3*TILE+2,(COLS-2)*TILE-16,2,1);
+
   drawFloor(){
    const g=this.add.graphics();
    g.fillStyle(0xdcc7a0).fillRect(TILE,TILE,(COLS-2)*TILE,(ROWS-2)*TILE);
