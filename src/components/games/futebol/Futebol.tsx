@@ -121,6 +121,7 @@ export function Futebol({ me }: { me: Me }) {
       curve: state.mode === "falta" ? curve : 0,
       seed: (Math.random() * 1e9) | 0,
       dive,
+      foot: "direita",
     };
     setState((p) => (p.shot ? p : { ...p, shot }));
   };

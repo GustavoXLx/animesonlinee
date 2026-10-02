@@ -410,7 +410,7 @@ function Game(p: SceneProps) {
 
   const preview = useMemo(() => {
     if (p.view !== "kicker" || p.shot || p.mode !== "falta") return null;
-    const s = solve({ mode: "falta", sx, sz, tx: p.aim.x, ty: p.aim.y, power: 0.6, curve: p.curve, seed: 1, dive: null });
+    const s = solve({ mode: "falta", sx, sz, tx: p.aim.x, ty: p.aim.y, power: 0.6, curve: p.curve, seed: 1, dive: null, foot: "direita" });
     const pts: THREE.Vector3[] = [];
     // sem dispersão: recalcula só a curva ideal
     for (let i = 0; i <= 18; i++) {
