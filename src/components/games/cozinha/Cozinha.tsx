@@ -63,7 +63,6 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   );
   const isHost = me === "gu";
   const [meta, setMeta] = useState(() => loadMeta(me));
-  const [localReady, setLocalReady] = useState(false);
   const [world, setWorld] = useState<WorldSnapshot>(state.world);
   const [showFps, setShowFps] = useState(false);
   const [held, setHeld] = useState<HeldItem>(null);
@@ -272,7 +271,6 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   };
 
   const setReady = () => {
-    setLocalReady(true);
     setState((p) => ({ ...p, players: { ...p.players, [me]: { ...p.players[me], outfit: meta.outfit, hair: meta.hair, ready: true } } }));
   };
 
@@ -322,7 +320,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   const actionLabel = held && focus === "entrega" && isDish(held) ? "ENTREGAR" : held ? "Colocar" : focus ? "Pegar" : "Ação";
 
   // ============ telas ============
-  if (!localReady) {
+  if (state.stage === "espera") {
     const outfitNames: Record<string, string> = {
       "0xf59ac2": "Rosa chef",
       "0x7dd0e8": "Azul céu",
@@ -451,10 +449,11 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                   <button
                     type="button"
                     onClick={() => { void enterLandscape(); setReady(); }}
+                    disabled={state.players[me].ready}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-3.5 text-sm font-black text-white shadow-xl shadow-pink-950/30 transition duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0"
                   >
                     <Check size={18} />
-                    Estou pronto para cozinhar
+                    {state.players[me].ready ? "Você está pronto!" : "Estou pronto para cozinhar"}
                   </button>
                 </div>
               </div>
