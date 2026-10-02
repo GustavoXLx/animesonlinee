@@ -233,7 +233,7 @@ function Goal({ solRef, timeRef }: { solRef: MutableRefObject<Solved | null>; ti
   );
 }
 
-function Crowd({ excite }: { excite: React.MutableRefObject<number> }) {
+function Crowd({ excite }: { excite: MutableRefObject<number> }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const data = useMemo(() => {
     const list: { x: number; y: number; z: number; ry: number; ph: number }[] = [];
@@ -338,7 +338,7 @@ function Stadium() {
   );
 }
 
-function Confetti({ trigger }: { trigger: React.MutableRefObject<number> }) {
+function Confetti({ trigger }: { trigger: MutableRefObject<number> }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const N = 260;
   const parts = useMemo(() => Array.from({ length: N }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), s: 0 })), []);
