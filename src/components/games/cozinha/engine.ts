@@ -52,12 +52,13 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
   const Phaser = await import("phaser");
   let seq = 0;
   let localHeld: HeldItem = null;
+  // Spawn points separados para a dupla começar dentro da cozinha, perto da área de serviço.
   let localX = (hooks.me === "gu" ? 5.5 : 9.5) * TILE;
-  let localY = 4.5 * TILE;
+  let localY = 6.5 * TILE;
   let localFacing: PosMsg["facing"] = "down";
   const solid = buildSolidGrid();
   const remoteBuf: PosMsg[] = [];
-  let remoteDisplay = { x: (hooks.me === "gu" ? 9.5 : 5.5) * TILE, y: 4.5 * TILE, facing: "down" as PosMsg["facing"], holding: null as HeldItem };
+  let remoteDisplay = { x: (hooks.me === "gu" ? 9.5 : 5.5) * TILE, y: 6.5 * TILE, facing: "up" as PosMsg["facing"], holding: null as HeldItem };
   const joy = { vx: 0, vy: 0 };
   let actionPressed = false;
   let focusStation: string | null = null;
@@ -91,8 +92,8 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       this.highlightGfx = this.add.rectangle(0, 0, TILE - 6, TILE - 6, COLORS.accent, 0.12)
         .setStrokeStyle(4, COLORS.accent, 0.95).setVisible(false).setDepth(8);
       this.drawHudFrame();
-      this.sprites.gu = this.makeAvatar(hooks.outfits.gu, "bb gu");
-      this.sprites.li = this.makeAvatar(hooks.outfits.li, "bb li");
+      this.sprites.gu = this.makeAvatar(hooks.outfits.gu, "bb gu", 5.5 * TILE, 6.5 * TILE);
+      this.sprites.li = this.makeAvatar(hooks.outfits.li, "bb li", 9.5 * TILE, 6.5 * TILE);
       const unsubPos = hooks.onPos((p) => {
         remoteBuf.push({ ...p, t: performance.now() });
         if (remoteBuf.length > 8) remoteBuf.shift();
@@ -206,14 +207,15 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       const g = this.add.graphics().setDepth(20);
       g.fillStyle(0x251d23, 0.94).fillRoundedRect(10, 9, COLS * TILE - 20, 51, 8);
       g.lineStyle(1, 0xffffff, 0.12).strokeRoundedRect(10, 9, COLS * TILE - 20, 51, 8);
-      this.scoreText = this.add.text(25, 25, "0", { fontFamily: "Arial", fontSize: "20px", fontStyle: "bold", color: "#fff1dc" }).setDepth(21);
+      this.scoreText = this.add.text(25, 25, "0 PTS", { fontFamily: "Arial", fontSize: "20px", fontStyle: "bold", color: "#fff1dc" }).setDepth(21);
       this.timerText = this.add.text(COLS * TILE - 25, 25, "3:00", { fontFamily: "Arial", fontSize: "20px", fontStyle: "bold", color: "#fff1dc" }).setOrigin(1, 0).setDepth(21);
-      this.ordersGroup = this.add.container(92, 13).setDepth(21);
+      this.ordersGroup = this.add.container(100, 13).setDepth(21);
       this.fpsText = this.add.text(COLS * TILE - 55, 65, "", { fontSize: "10px", color: "#ffffffaa" }).setDepth(21);
+      this.add.text(COLS * TILE / 2, 43, "PEDIDOS", { fontFamily: "Arial", fontSize: "8px", fontStyle: "bold", color: "#fff1dc99" }).setOrigin(0.5).setDepth(21);
     }
 
-    makeAvatar(outfit: { outfit: string; hair: string }, name: string) {
-      const c = this.add.container(localX, localY).setDepth(10);
+    makeAvatar(outfit: { outfit: string; hair: string }, name: string, x: number, y: number) {
+      const c = this.add.container(x, y).setDepth(10);
       const shadow = this.add.ellipse(0, 16, 31, 12, COLORS.shadow, 0.3);
       const legs = this.add.graphics().setName("legs");
       const body = this.add.graphics();
