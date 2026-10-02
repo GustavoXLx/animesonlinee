@@ -12,8 +12,9 @@ type St = {
   kickId: number;
   shot: Shot | null;
   seed: number;
+  skins: Record<Me, "default" | "neymar">;
 };
-const init: St = { mode: null, first: "gu", kicks: [], kickId: 0, shot: null, seed: 1 };
+const init: St = { mode: null, first: "gu", kicks: [], kickId: 0, shot: null, seed: 1, skins: { gu: "default", li: "default" } };
 const NAME: Record<Me, string> = { gu: "bb gu", li: "bb li" };
 const MODEL: Record<Me, string> = { gu: "male-c", li: "female-a" };
 const other = (w: Me): Me => (w === "gu" ? "li" : "gu");
@@ -36,6 +37,7 @@ export function Futebol({ me }: { me: Me }) {
   const [myDive, setMyDive] = useState<Dive | null>(null);
   const [overlay, setOverlay] = useState<{ txt: string; good: boolean } | null>(null);
   const [replay, setReplay] = useState(false);
+  const [mySkin, setMySkin] = useState<"default" | "neymar">(state.skins?.[me] ?? "default");
   const diveRef = useRef<{ id: number; d: Dive } | null>(null);
   const startRef = useRef(0);
   const shotKey = useRef("");
@@ -132,8 +134,13 @@ export function Futebol({ me }: { me: Me }) {
     sendEvent("dive", { id: state.kickId, d });
   };
 
+  const selectSkin = (skin: "default" | "neymar") => {
+    setMySkin(skin);
+    setState((p) => ({ ...p, skins: { ...(p.skins ?? { gu: "default", li: "default" }), [me]: skin } }));
+  };
+
   const start = (mode: Mode) =>
-    setState({ mode, first: Math.random() < 0.5 ? "gu" : "li", kicks: [], kickId: 0, shot: null, seed: (Math.random() * 1e6) | 0 });
+    setState((p) => ({ ...p, mode, first: Math.random() < 0.5 ? "gu" : "li", kicks: [], kickId: 0, shot: null, seed: (Math.random() * 1e6) | 0 }));
 
   /* ---------- menu ---------- */
   if (!state.mode) {
@@ -145,7 +152,21 @@ export function Futebol({ me }: { me: Me }) {
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.35em] text-emerald-300/70"><Radio className="h-4 w-4" strokeWidth={2.4} /> FUTEBOL 3D</div>
           <h3 className="mt-2 text-4xl font-black italic sm:text-6xl">DUELO DE CRAQUES</h3>
           <p className="mx-auto mt-2 max-w-xl text-xs text-white/50 sm:text-sm">Escolha a disputa e enfrente seu parceiro em uma série de cobranças.</p>
-          <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.045] p-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <div><p className="text-xs font-black uppercase tracking-[0.22em] text-white/80">Sua skin</p><p className="mt-1 text-[10px] text-white/40">Escolha o visual antes da partida.</p></div>
+              <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-amber-200">Fã edition</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(["default", "neymar"] as const).map((skin) => (
+                <button key={skin} onClick={() => selectSkin(skin)} className={mySkin === skin ? "rounded-2xl border border-amber-300/50 bg-amber-300/10 p-3 text-left ring-1 ring-amber-300/20" : "rounded-2xl border border-white/10 bg-black/20 p-3 text-left transition hover:bg-white/[0.06]"}>
+                  <p className="text-xs font-black">{skin === "neymar" ? "Neymar — 10" : "Craque clássico"}</p>
+                  <p className="mt-1 text-[9px] text-white/40">{skin === "neymar" ? "Visual inspirado no craque" : "Uniforme padrão"}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
             {[
               ["penalti","PÊNALTIS","goal","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
               ["falta","FALTAS","crosshair","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
@@ -183,6 +204,8 @@ export function Futebol({ me }: { me: Me }) {
           spot={spot}
           kickerModel={MODEL[kicker]}
           keeperModel={state.mode === "penalti" ? MODEL[keeperWho] : "male-a"}
+          kickerSkin={state.skins?.[kicker] ?? "default"}
+          keeperSkin={state.skins?.[keeperWho] ?? "default"}
           view={iKick ? "kicker" : state.mode === "penalti" ? "keeper" : "watch"}
           shot={state.shot}
           startRef={startRef}
