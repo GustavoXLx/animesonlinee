@@ -72,7 +72,7 @@ export const DEFAULT_LOOKS: Record<"gu" | "li", Look> = {
   },
   li: {
     skin: "#f5d0a9", hair: "long", hairC: "#6b4226", eyes: "#3b2416", lips: "#e11d48", face: "blush",
-    top: "crop", topC: "#f472b6", topC2: "#ffffff", topP: "solid", bottom: "skirt", botC: "#ffffff", botP: "pleated" === "pleated" ? "solid" : "solid",
+    top: "crop", topC: "#f472b6", topC2: "#ffffff", topP: "solid", bottom: "skirt", botC: "#ffffff", botP: "solid",
     shoes: "sneakers", shoeC: "#ffffff", hat: "bow", hatC: "#ec4899", glasses: "none", glassC: "#111111", acc: "none", accC: "#ffffff", hand: "none", handC: "#f472b6",
   },
 };
