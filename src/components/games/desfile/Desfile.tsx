@@ -13,6 +13,7 @@ const DesfileScene = lazy(() => import("./DesfileScene"));
 
 type Phase = "lobby" | "dress" | "judging" | "show";
 type St = {
+  ready: Record<Me, boolean>;
   phase: Phase;
   round: number;
   theme: string;
@@ -26,7 +27,7 @@ type St = {
   used: number[];
   error: string;
 };
-const init: St = { phase: "lobby", round: 0, theme: "", endsAt: 0, subs: {}, order: ["gu", "li"], poses: { gu: 0, li: 1 }, verdict: null, showAt: 0, wins: { gu: 0, li: 0 }, used: [], error: "" };
+const init: St = { ready: { gu: false, li: false }, phase: "lobby", round: 0, theme: "", endsAt: 0, subs: {}, order: ["gu", "li"], poses: { gu: 0, li: 1 }, verdict: null, showAt: 0, wins: { gu: 0, li: 0 }, used: [], error: "" };
 const NAME: Record<Me, string> = { gu: "bb gu", li: "bb li" };
 const DRESS_SECS = 150;
 const other = (w: Me): Me => (w === "gu" ? "li" : "gu");
@@ -47,6 +48,7 @@ function DesfileInner({ me }: { me: Me }) {
   const [now, setNow] = useState(Date.now());
   const startRef = useRef(0);
   const judging = useRef(-1);
+  const starting = useRef(false);
 
   // rascunho salvo no aparelho
   useEffect(() => {
@@ -140,6 +142,17 @@ function DesfileInner({ me }: { me: Me }) {
     if (state.phase === "show") startRef.current = performance.now() - (Date.now() - state.showAt);
   }, [state.phase, state.showAt]);
 
+  useEffect(() => {
+    if (!host || state.phase !== "lobby" || !state.ready.gu || !state.ready.li || starting.current) return;
+    starting.current = true;
+    newRound();
+  }, [host, state.phase, state.ready.gu, state.ready.li]);
+
+  const toggleReady = () => {
+    if (!peerOnline && me === "gu") return;
+    setState((p) => ({ ...p, ready: { ...p.ready, [me]: !p.ready[me] } }));
+  };
+
   const newRound = () => {
     const pool = FASHION_THEMES.map((_, i) => i).filter((i) => !state.used.includes(i));
     const list = pool.length ? pool : FASHION_THEMES.map((_, i) => i);
@@ -154,6 +167,7 @@ function DesfileInner({ me }: { me: Me }) {
       verdict: null,
       error: "",
       used: pool.length ? [...p.used, idx] : [idx],
+      ready: { gu: false, li: false },
     }));
   };
 
@@ -188,8 +202,8 @@ function DesfileInner({ me }: { me: Me }) {
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">IA</p><p className="text-[9px] uppercase tracking-wider text-white/35">como jurada</p></div>
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">{state.wins.gu + state.wins.li}</p><p className="text-[9px] uppercase tracking-wider text-white/35">vitórias na sala</p></div>
           </div>
-          <button onClick={() => { void enterLandscape(); newRound(); }} className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-9 py-3.5 text-sm font-black shadow-xl transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-35"><Sparkles size={17} /> Sortear tema e começar</button>
-          {!peerOnline && <p className="mt-3 text-xs font-medium text-amber-300">Você pode começar; {NAME[other(me)]} pode entrar depois.</p>}
+          <button onClick={() => { void enterLandscape(); toggleReady(); }} disabled={!peerOnline && me === "gu"} className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-9 py-3.5 text-sm font-black shadow-xl transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"><Sparkles size={17} /> {state.ready[me] ? "Você está pronto!" : "Estou pronto(a)!"}</button>
+          <p className="mt-3 text-xs font-medium text-amber-300">{peerOnline ? (state.ready.gu && state.ready.li ? "Os dois estão prontos. Iniciando…" : state.ready[other(me)] ? `${NAME[other(me)]} está pronto(a). Marque seu pronto!` : "Aguardando os dois jogadores ficarem prontos.") : "Aguardando bb li entrar na sala…"}</p>
         </div>
       </div>
     );
