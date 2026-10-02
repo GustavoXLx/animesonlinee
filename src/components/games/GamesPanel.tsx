@@ -24,6 +24,7 @@ import { useGameChannel, type Me } from "./useGameChannel";
 import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
 import { GameChat } from "./GameChat";
+import { SPECTRA_EXTRA } from "./sintoniaExtra";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
 import { Leilao } from "./Leilao";
 
@@ -219,7 +220,7 @@ export function GamesPanel({
             escolham o mesmo jogo pra começar · dá pra conversar dentro do jogo 💬
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
-            {GAMES.map((g) => (
+            {GAMES.filter((g) => g.key !== "embraza").map((g) => (
               <button
                 key={g.key}
                 onClick={() => setActive(g.key)}
@@ -261,6 +262,7 @@ function WaitingPeer({ peerOnline, children }: { peerOnline: boolean; children: 
 
 // ============ SINTONIA ============
 const SPECTRA: [string, string][] = [
+  ...SPECTRA_EXTRA,
   ["frio", "quente"],
   ["fácil", "difícil"],
   ["saudável", "gostoso"],
@@ -340,6 +342,17 @@ const sintoniaInitial: SintoniaState = {
   round: 0,
 };
 
+function pickSpectrum() {
+  const K = "anistream-sintonia-used";
+  let used: number[] = [];
+  try { used = JSON.parse(localStorage.getItem(K) || "[]"); } catch {}
+  let free = SPECTRA.map((_, i) => i).filter((i) => !used.includes(i));
+  if (!free.length) { used = []; free = SPECTRA.map((_, i) => i); }
+  const idx = free[Math.floor(Math.random() * free.length)];
+  try { localStorage.setItem(K, JSON.stringify([...used, idx])); } catch {}
+  return idx;
+}
+
 function Sintonia({ me }: { me: Me }) {
   const { state, setState, peerOnline } = useGameChannel<SintoniaState>(
     "sintonia",
@@ -359,7 +372,7 @@ function Sintonia({ me }: { me: Me }) {
       ...state,
       phase: "clue",
       host,
-      spectrumIdx: Math.floor(Math.random() * SPECTRA.length),
+      spectrumIdx: pickSpectrum(),
       target: Math.floor(Math.random() * 101),
       clue: "",
       guess: 50,
@@ -418,7 +431,7 @@ function Sintonia({ me }: { me: Me }) {
         )}
 
         {state.phase === "clue" && (
-          <div className="space-y-4">
+          <div key={"c" + state.round} className="space-y-4 lei-drop">
             <Spectrum left={left} right={right} target={isHost ? state.target : undefined} />
             {isHost ? (
               <>
@@ -453,7 +466,7 @@ function Sintonia({ me }: { me: Me }) {
 
         {state.phase === "guess" && (
           <div className="space-y-4">
-            <div className="text-center bg-white/5 rounded-2xl p-4">
+            <div className="text-center bg-white/5 rounded-2xl p-4 lei-pop">
               <p className="text-[10px] uppercase tracking-widest text-white/40">dica</p>
               <p className="text-lg font-bold mt-1">"{state.clue}"</p>
             </div>
@@ -479,8 +492,12 @@ function Sintonia({ me }: { me: Me }) {
 
         {state.phase === "reveal" && (
           <div className="space-y-4">
+            {Math.abs(state.guess - state.target) <= 12 && <SintConfetti />}
             <Spectrum left={left} right={right} target={state.target} guess={state.guess} />
-            <div className="text-center bg-white/5 rounded-2xl p-4">
+            <div className="text-center bg-white/5 rounded-2xl p-4 lei-pop">
+              <p className="text-sm font-black mb-2 sint-glow">
+                {(() => { const d = Math.abs(state.guess - state.target); return d <= 5 ? "SINTONIA PERFEITA! +4" : d <= 12 ? "Quase lá! +3" : d <= 20 ? "Boa! +2" : d <= 30 ? "Passou perto +1" : "Errou feio 0"; })()}
+              </p>
               <p className="text-xs text-white/50">dica era</p>
               <p className="font-bold">"{state.clue}"</p>
               <p className="text-xs text-white/50 mt-3">diferença</p>
@@ -521,7 +538,7 @@ function Spectrum({
       <div className="relative h-14 rounded-full bg-gradient-to-r from-sky-500 via-white/10 to-rose-500 overflow-visible">
         {typeof target === "number" && (
           <div
-            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-16 bg-yellow-300 rounded-full shadow-lg"
+            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-16 bg-yellow-300 rounded-full shadow-lg sint-target"
             style={{ left: `${target}%` }}
           >
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-yellow-300">
@@ -531,7 +548,7 @@ function Spectrum({
         )}
         {typeof guess === "number" && (
           <div
-            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-2 border-fuchsia-500 shadow-xl"
+            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-2 border-fuchsia-500 shadow-xl transition-[left] duration-150 sint-knob"
             style={{ left: `${guess}%` }}
           />
         )}
@@ -788,5 +805,20 @@ function PPT({ me }: { me: Me }) {
         )}
       </div>
     </WaitingPeer>
+  );
+}
+
+function SintConfetti() {
+  const colors = ["#e879f9", "#818cf8", "#fde047", "#f472b6", "#34d399"];
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
+      {Array.from({ length: 30 }, (_, i) => (
+        <span
+          key={i}
+          className="lei-confetti"
+          style={{ left: `${(i * 41) % 100}%`, background: colors[i % 5], animationDelay: `${(i % 6) * 80}ms`, animationDuration: `${1.3 + (i % 4) * 0.3}s` }}
+        />
+      ))}
+    </div>
   );
 }

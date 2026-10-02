@@ -406,15 +406,18 @@ Orçamento inicial de cada jogador: R$${data.budget}
 Time de "bb gu": ${fmt(data.gu)}
 Time de "bb li": ${fmt(data.li)}
 
-Julgue com CRITÉRIO RIGOROSO, item por item:
-1. Dê internamente uma nota de 0 a 10 para CADA item, baseada em fatos reais: qualidade/habilidade, conquistas, prestígio, impacto histórico e relevância atual. ${
+Julgue item por item com notas de 0 a 10 (uma casa decimal), CALIBRADAS assim:
+- 9.5–10: lenda absoluta / top 3 do tema no mundo (ex. futebol: Pelé, Messi, Cristiano Ronaldo, Marta; YouTubers BR: Whindersson, Felipe Neto, Rezendeevil, Casimiro).
+- 8.5–9.4: estrela muito famosa e reconhecida por todo mundo (ex. Neymar, Ronaldinho, Kaká, Vini Jr).
+- 7–8.4: muito bom e conhecido, mas abaixo das estrelas.
+- 5–6.9: mediano / conhecido só por fãs.
+- abaixo de 5: fraco ou quase desconhecido.
+Considere fama, popularidade no Brasil, conquistas, impacto e talento. Itens super famosos NUNCA ganham nota baixa. ${
       data.football
-        ? "Em futebol, compare o jogador com os melhores da MESMA posição (goleiro com goleiro, defensor com defensor, etc.) e considere títulos, Bolas de Ouro, seleção e nível de clube."
+        ? "Em futebol, compare com os melhores da MESMA posição e considere títulos, Bolas de Ouro, seleção e fama. Jogadores e jogadoras de elite (masculino ou feminino) ficam na mesma faixa alta."
         : "Compare cada item com os melhores possíveis dentro do tema."
     }
-2. A nota final de cada time = média das notas dos itens dele (arredonde em 1 decimal). NÃO invente empate: só use "empate" se a diferença for exatamente 0.
-3. O vencedor é obrigatoriamente quem tiver a maior nota final.
-4. Nos comentários (máx 2 frases, português brasileiro, divertido), cite o item mais forte e o mais fraco do time e justifique. No "summary" diga a diferença de nota e o motivo decisivo.
+O placar do time é a SOMA das notas (time incompleto perde pontos porque item faltando vale 0). Nos comentários (máx 2 frases, português brasileiro, divertido), cite o item mais forte e o mais fraco. No "summary" diga o motivo decisivo.
 Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
 
 
@@ -504,12 +507,12 @@ Seja imparcial: ignore quem pagou mais caro, avalie só a qualidade real.`;
       const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
       if (!args) throw new Error("no_args");
       const parsed = JSON.parse(args) as Judged;
-      const avg = (items?: { note: number }[], fallback = 0) =>
-        items && items.length
-          ? Math.round((items.reduce((a, b) => a + (b.note ?? 0), 0) / items.length) * 10) / 10
-          : fallback;
-      const guScore = avg(parsed.guItems, parsed.guScore);
-      const liScore = avg(parsed.liItems, parsed.liScore);
+      const sum = (items: { note: number }[] | undefined, n: number) =>
+        Math.round(
+          (items ?? []).slice(0, n).reduce((a, b) => a + Math.max(0, Math.min(10, Number(b.note) || 0)), 0) * 10,
+        ) / 10;
+      const guScore = sum(parsed.guItems, data.gu.length);
+      const liScore = sum(parsed.liItems, data.li.length);
       return {
         ...parsed,
         guScore,
