@@ -346,7 +346,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
 
     return (
       <LandscapeGate>
-        <div className="fixed inset-0 h-dvh w-screen overflow-y-auto bg-[#17131a] text-white">
+        <div className="fixed inset-0 h-dvh w-screen overflow-y-auto bg-[#121015] text-white">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl animate-pulse" />
             <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl animate-pulse [animation-delay:700ms]" />
@@ -392,7 +392,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Seu chef</p>
                       <p className="mt-1 text-lg font-black">{NAME[me]}</p>
                     </div>
-                    <div className="rounded-[20px] bg-white/10 p-2.5 text-pink-200">
+                    <div className="rounded-[16px] bg-white/[0.08] p-2.5 text-pink-200">
                       <Sparkles size={18} />
                     </div>
                   </div>
