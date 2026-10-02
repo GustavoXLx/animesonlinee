@@ -71,9 +71,11 @@ export function useChatNotifier(active: boolean) {
   const lastIdRef = useRef<string | null>(null);
   const [unread, setUnread] = useState(false);
   const [identityVersion, setIdentityVersion] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
 
   useEffect(() => {
+    setHydrated(true);
     setPermission("Notification" in window ? Notification.permission : "unsupported");
     const refresh = () => setIdentityVersion((value) => value + 1);
     window.addEventListener("as-notify-identity", refresh);
@@ -159,7 +161,7 @@ export function useChatNotifier(active: boolean) {
     };
   }, [active, identityVersion]);
 
-  const who = typeof window === "undefined" ? null : getWho();
+  const who = hydrated ? getWho() : null;
   const requestPermission = async () => {
     if (who !== "gu" || !("Notification" in window)) {
       setPermission("unsupported");
