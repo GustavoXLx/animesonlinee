@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Lightformer, Line, Outlines, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -13,7 +13,7 @@ export type SceneProps = {
   keeperModel: string;
   view: View;
   shot: Shot | null;
-  startRef: React.MutableRefObject<number>;
+  startRef: MutableRefObject<number>;
   aim: { x: number; y: number };
   curve: number;
   power: number;
@@ -433,7 +433,7 @@ function Game(p: SceneProps) {
       pts.push(new THREE.Vector3(v[0], v[1], v[2]));
     }
     return pts;
-  }, [p.view, p.shot, p.mode, sx, sz, p.aim.x, p.aim.y, p.curve]);
+  }, [p.view, p.shot, p.mode, sx, sz, p.aim.x, p.aim.y, p.curve, p.power]);
 
   const tmp = useMemo(() => new THREE.Vector3(), []);
   const look = useRef(new THREE.Vector3(0, 1.2, 0));
