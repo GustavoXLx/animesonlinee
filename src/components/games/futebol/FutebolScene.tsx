@@ -117,72 +117,41 @@ function useBallTex() {
   }, []);
 }
 
-/* ---------------- gramado procedural ---------------- */
-function ProceduralGrass() {
-  const mat = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } },
-    vertexShader: `
-      varying vec2 vUv;
-      varying float vWave;
-      uniform float uTime;
-      void main() {
-        vUv = uv;
-        vec3 p = position;
-        float wave = sin(p.x * 0.32 + uTime * 0.65) * 0.008
-          + cos(p.y * 0.27 - uTime * 0.42) * 0.006
-          + sin((p.x + p.y) * 0.12 + uTime * 0.25) * 0.004;
-        p.z += wave;
-        vWave = wave;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-      }
-    `,
-    fragmentShader: `
-      varying vec2 vUv;
-      varying float vWave;
-      uniform float uTime;
-      float hash(vec2 p) {
-        p = fract(p * vec2(123.34, 456.21));
-        p += dot(p, p + 45.32);
-        return fract(p.x * p.y);
-      }
-      float noise(vec2 p) {
-        vec2 i = floor(p), f = fract(p);
-        f = f * f * (3.0 - 2.0 * f);
-        return mix(mix(hash(i), hash(i + vec2(1.0,0.0)), f.x),
-          mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), f.x), f.y);
-      }
-      float fbm(vec2 p) {
-        float v = 0.0;
-        float a = 0.5;
-        for (int i=0; i<4; i++) { v += noise(p) * a; p *= 2.02; a *= 0.5; }
-        return v;
-      }
-      void main() {
-        vec2 p = vUv * 42.0;
-        float broad = fbm(p * 0.16);
-        float micro = fbm(p * 2.8);
-        float blades = noise(p * 9.0 + vec2(uTime * 0.08, -uTime * 0.05));
-        float stripe = 0.035 * sin(vUv.y * 22.0 * 3.14159);
-        vec3 dark = vec3(0.035, 0.20, 0.055);
-        vec3 mid = vec3(0.055, 0.34, 0.085);
-        vec3 light = vec3(0.12, 0.43, 0.12);
-        vec3 col = mix(dark, mid, smoothstep(0.18, 0.58, broad));
-        col = mix(col, light, smoothstep(0.62, 0.9, micro) * 0.32);
-        col += vec3(0.015, 0.045, 0.012) * blades;
-        col += stripe * vec3(0.55, 0.75, 0.45);
-        col += vWave * vec3(0.5, 0.9, 0.35);
-        gl_FragColor = vec4(col, 1.0);
-      }
-    `,
-    side: THREE.DoubleSide
-  }), []);
-  useFrame(({ clock }) => { mat.uniforms.uTime.value = clock.elapsedTime; });
-  return <mesh position={[0, -0.008, 28]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-    <planeGeometry args={[80, 80, 96, 96]} />
-    <primitive object={mat} attach="material" />
+/* ---------------- gramado ---------------- */
+function CleanGrass() {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#2f7d35";
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.globalAlpha = 0.22;
+    for (let i = 0; i < 2200; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const h = 2 + Math.random() * 5;
+      ctx.strokeStyle = i % 3 ? "#78ad55" : "#174d24";
+      ctx.lineWidth = 0.65;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (Math.random() - 0.5) * 1.2, y - h);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    const t = new THREE.CanvasTexture(canvas);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(18, 18);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  return <mesh position={[0, -0.01, 28]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <planeGeometry args={[80, 80]} />
+    <meshStandardMaterial map={texture} color="#ffffff" roughness={0.96} metalness={0} />
   </mesh>;
 }
-
 function GrassDebris({ trigger, spot }: { trigger: MutableRefObject<number>; spot: { x: number; z: number } }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const last = useRef(0);
@@ -294,74 +263,110 @@ function Person({
   height?: number;
   skin?: "default" | "neymar";
 }) {
-  const gltf = useGLTF(charUrl(model));
-  const inner = useRef<THREE.Group>(null);
-  const { actions } = useAnimations(gltf.animations, inner);
-  const current = useRef("");
+  const root = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
+  const neymar = skin === "neymar";
+  const accent = neymar ? "#087f3f" : model.endsWith("c") ? "#16a34a" : "#2563eb";
+  const shirt = neymar ? "#f7c948" : "#f5f7fb";
+  const shorts = neymar ? "#075d35" : "#172033";
+  const hair = neymar ? "#17120e" : model.includes("female") ? "#5b3325" : "#2a211d";
 
-  const rig = useMemo(() => {
-    const root = skClone(gltf.scene);
-    root.traverse((node) => {
-      if (!(node as THREE.Mesh).isMesh) return;
-      const mesh = node as THREE.Mesh;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      mesh.material = mats.map((source) => {
-        const mat = source.clone() as THREE.MeshStandardMaterial;
-        const name = String(mat.name || "").toLowerCase();
-        if (/shirt|top|body/.test(name)) {
-          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#f7c948" : "#e8edf5"), 0.45);
-        }
-        if (/pants|short/.test(name)) {
-          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#075d35" : "#111827"), 0.55);
-        }
-        if (/shoe|boot/.test(name)) {
-          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#2563eb" : "#111827"), 0.55);
-        }
-        if (skin === "neymar" && /hair/.test(name)) mat.color.set("#17120e");
-        mat.roughness = Math.min(0.82, Math.max(0.38, mat.roughness || 0.58));
-        return mat;
-      });
-    });
-    const box = new THREE.Box3().setFromObject(root);
-    const h = Math.max(0.001, box.max.y - box.min.y);
-    const s = height / h;
-    root.scale.setScalar(s);
-    root.position.y = -box.min.y * s;
-    return root;
-  }, [gltf.scene, height, skin]);
-
-  useFrame(() => {
-    const requested = anim.current.name;
-    const aliases: Record<string, string[]> = {
-      idle: ["Idle", "idle", "Standing"],
-      sprint: ["Run", "run", "Walk"],
-      "attack-kick-right": ["Kick", "Punch", "kick", "Idle"],
-      jump: ["Jump", "jump"],
-      "emote-yes": ["Clapping", "Celebrate", "Idle"],
-      "emote-no": ["Idle", "Standing"],
+  useEffect(() => {
+    groupRef.current = root.current;
+    return () => {
+      groupRef.current = null;
     };
-    const names = aliases[requested] ?? aliases.idle;
-    const clipName = names.find((name) => !!actions[name]) ?? Object.keys(actions)[0];
-    if (!clipName || current.current === clipName) return;
-    const next = actions[clipName];
-    if (!next) return;
-    const prev = current.current ? actions[current.current] : undefined;
-    next.reset();
-    next.timeScale = anim.current.speed ?? 1;
-    next.setLoop(anim.current.once ? THREE.LoopOnce : THREE.LoopRepeat, anim.current.once ? 1 : Infinity);
-    next.clampWhenFinished = !!anim.current.once;
-    next.fadeIn(0.1).play();
-    prev?.fadeOut(0.1);
-    current.current = clipName;
+  }, [groupRef]);
+
+  useFrame(({ clock }) => {
+    const r = root.current;
+    if (!r) return;
+    const mode = anim.current.name;
+    const speed = anim.current.speed ?? 1;
+    const t = clock.elapsedTime * (mode === "sprint" ? 9 * speed : 4 * speed);
+    const moving = mode === "sprint";
+    const kick = mode === "attack-kick-right";
+    const jump = mode === "jump";
+    const phase = Math.sin(t);
+    const other = Math.sin(t + Math.PI);
+    if (leftLeg.current && rightLeg.current) {
+      leftLeg.current.rotation.x = moving ? phase * 0.62 : kick ? 0.18 : 0;
+      rightLeg.current.rotation.x = moving ? other * 0.62 : kick ? -1.15 : 0;
+    }
+    if (leftArm.current && rightArm.current) {
+      leftArm.current.rotation.x = moving ? other * 0.5 : kick ? -0.55 : 0;
+      rightArm.current.rotation.x = moving ? phase * 0.5 : kick ? 0.75 : 0;
+    }
+    if (torso.current) torso.current.rotation.z = moving ? phase * 0.035 : 0;
+    r.position.y = jump ? 0.16 + Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.16 : 0;
+    r.scale.y = jump ? 1.02 : 1;
   });
 
+  const limb = (ref: MutableRefObject<THREE.Group | null>, x: number, y: number, z: number, color: string, isArm = false) => (
+    <group ref={ref} position={[x, y, z]} key={x + z + color}>
+      <mesh position={[0, isArm ? -0.19 : -0.27, 0]} castShadow>
+        <capsuleGeometry args={[isArm ? 0.07 : 0.105, isArm ? 0.25 : 0.38, 5, 12]} />
+        <meshStandardMaterial color={color} roughness={0.62} />
+      </mesh>
+    </group>
+  );
+
   return (
-    <group ref={groupRef}>
-      <group ref={inner}>
-        <primitive object={rig} />
+    <group ref={root}>
+      <group ref={torso} scale={[1, 1, 1]}>
+        <mesh position={[0, 1.04, 0]} castShadow>
+          <capsuleGeometry args={[0.30, 0.52, 6, 16]} />
+          <meshStandardMaterial color={shirt} roughness={0.58} />
+        </mesh>
+        <mesh position={[0, 1.12, 0.27]} scale={[0.82, 0.30, 0.06]} castShadow>
+          <boxGeometry args={[0.48, 0.18, 0.08]} />
+          <meshStandardMaterial color={accent} roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.66, 0]} castShadow>
+          <capsuleGeometry args={[0.23, 0.22, 5, 14]} />
+          <meshStandardMaterial color={shorts} roughness={0.72} />
+        </mesh>
+        <mesh position={[0, 1.55, 0]} castShadow>
+          <sphereGeometry args={[0.29, 20, 16]} />
+          <meshStandardMaterial color="#dca37f" roughness={0.72} />
+        </mesh>
+        <mesh position={[0, 1.68, -0.03]} scale={[1.02, 0.5, 1.02]}>
+          <sphereGeometry args={[0.30, 20, 12]} />
+          <meshStandardMaterial color={hair} roughness={0.9} />
+        </mesh>
+        <mesh position={[-0.10, 1.55, 0.265]}><sphereGeometry args={[0.025, 8, 8]} /><meshBasicMaterial color="#161616" /></mesh>
+        <mesh position={[0.10, 1.55, 0.265]}><sphereGeometry args={[0.025, 8, 8]} /><meshBasicMaterial color="#161616" /></mesh>
+        <mesh position={[0, 1.47, 0.275]} rotation={[0, 0, Math.PI]}>
+          <torusGeometry args={[0.055, 0.012, 6, 12, Math.PI]} />
+          <meshBasicMaterial color="#7a3f3f" />
+        </mesh>
+        {neymar && <mesh position={[0, 1.79, 0]} scale={[1.05, 0.18, 1.05]}>
+          <sphereGeometry args={[0.29, 16, 10]} />
+          <meshStandardMaterial color="#17120e" roughness={0.95} />
+        </mesh>}
+        {limb(leftArm, -0.34, 1.16, 0, shirt, true)}
+        {limb(rightArm, 0.34, 1.16, 0, shirt, true)}
+        {limb(leftLeg, -0.14, 0.58, 0, shorts)}
+        {limb(rightLeg, 0.14, 0.58, 0, shorts)}
+        {[-0.14, 0.14].map((x) => (
+          <group key={x}>
+            <mesh position={[x, 0.10, 0.07]} scale={[1.25, 0.5, 1.75]} castShadow>
+              <sphereGeometry args={[0.105, 16, 10]} />
+              <meshStandardMaterial color={neymar ? "#2563eb" : "#101318"} roughness={0.38} />
+            </mesh>
+            <mesh position={[x, 0.31, 0]}><cylinderGeometry args={[0.10, 0.09, 0.30, 12]} /><meshStandardMaterial color="#f4f4f2" roughness={0.7} /></mesh>
+          </group>
+        ))}
+        {neymar && <mesh position={[0, 1.12, 0.31]}><planeGeometry args={[0.16, 0.16]} /><meshBasicMaterial color="#075d35" /></mesh>}
       </group>
+      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[0.48, 24]} />
+        <meshBasicMaterial color="#0b1010" transparent opacity={0.22} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
@@ -931,7 +936,7 @@ function Game(p: SceneProps) {
 
   return (
     <>
-      <ProceduralGrass />
+      <CleanGrass />
       {Array.from({ length: 12 }, (_, i) => (
         <mesh key={"turf-" + i} position={[0, 0.002, -8 + i * 6.5]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[68, 6.5]} />
