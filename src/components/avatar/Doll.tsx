@@ -639,20 +639,19 @@ function Face({ l }: { l: Look }) {
       {l.face === "tears" && <mesh geometry={sph(0.01, 8, 6)} material={glass("#60a5fa", 0.8)} position={[0.05, -0.035, z + 0.01]} scale={[1, 1.6, 0.6]} />}
       {l.face === "whiskers" && [-1, 1].flatMap((s) => [-1, 1].map((k) => <mesh key={s + ":" + k} geometry={box(0.05, 0.003, 0.003)} material={BLACK()} position={[s * 0.07, -0.03 + k * 0.008, z + 0.005]} rotation={[0, 0, s * k * 0.15]} />))}
       {l.face === "paint" && [-1, 1].map((s) => <mesh key={s} geometry={box(0.04, 0.008, 0.01)} material={mat("#ef4444")} position={[s * 0.07, -0.03, z]} />)}
-      {l.face === "mustache" && (
-        <group position={[0, -0.036, z + 0.009]}>
+      {(l.face === "mustache" || l.face === "beard") && (
+        <group position={[0, -0.04, z + 0.004]}>
           {[-1, 1].map((s) => (
-            <mesh key={s} geometry={cap(0.009, 0.028)} material={mat(l.hairC)} position={[s * 0.021, -0.003, 0]} rotation={[0, 0, s * 0.55]} />
+            <mesh key={s} geometry={cap(0.0085, 0.03)} material={hairMat(l.hairC)} position={[s * 0.02, -0.002, 0]} rotation={[0, s * 0.35, s * (Math.PI / 2 - 0.32)]} />
           ))}
-          <mesh geometry={sph(0.009, 8, 6)} material={mat(l.hairC)} position={[0, -0.006, 0.002]} />
         </group>
       )}
       {l.face === "beard" && (
         <group>
-          <mesh geometry={sph(0.08, 16, 12)} material={mat(l.hairC)} position={[0, -0.075, z - 0.058]} scale={[1, 0.82, 0.62]} />
-          {[-1, 1].map((s) => (
-            <mesh key={s} geometry={sph(0.05, 14, 10)} material={mat(l.hairC)} position={[s * 0.088, -0.03, z - 0.07]} scale={[0.75, 1.05, 0.6]} rotation={[0, s * 0.3, 0]} />
+          {[0.12, Math.PI / 2 + 0.42].map((ps) => (
+            <mesh key={ps} geometry={geo(`beard${ps}`, () => new THREE.SphereGeometry(R * 1.035, 12, 8, ps, Math.PI / 2 - 0.54, 1.62, Math.PI - 1.62 - 0.22))} material={hairMat(l.hairC)} />
           ))}
+          <mesh geometry={geo("beardChin", () => new THREE.SphereGeometry(R * 1.045, 10, 6, Math.PI / 2 - 0.44, 0.88, 2.2, Math.PI - 2.2 - 0.22))} material={hairMat(l.hairC)} />
         </group>
       )}
     </group>
