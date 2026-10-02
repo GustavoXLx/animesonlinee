@@ -66,8 +66,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     .setOrigin(.5).setDepth(120).setVisible(false);
    this.fpsLabel=this.add.text(12,ROWS*TILE-24,"",{fontFamily:"Arial",fontSize:"10px",color:"#ffffffaa"}).setScrollFactor(0).setDepth(200).setVisible(false);
    this.keys=this.input.keyboard?.addKeys("W,A,S,D,UP,DOWN,LEFT,RIGHT,E,SPACE,Q");
-   this.cameras.main.setBackgroundColor("#211b20");
+   this.cameras.main.setBackgroundColor("#171318");
    this.cameras.main.centerOn(COLS*TILE/2,ROWS*TILE/2);
+   this.cameras.main.postFX.addVignette(0.5,0.48,0.78,0.16);
    this.fitCamera();
    this.scale.on("resize",()=>this.fitCamera());
   }
@@ -81,36 +82,72 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
 
   drawBackdrop(){
    const g=this.add.graphics();
-   g.fillStyle(0x1e181c).fillRect(0,0,COLS*TILE,ROWS*TILE);
-   g.fillStyle(0x31252b).fillRect(0,0,COLS*TILE,TILE);
-   g.fillStyle(0x241d22).fillRect(0,(ROWS-1)*TILE,COLS*TILE,TILE);
-   for(let i=0;i<9;i++){
-    g.fillStyle(i%2?0x3b2d34:0x44333a).fillRoundedRect(18+i*98,10,78,32,8);
-    g.lineStyle(2,0x5b4348,.7).strokeRoundedRect(18+i*98,10,78,32,8);
+   g.fillStyle(0x171318).fillRect(0,0,COLS*TILE,ROWS*TILE);
+   g.fillStyle(0x2a2027).fillRect(0,0,COLS*TILE,TILE);
+   g.fillStyle(0x211a20).fillRect(0,(ROWS-1)*TILE,COLS*TILE,TILE);
+   g.fillStyle(0x0d0b0e,.8).fillRect(TILE,TILE,(COLS-2)*TILE,10);
+
+   for(let i=0;i<11;i++){
+    const x=26+i*84;
+    g.fillStyle(i%2?0x46343d:0x523b45).fillRoundedRect(x,13,66,29,7);
+    g.lineStyle(2,0x73535f,.65).strokeRoundedRect(x,13,66,29,7);
+    g.fillStyle(i%3===0?0xffd36e:i%3===1?0x7dd0e8:0xf59ac2).fillCircle(x+9,27,2.5);
+    g.fillStyle(0xffffff,.08).fillRoundedRect(x+18,19,39,4,2);
    }
-   this.add.text(22,18,"KITCHEN // SERVICE",{
-    fontFamily:"Arial",fontSize:"12px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
-   }).setDepth(4);
+
+   const shelf=this.add.graphics().setDepth(2);
+   shelf.fillStyle(0x5d3b2e).fillRoundedRect(24,54,COLS*TILE-48,13,5);
+   shelf.fillStyle(0x2c2022).fillRect(31,67,COLS*TILE-62,5);
+   for(let i=0;i<12;i++){
+    const x=48+i*77;
+    shelf.fillStyle([0x8fd1e0,0xffd36e,0xf59ac2,0x9ed6a3][i%4],.85).fillCircle(x,49,7);
+    shelf.fillStyle(0xffffff,.25).fillCircle(x-2,47,2);
+   }
+
+   const sign=this.add.container(COLS*TILE-165,16).setDepth(5);
+   const plate=this.add.graphics();
+   plate.fillStyle(0x171318,.9).fillRoundedRect(0,0,135,31,9);
+   plate.lineStyle(2,0xffd36e,.45).strokeRoundedRect(0,0,135,31,9);
+   sign.add(plate);
+   sign.add(this.add.text(68,8,"SERVICE", {fontFamily:"Arial",fontSize:"9px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2}).setOrigin(.5));
+   sign.postFX.addBloom(0xffd36e,1,1,.35,.12,2);
+
+   this.add.text(22,19,"KITCHEN // SERVICE",{
+    fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
+   }).setDepth(6);
   }
 
   drawFloor(){
    const g=this.add.graphics();
-   g.fillStyle(C.floor).fillRect(TILE,TILE,(COLS-2)*TILE,(ROWS-2)*TILE);
+   g.fillStyle(0xdcc7a0).fillRect(TILE,TILE,(COLS-2)*TILE,(ROWS-2)*TILE);
    for(let y=1;y<ROWS-1;y++){
     for(let x=1;x<COLS-1;x++){
-     if((x+y)%2===0)g.fillStyle(C.floor2,.34).fillRect(x*TILE,y*TILE,TILE,TILE);
-     g.lineStyle(1,0x8b6d52,.16).strokeRect(x*TILE,y*TILE,TILE,TILE);
+     const alt=(x+y)%2===0;
+     g.fillStyle(alt?0xe8d7b5:0xd6bd92,.72).fillRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
+     g.lineStyle(1,0x8c6b4e,.18).strokeRect(x*TILE,y*TILE,TILE,TILE);
+     if((x*7+y*13)%9===0){
+      g.fillStyle(0xffffff,.13).fillCircle(x*TILE+14,y*TILE+18,2);
+      g.fillStyle(0x7f5d43,.09).fillCircle(x*TILE+36,y*TILE+35,2);
+     }
     }
    }
-   g.fillStyle(0x7e563e,.22).fillRect(TILE,TILE,(COLS-2)*TILE,8);
-   g.fillStyle(0x7e563e,.14).fillRect(TILE,(ROWS-1)*TILE-10,(COLS-2)*TILE,10);
+   g.fillStyle(0x7e563e,.22).fillRect(TILE,TILE,(COLS-2)*TILE,7);
+   g.fillStyle(0x7e563e,.15).fillRect(TILE,(ROWS-1)*TILE-10,(COLS-2)*TILE,10);
+   g.lineStyle(5,0x6e4938,.42).strokeRect(TILE+3,TILE+3,(COLS-2)*TILE-6,(ROWS-2)*TILE-6);
+
+   const runner=this.add.graphics().setDepth(1);
+   runner.fillStyle(0x8d6a49,.13).fillRoundedRect(6*TILE,6*TILE,6*TILE,2*TILE,18);
+   runner.lineStyle(2,0xffffff,.08).strokeRoundedRect(6*TILE+2,6*TILE+2,6*TILE-4,2*TILE-4,16);
   }
 
   stationBox(x:number,y:number,w:number,h:number,color:number){
    const g=this.add.graphics();
-   g.fillStyle(C.shadow,.18).fillRoundedRect(x-w/2+4,y-h/2+6,w,h,8);
+   g.fillStyle(C.shadow,.22).fillRoundedRect(x-w/2+5,y-h/2+7,w,h,9);
+   g.fillStyle(0x2d2528,.25).fillRoundedRect(x-w/2-2,y-h/2-2,w+4,h+4,10);
    g.fillStyle(color).fillRoundedRect(x-w/2,y-h/2,w,h,8);
-   g.lineStyle(2,0x2c2428,.75).strokeRoundedRect(x-w/2,y-h/2,w,h,8);
+   g.fillStyle(0xffffff,.12).fillRoundedRect(x-w/2+5,y-h/2+4,w-10,7,4);
+   g.lineStyle(2,0x2c2428,.82).strokeRoundedRect(x-w/2,y-h/2,w,h,8);
+   g.lineStyle(1,0xffffff,.22).strokeRoundedRect(x-w/2+3,y-h/2+3,w-6,h-6,6);
    return g;
   }
 
@@ -335,7 +372,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    if(!this.nearest){this.stationLabel.setVisible(false);return;}
    const s=STATIONS.find(v=>v.id===this.nearest);if(!s)return;
    const x=(s.x+.5)*TILE,y=(s.y+.5)*TILE;
-   this.focusRing.lineStyle(3,C.accent,.85).strokeRoundedRect(x-24,y-24,48,48,10);
+   this.focusRing.lineStyle(5,0x1c1518,.22).strokeRoundedRect(x-27,y-27,54,54,12);
+   this.focusRing.lineStyle(3,C.accent,.92).strokeRoundedRect(x-24,y-24,48,48,10);
+   this.focusRing.fillStyle(C.accent,.045).fillRoundedRect(x-22,y-22,44,44,9);
    this.stationLabel.setPosition(x,y-38).setText(s.label??"AÇÃO").setVisible(true);
   }
 
