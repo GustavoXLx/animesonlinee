@@ -1,6 +1,6 @@
 import { makeVoiceFx, FX_LEVELS, type VoiceFx } from "./voiceFx";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Phone, PhoneOff, Mic, MicOff, Minimize2, Maximize2, Volume2, Volume1 } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Minimize2, Maximize2, Volume2, Volume1, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { setCallActive } from "@/lib/panic";
 
