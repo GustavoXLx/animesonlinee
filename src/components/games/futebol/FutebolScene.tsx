@@ -561,8 +561,8 @@ function Game(p: SceneProps) {
       target.set(sx * 0.5, 1.0, sz * 0.5);
       fov = 55;
     } else {
-      want.set(sx, 0, sz).addScaledVector(dir.d, -6.2).addScaledVector(dir.perp, 0.9);
-      want.y = p.mode === "falta" ? 2.6 : 2.0;
+      want.set(sx, 0, sz).addScaledVector(dir.d, -6.4).addScaledVector(dir.perp, -1.5);
+      want.y = p.mode === "falta" ? 3.0 : 2.5;
       target.set(0, 1.25, 0);
       if (sol && tk > 0) {
         const k = Math.min(1, tk / (sol.flight + 0.3));
