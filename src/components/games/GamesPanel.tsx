@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   X,
   Sparkles,
+  Eye,
   Grid3x3,
   Hand,
   ArrowLeft,
@@ -30,6 +31,7 @@ import { GameChat } from "./GameChat";
 import { SPECTRA_EXTRA } from "./sintoniaExtra";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
 import { Leilao } from "./Leilao";
+import { Impostor } from "./Impostor";
 
 type GameKey =
   | "sintonia"
@@ -47,7 +49,8 @@ type GameKey =
   | "embraza"
   | "futebol"
   | "desfile"
-  | "cozinha";
+  | "cozinha"
+  | "impostor";
 
 const GAMES: {
   key: GameKey;
@@ -56,6 +59,13 @@ const GAMES: {
   icon: React.ComponentType<{ size?: number }>;
   gradient: string;
 }[] = [
+  {
+    key: "impostor",
+    name: "Impostor",
+    desc: "5 jogadores, 1 impostor e 3 rodadas de pistas",
+    icon: Eye,
+    gradient: "from-violet-500 to-fuchsia-600",
+  },
   {
     key: "cozinha",
     name: "Cozinha a Dois",
@@ -243,6 +253,7 @@ export function GamesPanel({
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}
           {active === "verdade" && <VerdadeDesafio me={me} />}
+          {active === "impostor" && <Impostor me={me} />}
           {active === "leilao" && <Leilao me={me} />}
           {active === "stop" && <Stop me={me} />}
           {active === "quemsoueu" && <QuemSouEu me={me} />}
