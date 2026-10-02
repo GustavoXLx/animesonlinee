@@ -642,14 +642,14 @@ function Face({ l }: { l: Look }) {
       {(l.face === "mustache" || l.face === "beard") && (
         <group position={[0, -0.04, z + 0.004]}>
           {[-1, 1].map((s) => (
-            <mesh key={s} geometry={cap(0.0085, 0.03)} material={hairMat(l.hairC)} position={[s * 0.02, -0.002, 0]} rotation={[0, s * 0.35, s * (Math.PI / 2 - 0.32)]} />
+            <mesh key={s} geometry={cap(0.0085, 0.03)} material={hairMat(l.hairC)} position={[s * 0.022, 0, 0]} rotation={[0, 0, s * (Math.PI / 2 - 0.14)]} />
           ))}
         </group>
       )}
       {l.face === "beard" && (
         <group>
           {[0.12, Math.PI / 2 + 0.42].map((ps) => (
-            <mesh key={ps} geometry={geo(`beard${ps}`, () => new THREE.SphereGeometry(R * 1.035, 12, 8, ps, Math.PI / 2 - 0.54, 1.62, Math.PI - 1.62 - 0.22))} material={hairMat(l.hairC)} />
+            <mesh key={ps} geometry={geo(`beard${ps}`, () => new THREE.SphereGeometry(R * 1.035, 12, 8, ps, Math.PI / 2 - 0.54, 1.5, Math.PI - 1.5 - 0.2))} material={hairMat(l.hairC)} />
           ))}
           <mesh geometry={geo("beardChin", () => new THREE.SphereGeometry(R * 1.045, 10, 6, Math.PI / 2 - 0.44, 0.88, 2.2, Math.PI - 2.2 - 0.22))} material={hairMat(l.hairC)} />
         </group>
