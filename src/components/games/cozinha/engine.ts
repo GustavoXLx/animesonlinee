@@ -83,6 +83,9 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
 
     create() {
       this.cameras.main.setBackgroundColor(0x241c22);
+      this.fitKitchenToScreen();
+      this.scale.on("resize", this.fitKitchenToScreen, this);
+      this.events.once("shutdown", () => this.scale.off("resize", this.fitKitchenToScreen, this));
       this.drawRoom();
       this.drawStations();
       this.highlightGfx = this.add.rectangle(0, 0, TILE - 4, TILE - 4, COLORS.cream, 0.08)
@@ -95,6 +98,14 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         if (remoteBuf.length > 8) remoteBuf.shift();
       });
       this.events.once("shutdown", unsubPos);
+    }
+
+    fitKitchenToScreen() {
+      const width = this.scale.width;
+      const height = this.scale.height;
+      const zoom = Math.min(width / (COLS * TILE), height / (ROWS * TILE));
+      this.cameras.main.setZoom(zoom);
+      this.cameras.main.centerOn((COLS * TILE) / 2, (ROWS * TILE) / 2);
     }
 
     drawRoom() {
@@ -452,13 +463,13 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
   const config: PhaserType.Types.Core.GameConfig = {
     type: Phaser.WEBGL,
     parent: container,
-    width: COLS * TILE,
-    height: ROWS * TILE,
+    width: container.clientWidth || COLS * TILE,
+    height: container.clientHeight || ROWS * TILE,
     backgroundColor: "#241c22",
     transparent: false,
     antialias: true,
     render: { antialias: true, roundPixels: true, powerPreference: "high-performance" },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
     fps: { target: 120, min: 45, forceSetTimeOut: false },
     scene: Scene,
   };

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CookingPot, Gauge, Pause, Play, RotateCcw } from "lucide-react";
+import { Check, CookingPot, Gauge, Pause, Play, RotateCcw, X } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
 import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld } from "./recipes";
@@ -55,7 +55,7 @@ function initialShared(): SharedState {
   };
 }
 
-export function Cozinha({ me }: { me: Me }) {
+export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   const { state, setState, peerOnline, sendEvent, onEvent } = useGameChannel<SharedState>(
     "cozinha",
     me,
@@ -323,7 +323,10 @@ export function Cozinha({ me }: { me: Me }) {
   // ============ telas ============
   if (!localReady) {
     return (
-      <LandscapeGate><div className="h-full overflow-y-auto flex flex-col items-center justify-center gap-4 p-4 text-center bg-background">
+      <LandscapeGate><div className="fixed inset-0 h-dvh w-screen overflow-y-auto flex flex-col items-center justify-center gap-4 p-4 text-center bg-background">
+        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="absolute left-2 top-2 z-20 rounded-md bg-background/80 p-2 text-foreground border border-border">
+          <X size={18} />
+        </button>
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-primary">Cozinha a Dois</p>
           <h3 className="mt-1 text-2xl font-black text-foreground">Prepare seu cozinheiro</h3>
@@ -363,7 +366,10 @@ export function Cozinha({ me }: { me: Me }) {
 
   if (state.stage === "espera" || !peerOnline) {
     return (
-      <LandscapeGate><div className="h-full flex flex-col items-center justify-center p-8 text-center bg-background">
+      <LandscapeGate><div className="fixed inset-0 h-dvh w-screen flex flex-col items-center justify-center p-8 text-center bg-background">
+        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="absolute left-2 top-2 z-20 rounded-md bg-background/80 p-2 text-foreground border border-border">
+          <X size={18} />
+        </button>
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
           <CookingPot className="text-primary" />
         </div>
@@ -377,7 +383,10 @@ export function Cozinha({ me }: { me: Me }) {
 
   if (state.stage === "fim") {
     return (
-      <LandscapeGate><div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center bg-background">
+      <LandscapeGate><div className="fixed inset-0 h-dvh w-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-background">
+        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="absolute left-2 top-2 z-20 rounded-md bg-background/80 p-2 text-foreground border border-border">
+          <X size={18} />
+        </button>
         <p className="text-xs uppercase tracking-[0.3em] text-primary">Fim do turno</p>
         <p className="text-3xl font-black text-foreground">{world.score} pontos</p>
         <p className="text-lg text-muted-foreground max-w-sm">{endMessage}</p>
@@ -390,11 +399,14 @@ export function Cozinha({ me }: { me: Me }) {
 
   // jogando / pausa
   return (
-    <LandscapeGate><div className="relative h-full w-full bg-background select-none overflow-hidden touch-none">
-      <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
+    <LandscapeGate><div className="fixed inset-0 h-dvh w-screen bg-neutral-950 select-none overflow-hidden touch-none">
+      <div ref={containerRef} className="absolute inset-0 h-full w-full overflow-hidden bg-neutral-950 [&>canvas]:block" />
 
       {/* topo: pausa + fps */}
       <div className="absolute top-2 right-2 flex gap-2 z-20">
+        <button type="button" onClick={onExit} aria-label="Sair da cozinha" className="bg-background/80 text-foreground rounded-md p-1.5 border border-border">
+          <X size={15} />
+        </button>
         <button
           onClick={() => setShowFps((v) => !v)}
           aria-label="Mostrar desempenho"
@@ -440,7 +452,7 @@ export function Cozinha({ me }: { me: Me }) {
         onPointerUp={handleJoyEnd}
         onPointerCancel={handleJoyEnd}
         onPointerLeave={handleJoyEnd}
-        className="absolute left-5 bottom-5 w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none md:hidden backdrop-blur-sm grid place-items-center"
+        className="absolute left-[max(1.25rem,env(safe-area-inset-left))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none backdrop-blur-sm grid place-items-center"
       ><div ref={joyKnobRef} className="w-11 h-11 rounded-full bg-foreground/65 shadow-lg pointer-events-none transition-transform duration-75" /></div>
 
       {/* botão de ação (mobile) */}
@@ -448,7 +460,7 @@ export function Cozinha({ me }: { me: Me }) {
         onPointerDown={handleActDown}
         onPointerUp={handleActUp}
         onPointerCancel={handleActUp}
-        className="absolute right-5 bottom-5 w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
+        className="absolute right-[max(1.25rem,env(safe-area-inset-right))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
       >
         {actionLabel}
       </button>
