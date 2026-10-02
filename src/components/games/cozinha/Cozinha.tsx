@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X } from "lucide-react";
+import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X, Clock3 } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
 import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld } from "./recipes";
@@ -568,6 +568,33 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   return (
     <LandscapeGate><div className="fixed inset-0 h-dvh w-screen bg-neutral-950 select-none overflow-hidden touch-none">
       <div ref={containerRef} className="absolute inset-0 h-full w-full overflow-hidden bg-neutral-950 [&>canvas]:block" />
+
+      <div className="pointer-events-none absolute left-1/2 top-2 z-20 w-[min(92vw,900px)] -translate-x-1/2">
+        <div className="flex items-start gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {world.orders.length === 0 ? (
+            <div className="mx-auto rounded-2xl border border-white/10 bg-black/55 px-5 py-2.5 text-center text-[11px] font-black uppercase tracking-[0.18em] text-white/60 shadow-xl backdrop-blur-md">
+              Aguardando próximo pedido…
+            </div>
+          ) : world.orders.map((order) => {
+            const ratio = Math.max(0, Math.min(1, 1 - (Date.now() - order.bornAt) / order.patienceMs));
+            const ingredients = RECIPE_NEEDS[order.dish].map((item) => ITEM_LABEL[item] ?? item);
+            return (
+              <div key={order.id} className="min-w-[190px] rounded-2xl border border-white/15 bg-[#fff9ee]/95 px-3 py-2 text-left text-slate-900 shadow-2xl backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-xl bg-amber-100 px-2 py-1 text-[10px] font-black uppercase">{DISH_LABEL[order.dish]}</div>
+                  <div className="ml-auto flex items-center gap-1 text-[9px] font-black text-slate-500"><Clock3 size={11} /> {Math.ceil((order.patienceMs - (Date.now() - order.bornAt)) / 1000)}s</div>
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {ingredients.map((item) => <span key={item} className="rounded-md bg-slate-900/8 px-1.5 py-0.5 text-[9px] font-bold">{item}</span>)}
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                  <div className={`h-full rounded-full ${ratio > 0.5 ? "bg-emerald-500" : ratio > 0.2 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${ratio * 100}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* topo: pausa + fps */}
       <div className="absolute top-2 right-2 flex gap-2 z-20">
