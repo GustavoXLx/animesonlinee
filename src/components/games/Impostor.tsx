@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { Eye, EyeOff, MessageCircle, RotateCcw, Shield, Skull, Sparkles, Users, Vote, Check, Clock3, Play, LockKeyhole, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Check,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Play,
+  RotateCcw,
+  Shield,
+  Skull,
+  UserCheck,
+  Users,
+  Vote,
+} from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 
 type Player = "gu" | "li" | "cpu1" | "cpu2" | "cpu3";
@@ -8,672 +20,553 @@ type Phase = "lobby" | "cards" | "round" | "vote" | "result";
 type Theme = {
   name: string;
   items: string[];
-  clues: string[];
 };
-
-const THEMES: Theme[] = [
-  { name:"Comidas", items:["Pizza","Hambúrguer","Sushi","Lasanha","Pudim","Coxinha"], clues:["aparece em refeições","é comum em restaurantes","tem várias versões","pode ser servido quente","é conhecido por muita gente","combina com diferentes acompanhamentos"] },
-  { name:"Países", items:["Brasil","Japão","Itália","França","Egito","Canadá"], clues:["é destino de viagem","tem uma cultura marcante","tem culinária própria","possui lugares famosos","tem símbolos conhecidos","é associado a uma região do mundo"] },
-  { name:"Animais", items:["Leão","Golfinho","Elefante","Pinguim","Cachorro","Girafa"], clues:["é conhecido por muita gente","tem características físicas marcantes","vive em um ambiente específico","aparece bastante em documentários","tem um comportamento característico","pode ser visto em zoológicos ou na natureza"] },
-  { name:"Cidades", items:["Paris","Tóquio","Nova York","Rio de Janeiro","Londres","Dubai"], clues:["é muito visitada","tem pontos turísticos famosos","tem uma identidade visual própria","tem regiões bastante conhecidas","aparece em filmes e viagens","recebe pessoas do mundo todo"] },
-  { name:"Esportes", items:["Futebol","Basquete","Tênis","Vôlei","Boxe","Natação"], clues:["tem regras próprias","pode ser praticado profissionalmente","exige treino","tem competições","tem atletas famosos","pode ser acompanhado pela televisão"] },
-  { name:"Profissões", items:["Médico","Professor","Chef","Bombeiro","Piloto","Fotógrafo"], clues:["exige habilidades específicas","pode virar carreira","tem rotina própria","pode exigir formação","é conhecido por sua função","pode trabalhar com outras pessoas"] },
-  { name:"Filmes e séries", items:["Comédia","Terror","Ação","Romance","Ficção científica","Animação"], clues:["é um tipo de produção audiovisual","pode ter personagens marcantes","pode prender a atenção","tem fãs específicos","pode aparecer no cinema ou streaming","tem elementos característicos"] },
-  { name:"Tecnologia", items:["Celular","Notebook","Videogame","Drone","Robô","Smartwatch"], clues:["usa tecnologia","faz parte da vida moderna","pode ter bateria","tem funções diferentes","pode receber atualizações","é encontrado em lojas de eletrônicos"] },
-  { name:"Casa", items:["Sofá","Geladeira","Cama","Chuveiro","Televisão","Micro-ondas"], clues:["fica dentro de casa","tem uso frequente","faz parte da rotina","tem diferentes modelos","pode ser encontrado em lojas","facilita alguma tarefa do dia a dia"] },
-  { name:"Praia", items:["Guarda-sol","Areia","Prancha","Biquíni","Quente","Protetor solar"], clues:["combina com dias de sol","é associado ao litoral","pode aparecer durante férias","faz parte de um passeio","é comum no verão","pode ficar exposto ao sol"] },
-  { name:"Escola", items:["Prova","Caderno","Mochila","Professor","Recreio","Lápis"], clues:["faz parte da rotina escolar","é comum entre estudantes","pode aparecer em uma sala","está ligado ao aprendizado","tem relação com aulas","é conhecido por crianças e adolescentes"] },
-  { name:"Viagem", items:["Avião","Hotel","Passaporte","Mala","Aeroporto","Mapa"], clues:["aparece antes ou durante uma viagem","ajuda no deslocamento","pode fazer parte do planejamento","é comum em férias","tem relação com destinos","pode ser encontrado em uma viagem internacional"] },
-  { name:"Natureza", items:["Montanha","Cachoeira","Floresta","Vulcão","Deserto","Rio"], clues:["existe na natureza","pode ser cenário de viagem","tem paisagens marcantes","pode ser fotografado","tem relação com geografia","pode ocupar uma grande área"] },
-  { name:"Música", items:["Violão","Piano","Bateria","Microfone","Show","Cantor"], clues:["tem relação com música","pode aparecer em apresentações","pode fazer parte de uma banda","é reconhecido pelo público","pode envolver som ao vivo","faz parte do universo musical"] },
-  { name:"Moda", items:["Vestido","Tênis","Jaqueta","Bolsa","Boné","Óculos"], clues:["faz parte de um look","tem diferentes estilos","pode mudar conforme a ocasião","é vendido em lojas","pode ter várias cores","é usado para compor visual"] },
-  { name:"Transporte", items:["Carro","Ônibus","Metrô","Navio","Bicicleta","Motocicleta"], clues:["serve para deslocamento","pode levar pessoas","tem diferentes modelos","é usado no dia a dia","pode fazer parte de uma viagem","tem relação com mobilidade"] },
-  { name:"Festas", items:["Aniversário","Casamento","Carnaval","Réveillon","Balada","Formatura"], clues:["reúne pessoas","pode ter música","costuma ter decoração","pode envolver comida","é uma ocasião especial","pode gerar muitas fotos"] },
-  { name:"Objetos", items:["Chave","Relógio","Óculos","Guarda-chuva","Tesoura","Mochila"], clues:["é um objeto físico","pode ser carregado","tem uma função específica","é encontrado em casas","pode ser usado diariamente","tem diferentes modelos"] },
-  { name:"Doces", items:["Chocolate","Sorvete","Brigadeiro","Bolo","Donut","Picolé"], clues:["é associado a sobremesa","tem sabor doce","pode aparecer em festas","tem várias versões","é vendido em muitos lugares","costuma ser uma opção de sobremesa"] },
-  { name:"Super-heróis", items:["Herói","Vilão","Máscara","Capa","Poder","Quartel"], clues:["aparece em histórias","tem elementos marcantes","pode envolver batalhas","tem fãs de várias idades","pode aparecer em filmes","faz parte de um universo fictício"] },
-];
-
-const PLAYERS: Player[] = ["gu","li","cpu1","cpu2","cpu3"];
-const CPU_NAMES: Record<Player,string> = { gu:"Você", li:"BB Li", cpu1:"Alex", cpu2:"Nina", cpu3:"Theo" };
-const CPU_COLORS: Record<Player,string> = { gu:"from-pink-500 to-rose-500", li:"from-cyan-400 to-blue-500", cpu1:"from-violet-500 to-indigo-500", cpu2:"from-amber-400 to-orange-500", cpu3:"from-emerald-400 to-teal-500" };
 
 type ImpState = {
   phase: Phase;
   seed: number;
   themeIndex: number;
   round: number;
+  ready: Record<Me, boolean>;
+  seenCard: Record<Me, boolean>;
   clues: Record<Player, string[]>;
+  clueSubmitted: Record<Me, boolean>;
   votes: Record<Player, Player | null>;
-  ready: Record<"gu" | "li", boolean>;
   voteDone: Player[];
 };
 
-const initial: ImpState = {
-  phase:"lobby",
-  seed:0,
-  themeIndex:0,
-  round:0,
-  clues:{ gu:[], li:[], cpu1:[], cpu2:[], cpu3:[] },
-  votes:{ gu:null, li:null, cpu1:null, cpu2:null, cpu3:null },
-  ready:{ gu:false, li:false },
-  voteDone:[],
+const PLAYERS: Player[] = ["gu", "li", "cpu1", "cpu2", "cpu3"];
+const CPU_NAMES: Record<Player, string> = {
+  gu: "Você",
+  li: "BB Li",
+  cpu1: "Alex",
+  cpu2: "Nina",
+  cpu3: "Theo",
 };
 
-const WORD_HINTS: Record<string, string> = {
-  Pizza:"É redonda e costuma levar queijo por cima.", Hambúrguer:"É montado em camadas e costuma ir dentro de um pão.",
-  Sushi:"É pequeno, geralmente servido em pedaços e tem origem japonesa.", Lasanha:"É feita em camadas e costuma levar molho e queijo.",
-  Pudim:"É uma sobremesa macia, moldada e normalmente servida gelada.", Coxinha:"É um salgado de massa recheado, muito comum em festas.",
-  Brasil:"Tem uma grande faixa litorânea e é conhecido por suas cores verde e amarelo.", Japão:"É um país insular conhecido por tecnologia e cultura tradicional.",
-  Itália:"É famosa por sua culinária e por cidades históricas.", França:"É conhecida por sua gastronomia, arte e monumentos.",
-  Egito:"É muito associado às pirâmides e ao rio Nilo.", Canadá:"É conhecido pelo frio, grandes áreas naturais e uma folha em sua bandeira.",
-  Leão:"É um grande felino conhecido pela juba.", Golfinho:"É um animal marinho conhecido por sua inteligência.",
-  Elefante:"É um animal muito grande, com tromba e grandes orelhas.", Pinguim:"É uma ave que não voa e está muito ligada a regiões frias.",
-  Cachorro:"É um animal doméstico conhecido por ser companheiro das pessoas.", Girafa:"É um animal alto, com pescoço muito comprido.",
-  Paris:"É uma cidade europeia famosa por sua torre mais conhecida.", Tóquio:"É uma enorme cidade asiática conhecida por tecnologia e movimento.",
-  "Nova York":"É uma cidade com arranha-céus e uma famosa praça cheia de luzes.", "Rio de Janeiro":"É uma cidade brasileira conhecida por praias e uma grande estátua no alto.",
-  Londres:"É uma capital europeia conhecida por ônibus de dois andares e um grande relógio.", Dubai:"É uma cidade conhecida por construções muito altas e luxo.",
-  Futebol:"É jogado com uma bola e dois times tentando marcar gols.", Basquete:"É jogado em uma quadra e envolve arremessos em uma cesta.",
-  Tênis:"É disputado com raquete e uma rede dividindo os lados.", Vôlei:"É jogado com uma rede alta e uma bola que não pode tocar o chão.",
-  Boxe:"É uma luta em que os competidores usam luvas.", Natação:"É um esporte praticado dentro da água.",
-  Médico:"É um profissional que cuida da saúde das pessoas.", Professor:"É um profissional ligado ao ensino e à aprendizagem.",
-  Chef:"É um profissional especializado em preparar e comandar uma cozinha.", Bombeiro:"É um profissional treinado para combater incêndios e fazer resgates.",
-  Piloto:"É quem conduz uma aeronave durante um voo.", Fotógrafo:"É um profissional que trabalha registrando imagens.",
-  Comédia:"É um gênero feito para provocar humor e diversão.", Terror:"É um gênero que busca provocar medo e tensão.",
-  Ação:"É um gênero conhecido por perseguições, lutas e cenas intensas.", Romance:"É um gênero que costuma colocar relacionamentos no centro da história.",
-  "Ficção científica":"É um gênero que costuma explorar tecnologia, espaço ou futuros possíveis.", Animação:"É um formato em que personagens e cenários são criados quadro a quadro.",
-  Celular:"É um aparelho portátil usado para comunicação e vários aplicativos.", Notebook:"É um computador portátil que pode ser levado de um lugar para outro.",
-  Videogame:"É um aparelho ou sistema usado para jogar jogos eletrônicos.", Drone:"É um equipamento voador controlado remotamente.",
-  Robô:"É uma máquina criada para executar tarefas automaticamente.", Smartwatch:"É um relógio que também possui funções digitais e aplicativos.",
-  Sofá:"É um móvel comprido usado principalmente para sentar ou deitar.", Geladeira:"É um eletrodoméstico usado para manter alimentos refrigerados.",
-  Cama:"É um móvel usado principalmente para dormir.", Chuveiro:"É usado para tomar banho com água caindo de cima.",
-  Televisão:"É um aparelho usado para assistir a programas e vídeos.", "Micro-ondas":"É um aparelho usado para aquecer alimentos rapidamente.",
-  "Guarda-sol":"É usado para criar sombra em locais abertos.", Areia:"É formada por muitos pequenos grãos e aparece bastante no litoral.",
-  Prancha:"É usada por quem quer deslizar sobre a água.", Biquíni:"É uma peça de roupa de banho formada por duas partes.",
-  Quente:"É uma característica associada a temperaturas elevadas.", "Protetor solar":"É usado para proteger a pele da exposição ao sol.",
-  Prova:"É uma atividade usada para avaliar o conhecimento de estudantes.", Caderno:"É usado para escrever e organizar anotações.",
-  Mochila:"É carregada nas costas e serve para transportar objetos.", Recreio:"É um intervalo comum na rotina escolar.",
-  Lápis:"É um instrumento usado para escrever e desenhar.", Avião:"É um meio de transporte que viaja pelo ar.",
-  Hotel:"É um lugar onde viajantes podem se hospedar.", Passaporte:"É um documento usado em viagens internacionais.",
-  Mala:"É usada para transportar roupas e objetos durante viagens.", Aeroporto:"É um local de embarque e desembarque de aviões.",
-  Mapa:"É usado para representar lugares e ajudar na localização.", Montanha:"É uma elevação natural de grande tamanho.",
-  Cachoeira:"É um trecho em que a água de um rio cai de uma altura.", Floresta:"É uma grande área coberta principalmente por árvores.",
-  Vulcão:"É uma formação geológica que pode liberar lava e gases.", Deserto:"É uma região muito seca, com pouca chuva.",
-  Rio:"É um curso natural de água que percorre uma determinada região.", Violão:"É um instrumento de cordas muito usado em músicas.",
-  Piano:"É um instrumento com teclas e muitas cordas internas.", Bateria:"É um conjunto de instrumentos de percussão tocado com baquetas.",
-  Microfone:"É usado para captar a voz e outros sons.", Show:"É uma apresentação feita para um público.", Cantor:"É uma pessoa que usa a voz como instrumento musical.",
-  Vestido:"É uma peça de roupa geralmente formada por uma parte única.", Tênis:"É um calçado muito usado no dia a dia.",
-  Jaqueta:"É uma peça usada principalmente na parte de cima do corpo.", Bolsa:"É usada para carregar objetos pessoais.",
-  Boné:"É um acessório usado na cabeça com uma aba na frente.", Óculos:"É um acessório usado diante dos olhos e pode corrigir a visão.",
-  Carro:"É um veículo comum usado para transportar pessoas.", Ônibus:"É um veículo grande que transporta vários passageiros.",
-  Metrô:"É um transporte coletivo que circula principalmente por trilhos.", Navio:"É um grande meio de transporte que viaja pela água.",
-  Bicicleta:"É um veículo de duas rodas movido principalmente por pedais.", Motocicleta:"É um veículo de duas rodas equipado com motor.",
-  Aniversário:"É uma comemoração que acontece todos os anos na mesma data.", Casamento:"É uma celebração ligada à união de duas pessoas.",
-  Carnaval:"É uma festa conhecida por música, fantasias e desfiles.", Réveillon:"É uma celebração que marca a chegada de um novo ano.",
-  Balada:"É uma festa noturna geralmente ligada a música e dança.", Formatura:"É uma cerimônia que marca a conclusão de uma etapa de estudos.",
-  Chave:"É pequena e costuma ser usada para abrir ou fechar algo.", Relógio:"É usado para indicar as horas.",
-  Tesoura:"É um objeto com duas lâminas usado para cortar.", Chocolate:"É um doce feito principalmente a partir de cacau.",
-  Sorvete:"É uma sobremesa gelada e cremosa.", Brigadeiro:"É um doce brasileiro pequeno, geralmente feito com chocolate.",
-  Bolo:"É uma sobremesa assada muito comum em festas.", Donut:"É um doce geralmente redondo com um furo no centro.", Picolé:"É uma sobremesa congelada presa a um palito.",
-  Herói:"É um personagem que costuma proteger pessoas e enfrentar perigos.", Vilão:"É um personagem que normalmente se opõe ao protagonista.",
-  Máscara:"É usada para cobrir parte do rosto.", Capa:"É uma peça que pode ser usada sobre a roupa e aparece muito em personagens.",
-  Poder:"É uma habilidade extraordinária que um personagem pode possuir.", Quartel:"É um local que pode servir como base para um grupo de heróis.",
+const THEMES: Theme[] = [
+  { name: "Comidas", items: ["Pizza", "Hambúrguer", "Sushi", "Lasanha", "Pudim", "Coxinha"] },
+  { name: "Países", items: ["Brasil", "Japão", "Itália", "França", "Egito", "Canadá"] },
+  { name: "Animais", items: ["Leão", "Golfinho", "Elefante", "Pinguim", "Cachorro", "Girafa"] },
+  { name: "Cidades", items: ["Paris", "Tóquio", "Nova York", "Rio de Janeiro", "Londres", "Dubai"] },
+  { name: "Esportes", items: ["Futebol", "Basquete", "Tênis", "Vôlei", "Boxe", "Natação"] },
+  { name: "Tecnologia", items: ["Celular", "Notebook", "Videogame", "Drone", "Robô", "Smartwatch"] },
+  { name: "Casa", items: ["Sofá", "Geladeira", "Cama", "Chuveiro", "Televisão", "Micro-ondas"] },
+  { name: "Viagem", items: ["Avião", "Hotel", "Passaporte", "Mala", "Aeroporto", "Mapa"] },
+  { name: "Natureza", items: ["Montanha", "Cachoeira", "Floresta", "Vulcão", "Deserto", "Rio"] },
+  { name: "Música", items: ["Violão", "Piano", "Bateria", "Microfone", "Show", "Cantor"] },
+  { name: "Moda", items: ["Vestido", "Tênis", "Jaqueta", "Bolsa", "Boné", "Óculos"] },
+  { name: "Festas", items: ["Aniversário", "Casamento", "Carnaval", "Réveillon", "Balada", "Formatura"] },
+  { name: "Doces", items: ["Chocolate", "Sorvete", "Brigadeiro", "Bolo", "Donut", "Picolé"] },
+];
+
+const CLUES: Record<string, string[]> = {
+  Pizza: ["costuma ser dividida em fatias", "o queijo derretido chama atenção", "pode ter borda fina ou recheada"],
+  Hambúrguer: ["normalmente é montado em camadas", "o pão fica por fora do recheio", "pode receber vários complementos"],
+  Sushi: ["costuma ser servido em pedaços pequenos", "é muito associado à culinária japonesa", "pode levar arroz e ingredientes crus"],
+  Lasanha: ["é montada em várias camadas", "o molho aparece entre as camadas", "geralmente é servida em porções"],
+  Pudim: ["tem textura macia e cremosa", "costuma ter uma calda por cima", "normalmente é desenformado"],
+  Coxinha: ["tem formato parecido com uma gota", "o recheio tradicional é frango", "é muito comum em festas brasileiras"],
+  Brasil: ["é o maior país da América do Sul", "o português é a língua oficial", "a bandeira tem verde, amarelo, azul e branco"],
+  Japão: ["é formado por várias ilhas", "mistura tecnologia e tradições antigas", "a flor de cerejeira é um símbolo conhecido"],
+  Itália: ["Roma é a capital", "é muito associada a massas e pizzas", "tem formato parecido com uma bota no mapa"],
+  França: ["Paris é a capital", "a Torre Eiffel é um símbolo famoso", "é muito associada à gastronomia e à moda"],
+  Egito: ["o rio Nilo atravessa o país", "as pirâmides são um símbolo conhecido", "fica no nordeste da África"],
+  Canadá: ["a folha de bordo aparece na bandeira", "é conhecido por seus invernos rigorosos", "fica na América do Norte"],
+  Leão: ["o macho pode ter uma grande juba", "é um predador de grande porte", "vive em grupos"],
+  Golfinho: ["vive na água e precisa subir para respirar", "costuma viver em grupos", "é conhecido pela inteligência"],
+  Elefante: ["usa a tromba para pegar coisas", "tem enormes orelhas", "é um dos maiores animais terrestres"],
+  Pinguim: ["não consegue voar", "usa as asas para nadar", "é associado a regiões frias"],
+  Cachorro: ["tem olfato muito desenvolvido", "é um dos animais domésticos mais comuns", "existem muitas raças"],
+  Girafa: ["tem o pescoço extremamente comprido", "usa a língua para alcançar folhas", "é um animal muito alto"],
+  Paris: ["a Torre Eiffel é um cartão-postal", "fica às margens do rio Sena", "é muito ligada à arte e à moda"],
+  Tóquio: ["é a capital do Japão", "tem uma enorme rede ferroviária", "mistura bairros modernos e tradicionais"],
+  "Nova York": ["Manhattan é uma área muito conhecida", "tem muitos arranha-céus", "a Estátua da Liberdade fica na cidade"],
+  "Rio de Janeiro": ["o Cristo Redentor é um cartão-postal", "tem praias muito conhecidas", "o Pão de Açúcar fica na cidade"],
+  Londres: ["o Big Ben é um símbolo", "os ônibus vermelhos são famosos", "é a capital do Reino Unido"],
+  Dubai: ["é conhecida por construções muito altas", "fica nos Emirados Árabes Unidos", "é associada a luxo e arquitetura moderna"],
+  Futebol: ["dois times tentam marcar gols", "é jogado com uma bola", "tem onze jogadores de cada lado em campo"],
+  Basquete: ["envolve arremessos em uma cesta", "é jogado em uma quadra", "a bola é conduzida com as mãos"],
+  Tênis: ["é jogado com raquete", "uma rede divide os lados", "pode ser disputado individualmente ou em duplas"],
+  Vôlei: ["uma rede divide a quadra", "a bola não pode tocar o chão do próprio lado", "as equipes fazem rodízio"],
+  Boxe: ["os competidores usam luvas", "é uma modalidade de combate", "os golpes são feitos principalmente com as mãos"],
+  Natação: ["é praticada dentro da água", "há diferentes estilos", "pode ser disputada em piscinas"],
+  Celular: ["é portátil", "possui aplicativos", "é usado para comunicação"],
+  Notebook: ["é um computador portátil", "tem tela e teclado juntos", "pode ser levado para vários lugares"],
+  Videogame: ["é usado para jogar", "pode ter controle", "existem muitos gêneros diferentes"],
+  Drone: ["pode voar sem piloto dentro", "é controlado remotamente", "pode carregar uma câmera"],
+  Robô: ["é uma máquina programada", "pode executar tarefas", "pode ter sensores"],
+  Smartwatch: ["é usado no pulso", "tem funções digitais", "pode mostrar notificações"],
+  Sofá: ["é um móvel para sentar", "costuma ficar na sala", "pode acomodar várias pessoas"],
+  Geladeira: ["mantém alimentos refrigerados", "fica ligada na tomada", "tem portas e prateleiras"],
+  Cama: ["é usada para dormir", "fica normalmente no quarto", "pode ter colchão e travesseiro"],
+  Chuveiro: ["é usado durante o banho", "fica em uma área molhada", "libera água de cima"],
+  Televisão: ["tem uma tela", "pode transmitir programas", "é comum em salas"],
+  "Micro-ondas": ["aquece alimentos rapidamente", "tem uma porta", "possui um painel de controle"],
+  Avião: ["viaja pelo ar", "tem asas", "decola e pousa em aeroportos"],
+  Hotel: ["recebe viajantes", "oferece quartos", "pode ter recepção"],
+  Passaporte: ["é um documento", "é usado em viagens internacionais", "tem páginas para registros"],
+  Mala: ["serve para transportar roupas", "tem alça", "é comum em aeroportos"],
+  Aeroporto: ["recebe aviões", "tem áreas de embarque", "pode ter esteiras de bagagem"],
+  Mapa: ["ajuda na localização", "pode mostrar estradas", "representa lugares"],
+  Montanha: ["é uma grande elevação natural", "pode ter neve no topo", "é comum em paisagens"],
+  Cachoeira: ["tem água caindo de uma altura", "pode ficar em uma área de mata", "atrai visitantes"],
+  Floresta: ["tem muitas árvores", "abriga diversos animais", "pode ocupar uma área enorme"],
+  Vulcão: ["pode liberar lava", "é uma formação geológica", "pode ter uma cratera"],
+  Deserto: ["recebe pouca chuva", "pode ter grandes áreas de areia", "tem clima muito seco"],
+  Rio: ["é um curso natural de água", "pode atravessar cidades", "desemboca em outro corpo d'água"],
+  Violão: ["tem cordas", "pode ser tocado com palheta", "é muito usado em rodas de música"],
+  Piano: ["tem teclas", "é um instrumento grande", "pode aparecer em concertos"],
+  Bateria: ["é formada por peças de percussão", "pode ser tocada com baquetas", "marca o ritmo de músicas"],
+  Microfone: ["capta a voz", "é usado em apresentações", "pode ser conectado a caixas de som"],
+  Show: ["é uma apresentação para público", "pode ter música", "acontece em um palco"],
+  Cantor: ["usa a voz para se apresentar", "pode trabalhar com uma banda", "faz apresentações para público"],
+  Vestido: ["é uma peça de roupa", "pode ter vários estilos", "é usado em diferentes ocasiões"],
+  Tênis: ["é um tipo de calçado", "é usado no dia a dia", "pode ter sola de borracha"],
+  Jaqueta: ["é usada na parte de cima do corpo", "pode proteger do frio", "tem vários modelos"],
+  Bolsa: ["serve para carregar objetos", "pode ser usada no ombro", "tem muitos tamanhos"],
+  Boné: ["é usado na cabeça", "tem uma aba", "pode ter estampas"],
+  Óculos: ["fica diante dos olhos", "pode corrigir a visão", "também pode ser usado como acessório"],
+  Aniversário: ["acontece todos os anos", "costuma ter comemoração", "pode ter bolo"],
+  Casamento: ["é uma celebração", "pode reunir familiares", "costuma ter cerimônia"],
+  Carnaval: ["tem música e fantasias", "é famoso pelos desfiles", "atrai grandes multidões"],
+  Réveillon: ["marca a chegada de um novo ano", "é comemorado à noite", "pode ter fogos"],
+  Balada: ["costuma acontecer à noite", "tem música", "é ligada à dança"],
+  Formatura: ["marca o fim de uma etapa", "pode ter cerimônia", "reúne estudantes e familiares"],
+  Chocolate: ["é feito a partir de cacau", "pode ser ao leite ou amargo", "é uma sobremesa popular"],
+  Sorvete: ["é gelado", "pode ter vários sabores", "é servido em bolas ou porções"],
+  Brigadeiro: ["é um doce brasileiro", "leva chocolate", "costuma ser enrolado em pequenas porções"],
+  Bolo: ["é assado", "pode ter cobertura", "é comum em festas"],
+  Donut: ["tem formato circular", "pode ter cobertura", "tem um furo no centro"],
+  Picolé: ["é congelado", "tem um palito", "pode ter vários sabores"],
 };
 
-function impostorHint(seed:number, theme:Theme) {
-  const word = theme.items[wordIndex(seed, THEMES.indexOf(theme))];
-  return WORD_HINTS[word] ?? theme.clues[0];
-}
+const HINTS: Record<string, string> = {
+  Pizza: "Pense em algo redondo e que costuma ser servido em pedaços.",
+  Hambúrguer: "Pense em algo montado em camadas e envolto por pão.",
+  Sushi: "Pense em algo pequeno, japonês e servido em porções.",
+  Brasil: "Pense em um país grande da América do Sul.",
+  Japão: "Pense em um país de ilhas, tecnologia e tradição.",
+  Leão: "Pense em um grande felino.",
+  Golfinho: "Pense em um animal que vive no mar.",
+  Paris: "Pense em uma cidade europeia com uma torre muito famosa.",
+  Futebol: "Pense em um esporte com bola e gols.",
+  Celular: "Pense em um aparelho portátil cheio de aplicativos.",
+  Geladeira: "Pense em um eletrodoméstico ligado a alimentos frios.",
+  Avião: "Pense em um transporte que viaja pelo céu.",
+  Chocolate: "Pense em um doce feito com cacau.",
+};
 
-function hash(seed:number, salt:number) {
-  let x = (seed ^ (salt * 0x45d9f3b)) >>> 0;
+function hash(seed: number, salt: number) {
+  let x = (seed ^ Math.imul(salt, 0x45d9f3b)) >>> 0;
   x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
   x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
   return (x ^ (x >>> 16)) >>> 0;
 }
 
-function roleIndex(seed:number) {
-  return hash(seed, 71) % PLAYERS.length;
+function roleFor(seed: number) {
+  return PLAYERS[hash(seed, 71) % PLAYERS.length];
 }
 
-function themeIndex(seed:number) {
+function themeFor(seed: number) {
   return hash(seed, 113) % THEMES.length;
 }
 
-function wordIndex(seed:number, theme:number) {
-  return hash(seed, theme + 991) % THEMES[theme].items.length;
+function wordFor(seed: number, themeIndex: number) {
+  const theme = THEMES[themeIndex];
+  return theme.items[hash(seed, 991 + themeIndex) % theme.items.length];
 }
 
-function playerIsImpostor(seed:number, player:Player) {
-  return roleIndex(seed) === PLAYERS.indexOf(player);
-}
-
-function playerName(p:Player) {
-  return CPU_NAMES[p];
-}
-
-const CPU_CLUES: Record<string, string[]> = {
-  Pizza:["costuma ser dividida em fatias","o queijo derretido é uma característica marcante","pode ter borda recheada ou fina"],
-  Hambúrguer:["normalmente é montado em camadas","o pão fica por fora do recheio","pode levar queijo, molho e outros complementos"],
-  Sushi:["costuma ser servido em pedaços pequenos","é muito associado à culinária japonesa","pode levar arroz e ingredientes crus"],
-  Lasanha:["é montada em várias camadas","o molho aparece entre as camadas","geralmente é servida em porções cortadas"],
-  Pudim:["tem textura macia e cremosa","costuma ter uma calda por cima","normalmente é desenformado antes de servir"],
-  Coxinha:["tem formato que lembra uma gota","o recheio mais tradicional é frango","é um salgado muito comum em festas brasileiras"],
-  Brasil:["a bandeira tem verde, amarelo, azul e branco","é o maior país da América do Sul","o português é a língua oficial"],
-  Japão:["é formado por várias ilhas","a flor de cerejeira é um símbolo cultural conhecido","o país mistura tecnologia moderna e tradições antigas"],
-  Itália:["tem formato alongado no mapa da Europa","Roma é sua capital","é muito associada a massas e pizzas"],
-  França:["Paris é a capital","a Torre Eiffel é um de seus símbolos mais conhecidos","é muito associada à gastronomia e à moda"],
-  Egito:["o rio Nilo atravessa o país","as pirâmides são um símbolo mundialmente conhecido","fica no nordeste da África"],
-  Canadá:["a folha de bordo aparece na bandeira","é o segundo maior país do mundo em área","é conhecido por seus invernos rigorosos em várias regiões"],
-  Leão:["o macho pode ter uma juba grande","vive em grupos chamados alcateias","é um predador de grande porte"],
-  Golfinho:["vive na água e precisa subir para respirar","costuma viver em grupos","é conhecido por sua inteligência e comunicação"],
-  Elefante:["usa a tromba para pegar objetos e alimentos","tem enormes orelhas","é um dos maiores animais terrestres"],
-  Pinguim:["não consegue voar","usa as asas para nadar","é associado a regiões muito frias"],
-  Cachorro:["possui um olfato muito desenvolvido","é um dos animais domésticos mais comuns","muitas raças vivem próximas das pessoas"],
-  Girafa:["tem o pescoço extremamente comprido","usa a língua para alcançar folhas","é o animal terrestre mais alto"],
-  Paris:["a Torre Eiffel é um de seus cartões-postais","fica às margens do rio Sena","é conhecida como uma cidade ligada à moda e à arte"],
-  Tóquio:["é a capital do Japão","tem uma das redes ferroviárias urbanas mais movimentadas","mistura bairros tecnológicos com áreas tradicionais"],
-  "Nova York":["a Estátua da Liberdade fica na cidade","Manhattan é uma de suas áreas mais conhecidas","é famosa por seus arranha-céus"],
-  "Rio de Janeiro":["o Cristo Redentor fica no alto do Corcovado","a cidade tem praias como Copacabana","o Pão de Açúcar é um de seus cartões-postais"],
-  Londres:["o Big Ben é um de seus símbolos","os ônibus vermelhos são muito característicos","o rio Tâmisa atravessa a cidade"],
-  Dubai:["o Burj Khalifa fica na cidade","é conhecida por grandes construções modernas","fica nos Emirados Árabes Unidos"],
-  Futebol:["cada equipe tenta marcar colocando a bola no gol","os jogadores de linha não podem usar as mãos normalmente","uma partida costuma ter dois tempos"],
-  Basquete:["a pontuação acontece ao acertar uma cesta","a bola é conduzida principalmente com as mãos","as equipes atacam cestas em lados opostos da quadra"],
-  Tênis:["os jogadores usam raquetes","uma rede divide os dois lados da quadra","a pontuação usa termos como 15, 30 e 40"],
-  Vôlei:["a rede divide as duas equipes","cada lado tenta devolver a bola sem deixá-la cair","o saque inicia cada disputa de ponto"],
-  Boxe:["os competidores usam luvas acolchoadas","os golpes são direcionados principalmente com os punhos","as lutas são divididas em rounds"],
-  Natação:["as provas acontecem em piscinas ou águas abertas","existem estilos como crawl e costas","o objetivo é completar a distância no menor tempo"],
-  Médico:["pode usar estetoscópio em consultas","faz diagnósticos e acompanha tratamentos","pode trabalhar em hospitais e consultórios"],
-  Professor:["prepara aulas e atividades","trabalha diretamente com estudantes","costuma avaliar o aprendizado"],
-  Chef:["comanda ou organiza uma cozinha profissional","precisa dominar técnicas de preparo","pode criar e montar pratos"],
-  Bombeiro:["atua em incêndios e resgates","usa equipamentos de proteção","pode trabalhar em ocorrências de emergência"],
-  Piloto:["precisa controlar uma aeronave","acompanha instrumentos durante o voo","trabalha seguindo procedimentos de segurança"],
-  Fotógrafo:["trabalha com composição e iluminação","usa câmeras para registrar imagens","pode atuar em eventos, publicidade ou jornalismo"],
-  Comédia:["busca provocar risadas","costuma usar situações engraçadas","pode aparecer em filmes, séries ou apresentações"],
-  Terror:["costuma trabalhar com suspense e medo","pode usar sons para criar tensão","é comum encontrar cenários sombrios nesse gênero"],
-  Ação:["costuma ter perseguições e confrontos","pode envolver explosões e cenas intensas","heróis frequentemente enfrentam obstáculos físicos"],
-  Romance:["relações afetivas costumam estar no centro","conflitos amorosos são frequentes","pode terminar com uma aproximação ou separação do casal"],
-  "Ficção científica":["pode explorar viagens espaciais","tecnologias imaginárias aparecem com frequência","costuma brincar com futuros possíveis"],
-  Animação:["personagens podem ser desenhados ou modelados digitalmente","o movimento é criado quadro a quadro","não depende de atores filmados em cena"],
-  Celular:["cabe facilmente no bolso","tem tela sensível ao toque em muitos modelos","é usado para chamadas, mensagens e aplicativos"],
-  Notebook:["tem teclado integrado","possui uma tela dobrável sobre a base","pode funcionar longe de uma tomada por algum tempo"],
-  Videogame:["usa controles para interagir com jogos","pode ter partidas online","é ligado a telas para exibir a imagem"],
-  Drone:["é controlado remotamente","pode permanecer no ar usando hélices","é muito usado para captar imagens aéreas"],
-  Robô:["pode executar tarefas programadas","alguns possuem sensores para perceber o ambiente","pode ter movimentos automatizados"],
-  Smartwatch:["é usado no pulso","pode mostrar notificações do celular","alguns modelos monitoram atividades físicas"],
-  Sofá:["normalmente tem espaço para várias pessoas","fica geralmente na sala","pode ter almofadas e braços laterais"],
-  Geladeira:["mantém alimentos em baixa temperatura","possui uma porta ou mais","normalmente fica na cozinha"],
-  Cama:["tem colchão como parte principal","é usada principalmente durante o sono","pode ter cabeceira"],
-  Chuveiro:["fica normalmente acima da cabeça","libera água para o banho","pode ter controle de temperatura"],
-  Televisão:["tem uma tela grande para exibir imagens","pode receber canais ou aplicativos","normalmente fica voltada para quem está sentado"],
-  "Micro-ondas":["aquece comida em poucos minutos","possui uma porta na frente","costuma ter um painel de comandos"],
-  "Guarda-sol":["é usado para criar sombra","tem uma haste central","é comum em praias e áreas externas"],
-  Areia:["é formada por muitos grãos pequenos","pode ficar quente sob o sol","aparece em grande quantidade nas praias"],
-  Prancha:["é usada para deslizar sobre a água","normalmente precisa ser equilibrada com o corpo","pode ser usada para surfar"],
-  Biquíni:["é uma roupa de banho dividida em duas partes","é usado principalmente em praias e piscinas","pode ter diferentes estampas e modelos"],
-  Quente:["descreve algo com temperatura elevada","é uma sensação comum em dias de verão","é o oposto de frio"],
-  "Protetor solar":["é aplicado diretamente na pele","ajuda a proteger contra radiação ultravioleta","é muito usado antes de ficar exposto ao sol"],
-  Prova:["pode ter questões de múltipla escolha ou dissertativas","serve para avaliar o conhecimento","normalmente acontece em uma data marcada"],
-  Caderno:["tem páginas encadernadas","é usado para fazer anotações","pode ter linhas ou folhas em branco"],
-  Mochila:["é carregada nas costas","tem alças para os ombros","costuma guardar materiais e objetos"],
-  Recreio:["acontece entre períodos de aula","é um momento de pausa para estudantes","costuma acontecer no pátio ou em áreas comuns"],
-  Lápis:["pode ser apontado quando perde a ponta","usa grafite para escrever","também é muito usado para desenhar"],
-  Avião:["tem asas e motores","decola e pousa em aeroportos","transporta passageiros em grandes distâncias"],
-  Hotel:["oferece quartos para hóspedes","pode ter recepção e serviço de limpeza","é comum em destinos turísticos"],
-  Passaporte:["tem páginas para registros de viagem","é usado em deslocamentos internacionais","é emitido pelas autoridades de um país"],
-  Mala:["tem espaço para guardar roupas","pode ter rodinhas","é comum em viagens"],
-  Aeroporto:["tem pistas para pousos e decolagens","possui áreas de embarque","tem terminais para passageiros"],
-  Mapa:["pode mostrar ruas, países ou regiões","usa símbolos para representar lugares","ajuda a encontrar caminhos"],
-  Montanha:["possui uma elevação muito acima do terreno ao redor","pode ter neve no topo em algumas regiões","é comum encontrar trilhas em suas encostas"],
-  Cachoeira:["a água despenca de uma altura","pode formar uma piscina natural","é comum em regiões com rios e relevo acidentado"],
-  Floresta:["é dominada por árvores e vegetação","abriga muitos animais","pode ocupar grandes extensões de território"],
-  Vulcão:["pode liberar lava e cinzas","tem uma abertura por onde materiais podem sair","alguns ficam em áreas de encontro de placas tectônicas"],
-  Deserto:["recebe pouca chuva","pode ter grandes áreas de areia","as temperaturas podem variar bastante entre dia e noite"],
-  Rio:["a água corre por um leito","pode desaguar em outro rio, lago ou oceano","pode atravessar cidades e áreas rurais"],
-  Violão:["tem cordas e um corpo oco","é tocado com as mãos","é muito usado para acompanhar cantores"],
-  Piano:["tem teclas pretas e brancas","produz som por meio de cordas internas","pode ser encontrado em salas de concerto"],
-  Bateria:["é formada por vários tambores e pratos","é tocada principalmente com baquetas","marca o ritmo de muitas bandas"],
-  Microfone:["capta a voz para amplificação ou gravação","é comum em palcos","pode ficar preso a um pedestal"],
-  Show:["acontece diante de um público","pode ter iluminação de palco","normalmente envolve uma apresentação musical ou artística"],
-  Cantor:["usa a voz como instrumento","pode se apresentar acompanhado por uma banda","precisa trabalhar respiração e afinação"],
-  Vestido:["é uma peça geralmente de uma só estrutura","pode ser longo ou curto","é usado em ocasiões casuais ou formais"],
-  Jaqueta:["cobre a parte superior do corpo","pode ter zíper ou botões","é comum em dias frios ou de vento"],
-  Bolsa:["serve para carregar objetos pessoais","pode ser usada no ombro ou na mão","existem modelos grandes e pequenos"],
-  Boné:["tem uma aba na parte da frente","é usado na cabeça","é comum em looks esportivos e casuais"],
-  Óculos:["ficam apoiados sobre o nariz e as orelhas","podem ter lentes para corrigir a visão","também existem modelos usados apenas como acessório"],
-  Carro:["normalmente tem quatro rodas","possui volante para direção","pode transportar algumas pessoas no interior"],
-  Ônibus:["transporta muitos passageiros","costuma ter várias fileiras de bancos","circula por rotas definidas nas cidades"],
-  Metrô:["circula sobre trilhos","transporta muitos passageiros por viagem","muitas linhas passam por túneis"],
-  Navio:["é construído para navegar na água","pode transportar cargas ou passageiros","possui um casco de grande porte"],
-  Bicicleta:["tem duas rodas","é movida principalmente por pedais","usa guidão para mudar de direção"],
-  Motocicleta:["tem duas rodas e motor","é conduzida com guidão","normalmente exige capacete para o condutor"],
-  Aniversário:["é celebrado uma vez por ano para cada pessoa","pode ter bolo e velas","a data é ligada ao nascimento"],
-  Casamento:["costuma reunir familiares e amigos","pode ter uma cerimônia","é associado à união de um casal"],
-  Carnaval:["pode ter desfiles e blocos","fantasias são muito comuns","no Brasil é marcado por música e dança"],
-  Réveillon:["acontece na virada do ano","muitas pessoas fazem contagem regressiva","fogos de artifício são comuns em algumas celebrações"],
-  Balada:["normalmente acontece à noite","costuma ter música alta","pode ter pista de dança"],
-  Formatura:["marca a conclusão de uma etapa de estudos","pode ter cerimônia e entrega de certificados","é comum usar roupas formais na celebração"],
-  Chave:["tem dentes ou ranhuras em muitos modelos","é usada para abrir fechaduras","pode ser presa a um chaveiro"],
-  Relógio:["tem mostrador ou tela","é usado no pulso ou em paredes","serve para acompanhar a passagem das horas"],
-  "Guarda-chuva":["abre para formar uma cobertura","é carregado pela haste","protege da chuva"],
-  Tesoura:["tem duas lâminas que se cruzam","possui duas alças para os dedos","é usada para cortar materiais"],
-  Chocolate:["é produzido a partir do cacau","pode ser ao leite, amargo ou branco","derrete quando aquecido"],
-  Sorvete:["é servido congelado","pode ter muitos sabores","começa a derreter fora do congelador"],
-  Brigadeiro:["é um doce brasileiro","costuma levar leite condensado e chocolate","normalmente é enrolado em pequenas porções"],
-  Bolo:["é assado em forno","pode receber cobertura","é comum em comemorações"],
-  Donut:["tem formato de anel em muitos modelos","pode receber cobertura colorida","é muito associado à culinária norte-americana"],
-  Picolé:["é congelado em torno de um palito","pode ter sabores de frutas ou doces","é consumido segurando o palito"],
-  Herói:["costuma proteger outras pessoas","geralmente enfrenta grandes ameaças","é comum ter habilidades especiais em histórias"],
-  Vilão:["normalmente cria obstáculos para o protagonista","pode ter planos para dominar ou destruir algo","é o antagonista em muitas histórias"],
-  Máscara:["cobre parte do rosto","pode esconder a identidade","é usada por muitos personagens de histórias"],
-  Capa:["pode ser usada sobre os ombros","é um elemento visual clássico de heróis","pode se mover bastante durante cenas de ação"],
-  Poder:["é uma habilidade fora do comum","pode ser usada para enfrentar inimigos","em histórias pode ter origem sobrenatural ou tecnológica"],
-  Quartel:["serve como base de operações","pode guardar equipamentos","é onde um grupo pode se reunir e planejar ações"],
-};
-
-function clueFor(seed:number, theme:Theme, themeIdx:number, player:Player, round:number) {
-  const imp = playerIsImpostor(seed, player);
-  if (imp) {
-    const secret = theme.items[wordIndex(seed, themeIdx)];
-    const hint = WORD_HINTS[secret] ?? "tem características bem específicas";
+function clueFor(seed: number, themeIndex: number, player: Player, round: number) {
+  const word = wordFor(seed, themeIndex);
+  if (roleFor(seed) === player) {
+    const hint = HINTS[word] ?? "Pense em uma característica geral do que os outros receberam.";
     const variants = [
-      `Eu lembraria de algo que ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
-      `Uma pista que me vem à cabeça: ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
-      `Eu iria por este detalhe: ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
+      "Vou por uma característica que combine com isso.",
+      "Eu pensaria em algo ligado a isso.",
+      hint,
     ];
-    return variants[round % variants.length];
+    return variants[round];
   }
-  const secret = theme.items[wordIndex(seed, themeIdx)];
-  const bank = CPU_CLUES[secret] ?? theme.clues;
-  const offset = hash(seed, 4000 + themeIdx * 71 + PLAYERS.indexOf(player) * 19) % bank.length;
+
+  const bank = CLUES[word] ?? ["é bastante conhecido", "tem características marcantes", "tem diferentes versões"];
+  const offset = hash(seed, 500 + PLAYERS.indexOf(player) * 31) % bank.length;
   return bank[(offset + round) % bank.length];
 }
 
-function resetState(): ImpState {
+function emptyState(): ImpState {
   return {
-    phase:"lobby",
-    seed:0,
-    themeIndex:0,
-    round:0,
-    clues:{ gu:[], li:[], cpu1:[], cpu2:[], cpu3:[] },
-    votes:{ gu:null, li:null, cpu1:null, cpu2:null, cpu3:null },
-    ready:{ gu:false, li:false },
-    voteDone:[],
+    phase: "lobby",
+    seed: 0,
+    themeIndex: 0,
+    round: 0,
+    ready: { gu: false, li: false },
+    seenCard: { gu: false, li: false },
+    clues: { gu: [], li: [], cpu1: [], cpu2: [], cpu3: [] },
+    clueSubmitted: { gu: false, li: false },
+    votes: { gu: null, li: null, cpu1: null, cpu2: null, cpu3: null },
+    voteDone: [],
   };
 }
 
+function avatarLetter(player: Player) {
+  return player === "gu" ? "G" : player === "li" ? "L" : player.slice(-1).toUpperCase();
+}
+
 export function Impostor({ me }: { me: Me }) {
-  const { state, setState, peerOnline } = useGameChannel<ImpState>("impostor", me, initial);
+  const { state, setState, peerOnline } = useGameChannel<ImpState>("impostor", me, emptyState());
   const [draft, setDraft] = useState("");
-  const [showCard, setShowCard] = useState(true);
+  const [resetKey, setResetKey] = useState(0);
 
-  const theme = THEMES[state.themeIndex] ?? THEMES[0];
-  const secret = state.seed ? theme.items[wordIndex(state.seed, state.themeIndex)] : "";
-  const myImpostor = state.seed ? playerIsImpostor(state.seed, me) : false;
-  const impostor = state.seed ? PLAYERS[roleIndex(state.seed)] : null;
-
-  const ready = state.ready ?? { gu:false, li:false };
+  const ready = state.ready ?? { gu: false, li: false };
   const bothReady = ready.gu && ready.li;
-  const myReady = ready[me];
+  const theme = THEMES[state.themeIndex] ?? THEMES[0];
+  const secretWord = state.seed ? wordFor(state.seed, state.themeIndex) : "";
+  const myImpostor = state.seed ? roleFor(state.seed) === me : false;
+
+  useEffect(() => {
+    if (!peerOnline || !bothReady || state.phase !== "lobby") return;
+    const seed = hash(Date.now(), 7001) || 1;
+    setState({
+      ...emptyState(),
+      phase: "cards",
+      seed,
+      themeIndex: themeFor(seed),
+      ready: { gu: true, li: true },
+    });
+  }, [peerOnline, bothReady, state.phase, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "round" || !state.seed) return;
+    const nextClues = { ...state.clues };
+    let changed = false;
+    (["cpu1", "cpu2", "cpu3"] as Player[]).forEach((cpu) => {
+      const existing = nextClues[cpu] ?? [];
+      if (!existing[state.round]) {
+        nextClues[cpu] = [...existing, clueFor(state.seed, state.themeIndex, cpu, state.round)];
+        changed = true;
+      }
+    });
+    if (changed) setState({ ...state, clues: nextClues });
+  }, [state.phase, state.round, state.seed, state.themeIndex, state.clues, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "round") return;
+    if (state.round !== 2) return;
+    if (!state.clueSubmitted.gu || !state.clueSubmitted.li) return;
+    if (!state.clues.cpu1[2] || !state.clues.cpu2[2] || !state.clues.cpu3[2]) return;
+    setState({ ...state, phase: "vote" });
+  }, [state.phase, state.round, state.clueSubmitted, state.clues, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "vote" || !state.seed) return;
+    const nextVotes = { ...state.votes };
+    const done = [...state.voteDone];
+    let changed = false;
+
+    (["cpu1", "cpu2", "cpu3"] as Player[]).forEach((cpu) => {
+      if (nextVotes[cpu]) return;
+      const candidates = PLAYERS.filter((p) => p !== cpu);
+      let best = candidates[0];
+      let bestScore = -Infinity;
+      for (const candidate of candidates) {
+        let score = hash(state.seed, 900 + PLAYERS.indexOf(cpu) * 37 + PLAYERS.indexOf(candidate));
+        const clues = state.clues[candidate] ?? [];
+        score += clues.reduce((sum, clue) => sum + (clue.length < 24 ? 3 : 0), 0);
+        if (candidate === roleFor(state.seed)) score += roleFor(state.seed) === cpu ? -2 : 4;
+        if (candidate === "gu" || candidate === "li") score += 1;
+        if (score > bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      }
+      nextVotes[cpu] = best;
+      done.push(cpu);
+      changed = true;
+    });
+
+    if (changed) setState({ ...state, votes: nextVotes, voteDone: [...new Set(done)] });
+  }, [state.phase, state.seed, state.clues, state.votes, state.voteDone, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "vote") return;
+    if (state.voteDone.length < 3) return;
+    if (!state.votes.gu || !state.votes.li) return;
+    setState({ ...state, phase: "result" });
+  }, [state.phase, state.voteDone, state.votes, setState]);
+
+  const reset = () => {
+    setResetKey((v) => v + 1);
+    setDraft("");
+    setState(emptyState());
+  };
 
   const toggleReady = () => {
-    if (!peerOnline || state.phase !== "lobby") return;
-    setState((prev) => { const current = prev.ready ?? { gu:false, li:false }; return { ...prev, ready:{ ...current, [me]:!current[me] } }; });
+    setState((prev) => ({
+      ...prev,
+      ready: { ...(prev.ready ?? { gu: false, li: false }), [me]: !((prev.ready ?? { gu: false, li: false })[me]) },
+    }));
   };
 
-  useEffect(() => {
-    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !(state.ready ?? { gu:false, li:false }).gu || !(state.ready ?? { gu:false, li:false }).li) return;
-    const timer = window.setTimeout(() => {
-      setState((prev) => {
-        const currentReady = prev.ready ?? { gu:false, li:false };
-        if (prev.phase !== "lobby" || !currentReady.gu || !currentReady.li) return prev;
-        const seed = Math.floor(Math.random() * 0x7fffffff) + 1;
-        return { ...resetState(), phase:"cards", seed, themeIndex:themeIndex(seed) };
-      });
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [me, peerOnline, state.phase, state.ready?.gu, state.ready?.li]);
+  const revealCard = () => {
+    setState((prev) => ({
+      ...prev,
+      seenCard: { ...prev.seenCard, [me]: true },
+    }));
+  };
 
-  useEffect(() => {
-    if (me !== "gu" || state.phase !== "cards") return;
-    const timer = window.setTimeout(() => setState({ ...state, phase:"round", round:0 }), 2400);
-    return () => window.clearTimeout(timer);
-  }, [me, state.phase]);
-
-  useEffect(() => {
-    if (me !== "gu" || state.phase !== "round") return;
-    const missing = PLAYERS.filter((p) => !state.clues[p]?.[state.round]);
-    if (!missing.length) {
-      const timer = window.setTimeout(() => {
-        if (state.round >= 2) setState({ ...state, phase:"vote" });
-        else setState({ ...state, round:state.round + 1 });
-      }, 650);
-      return () => window.clearTimeout(timer);
-    }
-    const cpu = missing.find((p) => p.startsWith("cpu"));
-    if (!cpu) return;
-    const timer = window.setTimeout(() => {
-      const clues = { ...state.clues };
-      clues[cpu] = [...(clues[cpu] ?? []), clueFor(state.seed, theme, state.themeIndex, cpu, state.round)];
-      setState({ ...state, clues });
-    }, 850 + PLAYERS.indexOf(cpu) * 380);
-    return () => window.clearTimeout(timer);
-  }, [me, state.phase, state.round, state.clues]);
-
-  useEffect(() => {
-    if (me !== "gu" || state.phase !== "vote") return;
-    const missing = PLAYERS.filter((p) => !state.votes[p]);
-    if (!missing.length) return;
-    const cpu = missing.find((p) => p.startsWith("cpu"));
-    if (!cpu) return;
-    const timer = window.setTimeout(() => {
-      const candidates = PLAYERS.filter((p) => p !== cpu);
-      const scored = candidates.map((target) => {
-        let suspicion = 0;
-        for (let r=0;r<3;r++) {
-          const clue = state.clues[target]?.[r] ?? "";
-          suspicion += clue.length < 14 ? 3 : clue.length < 23 ? 1 : 0;
-          if (/conhece|tema|situação|lugares|atenção/.test(clue)) suspicion += 2;
-        }
-        if (playerIsImpostor(state.seed, cpu)) {
-          suspicion += hash(state.seed, 900 + PLAYERS.indexOf(target) * 31 + cpu.length) % 5;
-          if (target === "gu" || target === "li") suspicion += 1;
-        }
-        return { target, suspicion };
-      });
-      const max = Math.max(...scored.map((x) => x.suspicion));
-      const tied = scored.filter((x) => x.suspicion === max);
-      const vote = tied[hash(state.seed, 1200 + PLAYERS.indexOf(cpu)) % tied.length].target;
-      setState({ ...state, votes:{ ...state.votes, [cpu]:vote }, voteDone:[...state.voteDone, cpu] });
-    }, 900 + PLAYERS.indexOf(cpu) * 420);
-    return () => window.clearTimeout(timer);
-  }, [me, state.phase, state.votes]);
-
-  useEffect(() => {
-    if (me !== "gu" || state.phase !== "vote") return;
-    if (state.voteDone.length < 3 || !state.votes.gu || !state.votes.li) return;
-    const timer = window.setTimeout(() => setState({ ...state, phase:"result" }), 800);
-    return () => window.clearTimeout(timer);
-  }, [me, state.phase, state.voteDone.length, state.votes.gu, state.votes.li]);
+  const startRounds = () => {
+    setState((prev) => ({ ...prev, phase: "round", round: 0 }));
+    setDraft("");
+  };
 
   const submitClue = () => {
-    const value = draft.trim();
-    if (!value || state.phase !== "round" || state.clues[me]?.[state.round]) return;
-    const clues = { ...state.clues, [me]: [...(state.clues[me] ?? []), value.slice(0, 80)] };
+    const text = draft.trim();
+    if (!text) return;
+    setState((prev) => ({
+      ...prev,
+      clues: { ...prev.clues, [me]: [...(prev.clues[me] ?? []).slice(0, 2), text] },
+      clueSubmitted: { ...prev.clueSubmitted, [me]: true },
+    }));
     setDraft("");
-    setState({ ...state, clues });
   };
 
-  const vote = (target:Player) => {
-    if (state.phase !== "vote" || state.votes[me]) return;
-    setState({
-      ...state,
-      votes:{ ...state.votes, [me]:target },
-      voteDone:state.voteDone.includes(me) ? state.voteDone : [...state.voteDone, me],
+  const nextRound = () => {
+    setState((prev) => ({
+      ...prev,
+      round: prev.round + 1,
+      clueSubmitted: { gu: false, li: false },
+    }));
+    setDraft("");
+  };
+
+  const vote = (target: Player) => {
+    if (target === me || state.votes[me]) return;
+    setState((prev) => ({
+      ...prev,
+      votes: { ...prev.votes, [me]: target },
+      voteDone: [...new Set([...prev.voteDone, me])],
+    }));
+  };
+
+  const result = useMemo(() => {
+    if (state.phase !== "result" || !state.seed) return null;
+    const impostor = roleFor(state.seed);
+    const counts = PLAYERS.reduce<Record<Player, number>>((acc, p) => {
+      acc[p] = 0;
+      return acc;
+    }, {} as Record<Player, number>);
+    PLAYERS.forEach((p) => {
+      const target = state.votes[p];
+      if (target) counts[target] += 1;
     });
-  };
+    const max = Math.max(...Object.values(counts));
+    const mostVoted = PLAYERS.find((p) => counts[p] === max) ?? "gu";
+    return { impostor, counts, mostVoted, caught: mostVoted === impostor };
+  }, [state.phase, state.seed, state.votes]);
 
-  const restart = () => {
-    if (me === "gu") setState(resetState());
-  };
-
-  const voted = Boolean(state.votes[me]);
-  const voteCounts = PLAYERS.reduce<Record<Player,number>>((acc,p) => {
-    const target = state.votes[p];
-    if (target) acc[target] = (acc[target] ?? 0) + 1;
-    return acc;
-  }, {} as Record<Player,number>);
-  const maxVotes = Math.max(0, ...Object.values(voteCounts));
-  const topVoted = PLAYERS.filter((p) => voteCounts[p] === maxVotes && maxVotes > 0);
-  const caught = topVoted.length === 1 && topVoted[0] === impostor;
-  const myResultText = state.phase === "result"
-    ? myImpostor ? (caught ? "Você era o impostor e foi descoberto." : "Você era o impostor e escapou.") : (caught ? "O impostor foi descoberto." : "O impostor escapou.")
-    : "";
+  if (!peerOnline) {
+    return (
+      <div className="min-h-[520px] flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#141118] p-8 text-center shadow-2xl">
+          <Users className="mx-auto mb-4 text-white/60" size={34} />
+          <h2 className="text-xl font-black text-white">Impostor</h2>
+          <p className="mt-2 text-sm text-white/50">Aguardando BB Li entrar na sala.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#090a10] text-white">
-      <div className="relative mx-auto min-h-full w-full max-w-4xl px-4 py-5 sm:px-6">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-violet-500/15 via-fuchsia-500/5 to-transparent" />
-        <div className="relative">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-400/10 text-violet-200">
-              <Eye size={21} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-violet-200/60">jogo social • 5 jogadores</p>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">IMPOSTOR</h1>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-1.5 text-[10px] font-bold text-emerald-200">
-              <Users size={13} /> 2 + 3 CPU
-            </div>
+    <div key={resetKey} className="min-h-[520px] bg-[#0e0b12] text-white p-4 md:p-6">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <header className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-fuchsia-300">Sala de investigação</p>
+            <h1 className="mt-1 text-2xl font-black">Impostor</h1>
           </div>
+          <button onClick={reset} className="rounded-full border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10" title="Reiniciar">
+            <RotateCcw size={17} />
+          </button>
+        </header>
 
-          {state.phase === "lobby" && (
-            <section className="space-y-4">
-              <div className="relative overflow-hidden rounded-[30px] border border-violet-300/15 bg-gradient-to-br from-violet-950/70 via-[#11111d] to-fuchsia-950/40 p-5 shadow-2xl sm:p-7">
-                <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/15 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
-                <div className="relative grid gap-6 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
-                  <div>
-                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-200/10 bg-white/[0.05] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-violet-200/70">
-                      <LockKeyhole size={12} /> Sala privada
-                    </div>
-                    <h2 className="max-w-xl text-3xl font-black tracking-tight sm:text-4xl">Quem está escondendo a palavra?</h2>
-                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/50">
-                      Vocês dois precisam apertar <strong className="text-white/75">Iniciar</strong>. Só depois da confirmação dos dois a partida é criada e as cartas são distribuídas.
-                    </p>
-                    <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                      {[
-                        ["1","Confirmem","Você e BB Li apertam Iniciar."],
-                        ["2","Recebam a carta","Apenas o impostor recebe uma dica curta."],
-                        ["3","Descubram","Três rodadas de pistas e votação."],
-                      ].map(([n,t,d]) => (
-                        <div key={n} className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/10 text-[10px] font-black text-violet-200">{n}</div>
-                          <p className="text-xs font-black">{t}</p>
-                          <p className="mt-1 text-[10px] leading-relaxed text-white/35">{d}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="rounded-[26px] border border-white/10 bg-black/25 p-4 sm:p-5">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">Preparação</p>
-                        <p className="mt-1 text-sm font-black">{bothReady ? "Tudo pronto" : "Aguardando confirmação"}</p>
-                      </div>
-                      <div className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${bothReady ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
-                        {bothReady ? "2 de 2" : `${Number(ready.gu) + Number(ready.li)} de 2`}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {(["gu","li"] as const).map((p) => {
-                        const isMe = p === me;
-                        const playerReady = ready[p];
-                        return (
-                          <div key={p} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3">
-                            <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-[10px] font-black`}>
-                              {p === "gu" ? "GU" : "LI"}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-black">{playerName(p)}{isMe ? " • você" : ""}</p>
-                              <p className="mt-0.5 text-[9px] uppercase tracking-wider text-white/30">{playerReady ? "Pronto para iniciar" : "Ainda não confirmou"}</p>
-                            </div>
-                            {playerReady ? <UserCheck size={17} className="text-emerald-300" /> : <span className="h-2.5 w-2.5 rounded-full bg-white/15" />}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={toggleReady}
-                      disabled={!peerOnline}
-                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-35 ${myReady ? "border border-emerald-300/20 bg-emerald-400/10 text-emerald-200" : "bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white shadow-xl shadow-violet-950/30"}`}
-                    >
-                      {myReady ? <Check size={17} /> : <Play size={17} />}
-                      {myReady ? "Início confirmado" : "Iniciar partida"}
-                    </button>
-                    <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-white/30">
-                      <Users size={12} /> {peerOnline ? "BB Li está conectado" : "Aguardando BB Li entrar"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                {(["cpu1","cpu2","cpu3"] as const).map((p, i) => (
-                  <div key={p} className="rounded-[24px] border border-white/8 bg-white/[0.035] p-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-[10px] font-black`}>0{i+1}</div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-black">{playerName(p)}</p>
-                        <p className="text-[9px] uppercase tracking-wider text-violet-200/40">CPU • entra automaticamente</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2 text-[10px] text-white/35">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Pronto para jogar
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {state.phase === "cards" && (
-            <section className="mx-auto max-w-xl">
-              <div className="mb-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-violet-200/60">Sua carta</p>
-                <h2 className="mt-1 text-2xl font-black">Não deixe ninguém ver</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCard((v) => !v)}
-                className="group relative w-full overflow-hidden rounded-[30px] border border-violet-300/20 bg-gradient-to-br from-violet-950 via-[#171326] to-fuchsia-950 p-7 text-left shadow-2xl"
-              >
-                <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-fuchsia-500/15 blur-3xl" />
-                <div className="relative flex min-h-[300px] flex-col items-center justify-center text-center">
-                  {showCard ? (
-                    <>
-                      <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-3xl ${myImpostor ? "bg-red-500/15 text-red-300" : "bg-emerald-400/15 text-emerald-200"}`}>
-                        {myImpostor ? <Skull size={38} /> : <Shield size={38} />}
-                      </div>
-                      <p className={`text-[11px] font-black uppercase tracking-[0.25em] ${myImpostor ? "text-red-300" : "text-emerald-200"}`}>
-                        {myImpostor ? "VOCÊ É O IMPOSTOR" : "VOCÊ É INOCENTE"}
-                      </p>
-                      <p className="mt-3 text-xs text-white/45">{myImpostor ? "Você não vê a palavra. Recebe uma dica curta para tentar se encaixar." : "Você conhece a palavra secreta."}</p>
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 px-6 py-4">
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35">Tema</p>
-                        <p className="mt-1 text-xl font-black">{theme.name}</p>
-                        {myImpostor ? <><p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200/50">Dica</p><p className="mt-1 max-w-xs text-sm font-bold leading-relaxed text-amber-100">{impostorHint(state.seed, theme)}</p></> : <><p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-200/50">Palavra</p><p className="mt-1 text-2xl font-black text-emerald-100">{secret}</p></>}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <EyeOff size={42} className="text-white/30" />
-                      <p className="mt-4 text-sm font-black">Carta escondida</p>
-                      <p className="mt-1 text-xs text-white/40">Toque para revelar novamente.</p>
-                    </>
-                  )}
-                </div>
-              </button>
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-white/40">
-                <Clock3 size={13} /> A partida começa automaticamente.
-              </div>
-            </section>
-          )}
-
-          {state.phase === "round" && (
-            <section>
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        {state.phase === "lobby" && (
+          <div className="grid gap-4 md:grid-cols-[1.2fr_.8fr]">
+            <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-fuchsia-500/15 p-3 text-fuchsia-300"><Users size={22} /></div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-violet-200/60">Tema • {theme.name}</p>
-                  <h2 className="mt-1 text-2xl font-black">Rodada {state.round + 1} de 3</h2>
-                  <p className="mt-1 text-xs text-white/45">Fale uma característica. Não diga a palavra diretamente.</p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {[0,1,2].map((r) => <div key={r} className={`h-2 w-12 rounded-full ${r <= state.round ? "bg-violet-400" : "bg-white/10"}`} />)}
+                  <h2 className="font-bold">5 jogadores</h2>
+                  <p className="text-xs text-white/45">1 impostor • 3 rodadas • votação final</p>
                 </div>
               </div>
-              <div className="grid gap-3 lg:grid-cols-[1fr_.72fr]">
-                <div className="space-y-2">
-                  {PLAYERS.map((p) => {
-                    const clue = state.clues[p]?.[state.round];
-                    return (
-                      <div key={p} className={`rounded-2xl border p-3 ${clue ? "border-white/10 bg-white/[0.045]" : "border-white/6 bg-black/20"}`}>
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`h-7 w-7 rounded-lg bg-gradient-to-br ${CPU_COLORS[p]}`} />
-                            <div><p className="text-xs font-black">{playerName(p)}</p><p className="text-[9px] uppercase tracking-wider text-white/30">{p.startsWith("cpu") ? "CPU" : "jogador"}</p></div>
-                          </div>
-                          {clue ? <Check size={15} className="text-emerald-300" /> : <span className="text-[9px] text-white/25">pensando...</span>}
-                        </div>
-                        {clue ? <div className="flex items-start gap-2 rounded-xl bg-black/20 px-3 py-2.5 text-sm text-white/80"><MessageCircle size={14} className="mt-0.5 shrink-0 text-violet-300" />{clue}</div> : <div className="h-9 rounded-xl bg-white/[0.03] animate-pulse" />}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="h-fit rounded-[24px] border border-violet-300/10 bg-violet-400/[0.05] p-4">
-                  <div className="mb-3 flex items-center gap-2 text-violet-200"><MessageCircle size={16} /><p className="text-xs font-black">Sua vez de falar</p></div>
-                  <p className="text-[10px] leading-relaxed text-white/40">Dê uma característica verdadeira se você for inocente. Se for o impostor, tente se encaixar sem entregar que não sabe a palavra.</p>
-                  <textarea value={draft} onChange={(e) => setDraft(e.target.value)} disabled={Boolean(state.clues[me]?.[state.round])} maxLength={80} rows={3} placeholder="Ex.: é algo que muita gente conhece..." className="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-sm outline-none placeholder:text-white/20 focus:border-violet-300/30" />
-                  <button type="button" onClick={submitClue} disabled={!draft.trim() || Boolean(state.clues[me]?.[state.round])} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 py-2.5 text-xs font-black disabled:opacity-30"><MessageCircle size={14} /> Enviar característica</button>
-                  {state.clues[me]?.[state.round] && <p className="mt-2 text-center text-[10px] text-emerald-300/70">Sua pista foi enviada.</p>}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {state.phase === "vote" && (
-            <section className="mx-auto max-w-3xl">
-              <div className="mb-5 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-400/10 text-red-300"><Vote size={25} /></div>
-                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.25em] text-red-200/60">hora da votação</p>
-                <h2 className="mt-1 text-2xl font-black">Quem é o impostor?</h2>
-                <p className="mt-1 text-xs text-white/45">Todos os cinco jogadores precisam votar.</p>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {PLAYERS.map((p) => (
-                  <button key={p} type="button" onClick={() => vote(p)} disabled={voted} className={`rounded-2xl border p-4 text-left transition ${state.votes[me] === p ? "border-red-300/50 bg-red-400/10" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"} disabled:cursor-default`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${CPU_COLORS[p]}`} />
-                      <div className="min-w-0 flex-1"><p className="text-sm font-black">{playerName(p)}</p><p className="text-[9px] uppercase tracking-wider text-white/30">{p === me ? "Você" : p.startsWith("cpu") ? "CPU" : "Jogador"}</p></div>
-                      {state.votes[me] === p && <Check size={16} className="text-red-300" />}
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                {PLAYERS.map((player) => (
+                  <div key={player} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/15 p-3">
+                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 font-black">{avatarLetter(player)}</div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold">{CPU_NAMES[player]}</p>
+                      <p className="text-[11px] text-white/40">{player === "gu" || player === "li" ? "jogador" : "CPU"}</p>
                     </div>
-                  </button>
+                    <Check size={16} className={player === "gu" || player === "li" ? (ready[player] ? "text-emerald-400" : "text-white/20") : "text-emerald-400"} />
+                  </div>
                 ))}
               </div>
-              <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-center text-xs text-white/45">{voted ? "Seu voto foi registrado. Os CPUs também estão votando..." : "Escolha um suspeito."}</div>
             </section>
-          )}
 
-          {state.phase === "result" && (
-            <section className="mx-auto max-w-3xl">
-              <div className={`rounded-[30px] border p-6 text-center shadow-2xl ${caught ? "border-emerald-300/20 bg-emerald-300/[0.06]" : "border-red-300/20 bg-red-300/[0.06]"}`}>
-                <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-3xl ${caught ? "bg-emerald-400/15 text-emerald-200" : "bg-red-400/15 text-red-200"}`}>
-                  {caught ? <Shield size={32} /> : <Skull size={32} />}
-                </div>
-                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.25em] text-white/40">resultado</p>
-                <h2 className="mt-1 text-3xl font-black">{playerName(impostor!)}</h2>
-                <p className="mt-1 text-sm text-white/55">{myResultText}</p>
-                <div className="mt-5 grid gap-2 sm:grid-cols-5">
-                  {PLAYERS.map((p) => (
-                    <div key={p} className={`rounded-2xl border p-3 ${p === impostor ? "border-red-300/30 bg-red-400/10" : "border-white/8 bg-black/20"}`}>
-                      <p className="text-xs font-black">{playerName(p)}</p>
-                      <p className={`mt-1 text-[9px] font-black uppercase tracking-wider ${p === impostor ? "text-red-300" : "text-emerald-300"}`}>{p === impostor ? "Impostor" : "Inocente"}</p>
-                      <p className="mt-2 text-[10px] text-white/35">{voteCounts[p] ?? 0} voto(s)</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/8 bg-black/20 p-4">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35">Palavra secreta</p>
-                  <p className="mt-1 text-xl font-black">{secret}</p>
-                  <p className="mt-1 text-xs text-white/35">Tema: {theme.name}</p>
-                </div>
-                {me === "gu" && <button type="button" onClick={restart} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-xs font-black hover:bg-white/15"><RotateCcw size={15} /> Nova partida</button>}
-              </div>
+            <section className="rounded-3xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/40">Preparação</p>
+              <p className="mt-2 text-2xl font-black">{Number(ready.gu) + Number(ready.li)}/2 prontos</p>
+              <p className="mt-2 text-sm leading-6 text-white/55">A partida só começa quando você e BB Li confirmarem a entrada.</p>
+              <button
+                onClick={toggleReady}
+                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-bold transition ${ready[me] ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30" : "bg-fuchsia-500 text-white hover:bg-fuchsia-400"}`}
+              >
+                <UserCheck size={18} />
+                {ready[me] ? "Pronto para jogar" : "Estou pronto"}
+              </button>
+              {!bothReady && <p className="mt-3 text-center text-xs text-white/35">Esperando a confirmação dos dois jogadores.</p>}
             </section>
-          )}
-        </div>
+          </div>
+        )}
+
+        {state.phase === "cards" && (
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-fuchsia-300">Tema: {theme.name}</p>
+            <h2 className="mt-3 text-3xl font-black">Sua carta</h2>
+            {!state.seenCard[me] ? (
+              <>
+                <div className="mx-auto mt-6 grid max-w-sm place-items-center rounded-3xl border border-white/10 bg-black/20 p-10">
+                  <LockKeyhole size={42} className="text-white/40" />
+                  <p className="mt-4 text-sm text-white/50">Só você deve olhar sua carta.</p>
+                </div>
+                <button onClick={revealCard} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-fuchsia-500 px-6 py-3 font-bold">
+                  <Eye size={18} /> Ver minha carta
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={`mx-auto mt-6 max-w-sm rounded-3xl border p-7 ${myImpostor ? "border-red-400/30 bg-red-500/10" : "border-emerald-400/30 bg-emerald-500/10"}`}>
+                  {myImpostor ? <Skull className="mx-auto text-red-300" size={40} /> : <Shield className="mx-auto text-emerald-300" size={40} />}
+                  <p className="mt-4 text-2xl font-black">{myImpostor ? "VOCÊ É O IMPOSTOR" : "VOCÊ É INOCENTE"}</p>
+                  <p className="mt-3 text-sm text-white/60">{myImpostor ? `Sua dica: ${HINTS[secretWord] ?? "observe as pistas dos outros sem entregar que você não sabe a palavra."}` : `A palavra é: ${secretWord}`}</p>
+                </div>
+                <button onClick={startRounds} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-fuchsia-500 px-6 py-3 font-bold">
+                  <Play size={18} /> Continuar
+                </button>
+              </>
+            )}
+          </section>
+        )}
+
+        {state.phase === "round" && (
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-fuchsia-300">Rodada {state.round + 1} de 3</p>
+                <h2 className="mt-1 text-xl font-black">{theme.name}</h2>
+              </div>
+              <div className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/55">Tema compartilhado</div>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              {PLAYERS.map((player) => {
+                const clue = state.clues[player]?.[state.round];
+                return (
+                  <div key={player} className="rounded-2xl border border-white/10 bg-black/15 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-sm font-black">{avatarLetter(player)}</div>
+                      <p className="text-sm font-bold">{CPU_NAMES[player]}</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-white/70">{clue ?? "pensando na pista..."}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {!state.clueSubmitted[me] ? (
+              <div className="mt-5 rounded-2xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-4">
+                <p className="text-sm font-bold">Sua pista</p>
+                <p className="mt-1 text-xs text-white/45">Não diga a palavra diretamente. Dê uma característica.</p>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submitClue()}
+                    maxLength={100}
+                    placeholder="Ex.: costuma ser servido quente"
+                    className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-fuchsia-400/50"
+                  />
+                  <button onClick={submitClue} disabled={!draft.trim()} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-fuchsia-500 disabled:opacity-30">
+                    <Check size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : state.round < 2 ? (
+              <button onClick={nextRound} className="mt-5 w-full rounded-2xl bg-white/10 py-3 font-bold hover:bg-white/15">
+                Próxima rodada
+              </button>
+            ) : (
+              <p className="mt-5 text-center text-xs text-white/40">As pistas foram registradas. Preparando a votação...</p>
+            )}
+          </section>
+        )}
+
+        {state.phase === "vote" && (
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="text-center">
+              <Vote className="mx-auto text-fuchsia-300" size={30} />
+              <p className="mt-3 text-xs font-black uppercase tracking-widest text-white/40">Votação final</p>
+              <h2 className="mt-1 text-2xl font-black">Quem é o impostor?</h2>
+              <p className="mt-2 text-sm text-white/50">Escolha um jogador. Seu voto não pode ser alterado.</p>
+            </div>
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              {PLAYERS.filter((p) => p !== me).map((player) => (
+                <button
+                  key={player}
+                  onClick={() => vote(player)}
+                  disabled={Boolean(state.votes[me])}
+                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${state.votes[me] === player ? "border-fuchsia-400/50 bg-fuchsia-500/15" : "border-white/10 bg-black/15 hover:bg-white/[0.07]"} disabled:opacity-70`}
+                >
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 font-black">{avatarLetter(player)}</div>
+                  <div className="flex-1"><p className="font-bold">{CPU_NAMES[player]}</p><p className="text-xs text-white/40">votar neste jogador</p></div>
+                  {state.votes[me] === player && <Check size={17} className="text-fuchsia-300" />}
+                </button>
+              ))}
+            </div>
+            {state.votes[me] && <p className="mt-4 text-center text-xs text-white/40">Seu voto foi registrado. Aguarde a outra pessoa.</p>}
+          </section>
+        )}
+
+        {state.phase === "result" && result && (
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+            <div className="text-center">
+              {result.caught ? <Shield className="mx-auto text-emerald-300" size={42} /> : <Skull className="mx-auto text-red-300" size={42} />}
+              <p className="mt-4 text-xs font-black uppercase tracking-widest text-white/40">Resultado</p>
+              <h2 className="mt-1 text-3xl font-black">{result.caught ? "Impostor descoberto" : "O impostor escapou"}</h2>
+              <p className="mt-3 text-white/60">O impostor era <strong className="text-white">{CPU_NAMES[result.impostor]}</strong>.</p>
+            </div>
+
+            <div className="mt-6 grid gap-2">
+              {PLAYERS.map((player) => (
+                <div key={player} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/15 p-3">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-sm font-black">{avatarLetter(player)}</div>
+                  <p className="flex-1 font-bold">{CPU_NAMES[player]}</p>
+                  <p className="text-xs text-white/40">{result.counts[player]} voto{result.counts[player] === 1 ? "" : "s"}</p>
+                  {player === result.impostor ? <Skull size={16} className="text-red-300" /> : <Shield size={16} className="text-emerald-300" />}
+                </div>
+              ))}
+            </div>
+
+            <button onClick={reset} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-fuchsia-500 py-3 font-bold">
+              <RotateCcw size={18} /> Jogar novamente
+            </button>
+          </section>
+        )}
+
+        {state.phase === "lobby" && (
+          <p className="text-center text-[11px] text-white/30">A sala usa presença online real; CPUs entram automaticamente.</p>
+        )}
       </div>
     </div>
   );
