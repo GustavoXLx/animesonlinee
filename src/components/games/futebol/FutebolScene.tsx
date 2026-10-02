@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Lightformer, Line, useAnimations, useGLTF } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer, Line, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { BALL_R, GOAL_H, GOAL_W, RUN, sample, solve, wallLayout, type Mode, type Shot, type Solved } from "./sim";
@@ -308,9 +308,9 @@ function Stadium() {
   const tiers = [];
   for (let row = 0; row < 10; row++)
     tiers.push(
-      <mesh key={"b" + row} position={[0, 0.35 + row * 0.7, -9 - row * 0.9]} receiveShadow>
-        <boxGeometry args={[72, 0.7, 0.9]} />
-        <meshStandardMaterial color={row % 2 ? "#3a3f4b" : "#2f343e"} />
+      <mesh key={"b" + row} position={[0, 0.28 + row * 0.68, -9 - row * 0.82]} receiveShadow>
+        <boxGeometry args={[72, 0.46, 0.72]} />
+        <meshStandardMaterial color={row % 2 ? "#343a46" : "#292f3a"} roughness={0.82} />
       </mesh>,
     );
   for (const s of [-1, 1])
@@ -318,12 +318,23 @@ function Stadium() {
       tiers.push(
         <mesh key={s + "s" + row} position={[s * (38 + row * 0.92), 0.28 + row * 0.68, 19]} receiveShadow>
           <boxGeometry args={[0.72, 0.46, 48]} />
-          <meshStandardMaterial color={row % 2 ? "#3a3f4b" : "#2f343e"} />
+          <meshStandardMaterial color={row % 2 ? "#343a46" : "#292f3a"} roughness={0.82} />
         </mesh>,
       );
   return (
     <group>
       {tiers}
+
+      {/* anel superior do estádio */}
+      <mesh position={[0, 7.5, -13.5]} rotation={[0.06, 0, 0]}>
+        <boxGeometry args={[78, 0.5, 0.7]} />
+        <meshStandardMaterial color="#151922" metalness={0.55} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 7.35, -13.1]}>
+        <boxGeometry args={[70, 0.12, 0.12]} />
+        <meshStandardMaterial color="#6ee7b7" emissive="#34d399" emissiveIntensity={2.4} />
+      </mesh>
+
       {/* placas de publicidade */}
       <mesh position={[0, 0.5, -5.5]}>
         <boxGeometry args={[60, 1, 0.1]} />
@@ -335,6 +346,15 @@ function Stadium() {
           <meshStandardMaterial color="#111827" emissive="#2563eb" emissiveIntensity={0.5} />
         </mesh>
       ))}
+
+      {/* túneis laterais */}
+      {[-1, 1].map((s) => (
+        <mesh key={"tunnel" + s} position={[s * 30, 1.8, 7]} rotation={[0, s * Math.PI / 2, 0]}>
+          <boxGeometry args={[5.2, 3.6, 4]} />
+          <meshStandardMaterial color="#11151d" roughness={0.72} metalness={0.25} />
+        </mesh>
+      ))}
+
       {/* refletores */}
       {[
         [-36, -12],
@@ -351,11 +371,15 @@ function Stadium() {
             <boxGeometry args={[5, 2.2, 0.6]} />
             <meshStandardMaterial color="#fff" emissive="#fffbe8" emissiveIntensity={3} />
           </mesh>
+          <mesh position={[0, 23.2, 0]}>
+            <boxGeometry args={[4.3, 0.04, 0.04]} />
+            <meshBasicMaterial color="#fff7d6" transparent opacity={0.75} />
+          </mesh>
         </group>
       ))}
       <mesh position={[0, -0.02, 28]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[140, 140]} />
-        <meshStandardMaterial color="#1d4d22" />
+        <meshStandardMaterial color="#1d4d22" roughness={1} />
       </mesh>
     </group>
   );
@@ -598,16 +622,27 @@ function Game(p: SceneProps) {
       want.set(0, 2.05, -4.6);
       target.set(sx * 0.5, 1.0, sz * 0.5);
       fov = 55;
+    } else if (p.view === "watch") {
+      // câmera de transmissão: lateral baixa, acompanhando a cobrança como uma TV esportiva.
+      const side = sx >= 0 ? -1 : 1;
+      want.set(side * 13.5, 3.15, Math.max(2.5, sz * 0.55 + 5.5));
+      target.set(0, 1.05, Math.max(0, sz * 0.18));
+      if (sol && tk > 0) {
+        want.lerp(new THREE.Vector3(bp[0] + side * 8, 2.7, bp[2] + 7), 0.5);
+        target.lerp(new THREE.Vector3(bp[0], Math.max(0.7, bp[1]), bp[2]), 0.7);
+      }
+      fov = 42;
     } else {
-      want.set(sx, 0, sz).addScaledVector(dir.d, -7.6).addScaledVector(dir.perp, -2.4);
-      want.y = p.mode === "falta" ? 3.0 : 2.5;
-      target.set(0, 1.25, 0);
+      // câmera do cobrador: próxima o bastante para dar sensação de controle, aberta o bastante para ver gol e goleiro.
+      want.set(sx, 0.35, sz).addScaledVector(dir.d, -8.4).addScaledVector(dir.perp, -2.8);
+      want.y = p.mode === "falta" ? 3.05 : 2.65;
+      target.set(0, 1.15, 0);
       if (sol && tk > 0) {
         const k = Math.min(1, tk / (sol.flight + 0.3));
-        want.lerp(new THREE.Vector3(bp[0] * 0.5, 1.8, Math.max(4, bp[2] + 6)), k * 0.55);
-        target.lerp(new THREE.Vector3(bp[0], bp[1], bp[2]), 0.5);
+        want.lerp(new THREE.Vector3(bp[0] * 0.5, 1.9, Math.max(4, bp[2] + 6.5)), k * 0.6);
+        target.lerp(new THREE.Vector3(bp[0], bp[1], bp[2]), 0.58);
       }
-      fov = 50;
+      fov = 48;
     }
     const snap = camMode !== "live" ? 9 : 4;
     cam.position.x = THREE.MathUtils.damp(cam.position.x, want.x, snap, dt);
@@ -642,6 +677,7 @@ function Game(p: SceneProps) {
       </mesh>
       <Stadium />
       <Crowd excite={excite} />
+      <ContactShadows position={[0, 0.015, 0]} opacity={0.28} scale={38} blur={2.4} far={8} resolution={512} />
       <Goal solRef={solRef} timeRef={tRef} />
       <Confetti trigger={confetti} />
 
