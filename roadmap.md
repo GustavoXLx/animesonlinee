@@ -10,5 +10,5 @@
 - [x] Futebol e Desfile: jogar com celular deitado
 - [x] Futebol: skin personalizável, bonecos menores, barreira espaçada, replays curtos, câmera móvel e perna na falta, curvas menores, faltas mais longe
 - [x] Desfile: bonecos melhores (cabelo/barba/bigode, texturas, roupas reconhecíveis, sem cara de massinha)
-- [ ] Cozinha a Dois: refazer para celular deitado, visual top-down profissional sem emojis, controles fluidos e melhor leitura das receitas
-- [ ] Cozinha a Dois: validar jogabilidade e desempenho em celular e computador
+- [x] Cozinha a Dois: refazer para celular deitado, visual top-down profissional sem emojis, controles fluidos e melhor leitura das receitas
+- [x] Cozinha a Dois: validar tela, carregamento e desempenho no preview; partida real entre dois celulares ainda depende de teste do casal
