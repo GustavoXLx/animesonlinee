@@ -5,7 +5,7 @@ import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld } from "./recipes";
 import { tickProcesses, maybeSpawnOrder, expireOrders } from "./recipes";
 import type { EngineHandle, EngineHooks } from "./engine";
-import type { ActMsg, HeldItem, PlayerMeta, PosMsg, SharedState, Stage, WorldSnapshot } from "./types";
+import type { ActMsg, Dish, HeldItem, PlayerMeta, PosMsg, SharedState, Stage, WorldSnapshot } from "./types";
 
 const NAME: Record<Me, string> = { gu: "bb gu", li: "bb li" };
 const other = (m: Me): Me => (m === "gu" ? "li" : "gu");
@@ -318,7 +318,8 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   };
 
   const endMessage = useMemo(() => END_MESSAGES[Math.floor(Math.random() * END_MESSAGES.length)], [state.stage === "fim"]);
-  const actionLabel = held ? "Colocar" : focus ? "Pegar" : "Ação";
+  const isDish = (item: HeldItem): item is Dish => item === "hamburguer" || item === "sanduiche" || item === "pizza" || item === "cupcake" || item === "suco";
+  const actionLabel = held && focus === "entrega" && isDish(held) ? "ENTREGAR" : held ? "Colocar" : focus ? "Pegar" : "Ação";
 
   // ============ telas ============
   if (!localReady) {
@@ -610,7 +611,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
         onPointerDown={handleActDown}
         onPointerUp={handleActUp}
         onPointerCancel={handleActUp}
-        className="absolute right-[max(1.25rem,env(safe-area-inset-right))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
+        className="absolute right-[max(1.25rem,env(safe-area-inset-right))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-24 h-24 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
       >
         {actionLabel}
       </button>
