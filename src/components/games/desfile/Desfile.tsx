@@ -197,7 +197,7 @@ function DesfileInner({ me }: { me: Me }) {
   if (state.phase === "dress" || state.phase === "judging") {
     const partnerDone = !!state.subs[other(me)];
     return (
-      <div className="flex h-full flex-col gap-2 bg-gradient-to-b from-fuchsia-950/60 to-neutral-950 p-3">
+      <div className="fixed inset-0 flex min-h-0 flex-col gap-2 overflow-hidden bg-gradient-to-b from-fuchsia-950/60 to-neutral-950 p-3 text-white">
         <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-2">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] uppercase tracking-[0.3em] text-pink-200/70">Tema da rodada {state.round}</p>
@@ -229,7 +229,7 @@ function DesfileInner({ me }: { me: Me }) {
             <div className="min-h-0 flex-1">
               <LookEditor landscape look={draft} onChange={(l) => !submitted && setDraft(l)} />
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2 pb-[env(safe-area-inset-bottom)]">
               <p className="flex-1 text-xs text-white/60">{partnerDone ? `${NAME[other(me)]} já está pronto(a)!` : `${NAME[other(me)]} está se arrumando…`}</p>
               <button disabled={submitted} onClick={submit} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-6 py-2.5 font-black disabled:opacity-50">
                 {submitted ? "Look entregue" : "Estou pronto(a)!"}
