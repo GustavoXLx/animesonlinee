@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X, Clock3 } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
 import { LandscapeGate, enterLandscape } from "../Landscape";
-import { applyAction, initialWorld } from "./recipes";
+import { applyAction, initialWorld, DISH_LABEL, ITEM_LABEL, RECIPE_NEEDS } from "./recipes";
 import { tickProcesses, maybeSpawnOrder, expireOrders } from "./recipes";
 import type { EngineHandle, EngineHooks } from "./engine";
 import type { ActMsg, Dish, HeldItem, PlayerMeta, PosMsg, SharedState, Stage, WorldSnapshot } from "./types";
