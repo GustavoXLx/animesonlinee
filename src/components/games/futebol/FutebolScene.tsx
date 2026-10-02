@@ -116,6 +116,47 @@ function useBallTex() {
 }
 
 /* ---------------- pessoas ---------------- */
+function FootballKit({ model }: { model: string }) {
+  const palette = model.includes("female")
+    ? { shirt: "#f5f5f5", accent: "#ec4899", shorts: "#202938", socks: "#f7f7f7", boots: "#101318" }
+    : model.endsWith("c")
+      ? { shirt: "#f5f5f5", accent: "#16a34a", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" }
+      : { shirt: "#f5f5f5", accent: "#2563eb", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" };
+
+  return (
+    <group position={[0, 0.01, 0]}>
+      <mesh position={[0, 0.98, 0]} castShadow>
+        <capsuleGeometry args={[0.285, 0.48, 6, 16]} />
+        <meshStandardMaterial color={palette.shirt} roughness={0.62} />
+      </mesh>
+      <mesh position={[0, 1.16, 0.22]} scale={[0.78, 0.42, 0.05]}>
+        <sphereGeometry args={[0.25, 20, 12]} />
+        <meshStandardMaterial color={palette.accent} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.62, 0]} castShadow>
+        <capsuleGeometry args={[0.22, 0.2, 5, 14]} />
+        <meshStandardMaterial color={palette.shorts} roughness={0.72} />
+      </mesh>
+      {[-0.13, 0.13].map((x) => (
+        <group key={x}>
+          <mesh position={[x, 0.3, 0]} castShadow>
+            <cylinderGeometry args={[0.105, 0.09, 0.48, 14]} />
+            <meshStandardMaterial color={palette.socks} roughness={0.65} />
+          </mesh>
+          <mesh position={[x, 0.07, 0.055]} scale={[1.25, 0.48, 1.65]} castShadow>
+            <sphereGeometry args={[0.1, 16, 10]} />
+            <meshStandardMaterial color={palette.boots} roughness={0.4} metalness={0.05} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 1.42, 0]} scale={[0.88, 0.045, 0.88]}>
+        <torusGeometry args={[0.25, 0.025, 8, 24]} />
+        <meshStandardMaterial color={palette.accent} roughness={0.48} />
+      </mesh>
+    </group>
+  );
+}
+
 type AnimRef = MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
 
 function Person({ model, groupRef, anim, height = 1.82 }: { model: string; groupRef: React.RefObject<THREE.Group | null>; anim: AnimRef; height?: number }) {
@@ -166,6 +207,7 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
   });
   return (
     <group ref={groupRef}>
+      <FootballKit model={model} />
       <group ref={inner} scale={scale}>
         <primitive object={obj} />
       </group>
