@@ -9,26 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ExplorarRouteImport } from './routes/explorar'
-import { Route as MinhaListaRouteImport } from './routes/minha-lista'
-import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as ZzFuttestRouteImport } from './routes/zz-futtest'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as MinhaListaRouteImport } from './routes/minha-lista'
+import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnimeAnimeIdRouteImport } from './routes/anime.$animeId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExplorarRoute = ExplorarRouteImport.update({
-  id: '/explorar',
-  path: '/explorar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MinhaListaRoute = MinhaListaRouteImport.update({
-  id: '/minha-lista',
-  path: '/minha-lista',
+const ZzFuttestRoute = ZzFuttestRouteImport.update({
+  id: '/zz-futtest',
+  path: '/zz-futtest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfilRoute = PerfilRouteImport.update({
@@ -36,9 +26,19 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ZzFuttestRoute = ZzFuttestRouteImport.update({
-  id: '/zz-futtest',
-  path: '/zz-futtest',
+const MinhaListaRoute = MinhaListaRouteImport.update({
+  id: '/minha-lista',
+  path: '/minha-lista',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorarRoute = ExplorarRouteImport.update({
+  id: '/explorar',
+  path: '/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnimeAnimeIdRoute = AnimeAnimeIdRouteImport.update({
@@ -110,25 +110,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explorar': {
-      id: '/explorar'
-      path: '/explorar'
-      fullPath: '/explorar'
-      preLoaderRoute: typeof ExplorarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/minha-lista': {
-      id: '/minha-lista'
-      path: '/minha-lista'
-      fullPath: '/minha-lista'
-      preLoaderRoute: typeof MinhaListaRouteImport
+    '/zz-futtest': {
+      id: '/zz-futtest'
+      path: '/zz-futtest'
+      fullPath: '/zz-futtest'
+      preLoaderRoute: typeof ZzFuttestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfil': {
@@ -138,11 +124,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/zz-futtest': {
-      id: '/zz-futtest'
-      path: '/zz-futtest'
-      fullPath: '/zz-futtest'
-      preLoaderRoute: typeof ZzFuttestRouteImport
+    '/minha-lista': {
+      id: '/minha-lista'
+      path: '/minha-lista'
+      fullPath: '/minha-lista'
+      preLoaderRoute: typeof MinhaListaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorar': {
+      id: '/explorar'
+      path: '/explorar'
+      fullPath: '/explorar'
+      preLoaderRoute: typeof ExplorarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/anime/$animeId': {
