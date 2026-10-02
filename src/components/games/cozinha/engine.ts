@@ -220,6 +220,16 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    }
   }
 
+  drawSceneDepth(){
+   const w=this.scale.width,h=this.scale.height;
+   const top=this.add.rectangle(w/2,46,w,92,0x17151a,.94).setDepth(2);
+   top.setStrokeStyle(1,0x4a3b3b,.35);
+   const backGlow=this.add.ellipse(w/2,150,w*.78,150,0x6e5143,.055).setDepth(3);
+   backGlow.setBlendMode(Phaser.BlendModes.ADD);
+   const edge=this.add.rectangle(w/2,108,w-36,3,0xf0b56c,.18).setDepth(8);
+   this.tweens.add({targets:edge,alpha:{from:.1,to:.25},duration:1800,yoyo:true,repeat:-1});
+  }
+
   drawStations(){
    for(const s of STATIONS){
     if(s.type==="parede")continue;
