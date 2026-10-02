@@ -1,13 +1,22 @@
-import { useEffect, useRef } from "react";
-import { peekNew } from "@/lib/chat.functions";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { issueDeviceToken, peekDevice } from "@/lib/chat.functions";
 
 const WHO_KEY = "as_pref_who";
 const SINCE_KEY = "as_pref_mark";
+const TOKEN_KEY = "as_pref_dev";
+const FEED = "as-feed-ping";
 
-/** Guarda quem usa este aparelho (só o bb gu recebe aviso). */
+/** Guarda quem usa este aparelho e pega o token do aparelho. */
 export function rememberWho(who: "gu" | "li") {
   try {
     localStorage.setItem(WHO_KEY, who);
+    const t = localStorage.getItem(TOKEN_KEY);
+    if (!t || !t.startsWith(who + ".")) {
+      void issueDeviceToken({ data: { who } })
+        .then((r) => localStorage.setItem(TOKEN_KEY, r.token))
+        .catch(() => {});
+    }
   } catch {
     /* noop */
   }
@@ -22,10 +31,23 @@ export function getWho(): "gu" | "li" | null {
   }
 }
 
-/** Marca tudo como visto até agora (chamado quando o chat está aberto). */
 export function markNotifiedNow() {
   try {
     localStorage.setItem(SINCE_KEY, new Date().toISOString());
+  } catch {
+    /* noop */
+  }
+}
+
+/** Avisa os outros aparelhos na hora (sem conteúdo nenhum). */
+let pingCh: ReturnType<typeof supabase.channel> | null = null;
+export function pingFeed() {
+  try {
+    if (!pingCh) {
+      pingCh = supabase.channel(FEED);
+      pingCh.subscribe();
+    }
+    void pingCh.send({ type: "broadcast", event: "p", payload: {} });
   } catch {
     /* noop */
   }
@@ -41,30 +63,32 @@ function preview(text: string, mediaType: string | null) {
 }
 
 /**
- * Vigia discreto: enquanto o chat NÃO está aberto, checa mensagens novas
- * e mostra um aviso do navegador (só no aparelho do bb gu).
+ * Fora do chat: bolinha no sino (os dois) + aviso do navegador (só bb gu).
+ * Retorna se há mensagem não vista do outro.
  */
 export function useChatNotifier(active: boolean) {
   const lastIdRef = useRef<string | null>(null);
+  const [unread, setUnread] = useState(false);
 
   useEffect(() => {
     if (!active || typeof window === "undefined") return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
     const who = getWho();
-    if (who !== "gu" || !("Notification" in window)) return;
+    const canNotify = who === "gu" && "Notification" in window;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const askOnce = () => {
-      if (Notification.permission === "default") void Notification.requestPermission();
-      window.removeEventListener("pointerdown", askOnce);
+      if (canNotify && Notification.permission === "default") void Notification.requestPermission();
     };
-    if (Notification.permission === "default") {
+    if (canNotify && Notification.permission === "default") {
       window.addEventListener("pointerdown", askOnce, { once: true });
     }
 
     const notify = (body: string, count: number) => {
-      if (Notification.permission !== "granted") return;
+      if (!canNotify || Notification.permission !== "granted") return;
       try {
         const n = new Notification(
           count > 1 ? `${count} novos episódios disponíveis` : "Novo episódio disponível",
@@ -79,33 +103,42 @@ export function useChatNotifier(active: boolean) {
       }
     };
 
+    let running = false;
     const tick = async () => {
+      if (running) return;
+      running = true;
       try {
         let since = localStorage.getItem(SINCE_KEY);
         if (!since) {
           since = new Date().toISOString();
           localStorage.setItem(SINCE_KEY, since);
         }
-        const res = await peekNew({ data: { me: "gu", since } });
+        const res = await peekDevice({ data: { token, since } });
         if (cancelled) return;
+        setUnread(res.unread);
         if (res.count > 0 && res.last && res.last.id !== lastIdRef.current) {
           lastIdRef.current = res.last.id;
           notify(preview(res.last.text, res.last.mediaType), res.count);
           localStorage.setItem(SINCE_KEY, res.last.createdAt);
         }
       } catch {
-        /* sessão fechada — silencioso */
+        /* silencioso */
+      } finally {
+        running = false;
       }
-      if (cancelled) return;
-      timer = setTimeout(tick, document.visibilityState === "visible" ? 3500 : 12000);
     };
+    const loop = async () => {
+      await tick();
+      if (cancelled) return;
+      timer = setTimeout(loop, document.visibilityState === "visible" ? 4000 : 10000);
+    };
+    void loop();
 
-    void tick();
+    // chegada instantânea: o outro aparelho dá um "ping" ao enviar
+    const ch = supabase.channel(FEED).on("broadcast", { event: "p" }, () => void tick()).subscribe();
 
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      if (timer) clearTimeout(timer);
-      void tick();
+      if (document.visibilityState === "visible") void tick();
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
@@ -113,9 +146,12 @@ export function useChatNotifier(active: boolean) {
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      supabase.removeChannel(ch);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
       window.removeEventListener("pointerdown", askOnce);
     };
   }, [active]);
+
+  return unread;
 }
