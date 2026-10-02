@@ -481,7 +481,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    }else{
     hooks.sendAct({seq:++seq,stationId:this.nearest,held,kind:"interact"});
    }
-   this.flashAction(this.nearest);\n   this.interactionBurst(this.nearest,held?itemColor(held):C.accent);
+   this.flashAction(this.nearest);
+   this.interactionBurst(this.nearest,held?itemColor(held):C.accent);
   }
 
   throwItem(){
