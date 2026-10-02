@@ -7,11 +7,11 @@ export type HeldItem = Ingredient | Dish | "pizza_crua" | "cupcake_assado" | "qu
 export type StationType =
   | "parede" | "balcao" | "geladeira" | "tabua" | "fogao" | "forno"
   | "liquidificador" | "montagem" | "entrega" | "lixeira";
-export interface StationDef { id:string; type:StationType; x:number; y:number; ingredient?:Ingredient; }
+export interface StationDef { id:string; type:StationType; x:number; y:number; ingredient?:Ingredient; label?:string; }
 export interface ProcessState { itemIn: Exclude<HeldItem,null>|null; startedAt:number|null; ready:boolean; burnt:boolean; }
 export interface StationState {
   id:string; held:HeldItem; process?:ProcessState; bench?:Exclude<HeldItem,null>[];
-  prep?:{ item:Exclude<HeldItem,null>; hits:number; needed:number };
+  prep?:{ item:Exclude<HeldItem,null>; hits:number; needed:number; startedAt?:number };
 }
 export interface Order { id:number; dish:Dish; bornAt:number; patienceMs:number; }
 export interface PlayerMeta { outfit:string; hair:string; ready:boolean; }
@@ -25,5 +25,5 @@ export interface SharedState {
   players:Record<Me,PlayerMeta>; world:WorldSnapshot;
 }
 export interface PosMsg { x:number;y:number;facing:"up"|"down"|"left"|"right";holding:HeldItem;t:number; }
-export interface ActMsg { seq:number; stationId:string; held:HeldItem; }
+export interface ActMsg { seq:number; stationId:string; held:HeldItem; kind?: "interact"|"throw"; }
 export interface ChatMsg { text:string;t:number; }
