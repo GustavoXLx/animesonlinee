@@ -7,6 +7,6 @@
 - [x] Notificações: mostrar ativação explícita para bb gu e orientar quando a prévia bloquear
 - [x] Chat: preservar a posição ao carregar mensagens antigas
 - [x] Notificações: aviso de ativação ao entrar + entrega real (Web Push com service worker)
-- [ ] Futebol e Desfile: jogar com celular deitado
-- [ ] Futebol: skin personalizável, bonecos menores, barreira espaçada, replays curtos, câmera móvel e perna na falta, curvas menores, faltas mais longe
-- [ ] Desfile: bonecos melhores (cabelo/barba/bigode, texturas, roupas reconhecíveis, sem cara de massinha)
+- [x] Futebol e Desfile: jogar com celular deitado
+- [x] Futebol: skin personalizável, bonecos menores, barreira espaçada, replays curtos, câmera móvel e perna na falta, curvas menores, faltas mais longe
+- [x] Desfile: bonecos melhores (cabelo/barba/bigode, texturas, roupas reconhecíveis, sem cara de massinha)
