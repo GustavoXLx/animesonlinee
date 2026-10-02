@@ -151,13 +151,149 @@ function playerName(p:Player) {
   return CPU_NAMES[p];
 }
 
+const CPU_CLUES: Record<string, string[]> = {
+  Pizza:["costuma ser dividida em fatias","o queijo derretido é uma característica marcante","pode ter borda recheada ou fina"],
+  Hambúrguer:["normalmente é montado em camadas","o pão fica por fora do recheio","pode levar queijo, molho e outros complementos"],
+  Sushi:["costuma ser servido em pedaços pequenos","é muito associado à culinária japonesa","pode levar arroz e ingredientes crus"],
+  Lasanha:["é montada em várias camadas","o molho aparece entre as camadas","geralmente é servida em porções cortadas"],
+  Pudim:["tem textura macia e cremosa","costuma ter uma calda por cima","normalmente é desenformado antes de servir"],
+  Coxinha:["tem formato que lembra uma gota","o recheio mais tradicional é frango","é um salgado muito comum em festas brasileiras"],
+  Brasil:["a bandeira tem verde, amarelo, azul e branco","é o maior país da América do Sul","o português é a língua oficial"],
+  Japão:["é formado por várias ilhas","a flor de cerejeira é um símbolo cultural conhecido","o país mistura tecnologia moderna e tradições antigas"],
+  Itália:["tem formato alongado no mapa da Europa","Roma é sua capital","é muito associada a massas e pizzas"],
+  França:["Paris é a capital","a Torre Eiffel é um de seus símbolos mais conhecidos","é muito associada à gastronomia e à moda"],
+  Egito:["o rio Nilo atravessa o país","as pirâmides são um símbolo mundialmente conhecido","fica no nordeste da África"],
+  Canadá:["a folha de bordo aparece na bandeira","é o segundo maior país do mundo em área","é conhecido por seus invernos rigorosos em várias regiões"],
+  Leão:["o macho pode ter uma juba grande","vive em grupos chamados alcateias","é um predador de grande porte"],
+  Golfinho:["vive na água e precisa subir para respirar","costuma viver em grupos","é conhecido por sua inteligência e comunicação"],
+  Elefante:["usa a tromba para pegar objetos e alimentos","tem enormes orelhas","é um dos maiores animais terrestres"],
+  Pinguim:["não consegue voar","usa as asas para nadar","é associado a regiões muito frias"],
+  Cachorro:["possui um olfato muito desenvolvido","é um dos animais domésticos mais comuns","muitas raças vivem próximas das pessoas"],
+  Girafa:["tem o pescoço extremamente comprido","usa a língua para alcançar folhas","é o animal terrestre mais alto"],
+  Paris:["a Torre Eiffel é um de seus cartões-postais","fica às margens do rio Sena","é conhecida como uma cidade ligada à moda e à arte"],
+  Tóquio:["é a capital do Japão","tem uma das redes ferroviárias urbanas mais movimentadas","mistura bairros tecnológicos com áreas tradicionais"],
+  "Nova York":["a Estátua da Liberdade fica na cidade","Manhattan é uma de suas áreas mais conhecidas","é famosa por seus arranha-céus"],
+  "Rio de Janeiro":["o Cristo Redentor fica no alto do Corcovado","a cidade tem praias como Copacabana","o Pão de Açúcar é um de seus cartões-postais"],
+  Londres:["o Big Ben é um de seus símbolos","os ônibus vermelhos são muito característicos","o rio Tâmisa atravessa a cidade"],
+  Dubai:["o Burj Khalifa fica na cidade","é conhecida por grandes construções modernas","fica nos Emirados Árabes Unidos"],
+  Futebol:["cada equipe tenta marcar colocando a bola no gol","os jogadores de linha não podem usar as mãos normalmente","uma partida costuma ter dois tempos"],
+  Basquete:["a pontuação acontece ao acertar uma cesta","a bola é conduzida principalmente com as mãos","as equipes atacam cestas em lados opostos da quadra"],
+  Tênis:["os jogadores usam raquetes","uma rede divide os dois lados da quadra","a pontuação usa termos como 15, 30 e 40"],
+  Vôlei:["a rede divide as duas equipes","cada lado tenta devolver a bola sem deixá-la cair","o saque inicia cada disputa de ponto"],
+  Boxe:["os competidores usam luvas acolchoadas","os golpes são direcionados principalmente com os punhos","as lutas são divididas em rounds"],
+  Natação:["as provas acontecem em piscinas ou águas abertas","existem estilos como crawl e costas","o objetivo é completar a distância no menor tempo"],
+  Médico:["pode usar estetoscópio em consultas","faz diagnósticos e acompanha tratamentos","pode trabalhar em hospitais e consultórios"],
+  Professor:["prepara aulas e atividades","trabalha diretamente com estudantes","costuma avaliar o aprendizado"],
+  Chef:["comanda ou organiza uma cozinha profissional","precisa dominar técnicas de preparo","pode criar e montar pratos"],
+  Bombeiro:["atua em incêndios e resgates","usa equipamentos de proteção","pode trabalhar em ocorrências de emergência"],
+  Piloto:["precisa controlar uma aeronave","acompanha instrumentos durante o voo","trabalha seguindo procedimentos de segurança"],
+  Fotógrafo:["trabalha com composição e iluminação","usa câmeras para registrar imagens","pode atuar em eventos, publicidade ou jornalismo"],
+  Comédia:["busca provocar risadas","costuma usar situações engraçadas","pode aparecer em filmes, séries ou apresentações"],
+  Terror:["costuma trabalhar com suspense e medo","pode usar sons para criar tensão","é comum encontrar cenários sombrios nesse gênero"],
+  Ação:["costuma ter perseguições e confrontos","pode envolver explosões e cenas intensas","heróis frequentemente enfrentam obstáculos físicos"],
+  Romance:["relações afetivas costumam estar no centro","conflitos amorosos são frequentes","pode terminar com uma aproximação ou separação do casal"],
+  "Ficção científica":["pode explorar viagens espaciais","tecnologias imaginárias aparecem com frequência","costuma brincar com futuros possíveis"],
+  Animação:["personagens podem ser desenhados ou modelados digitalmente","o movimento é criado quadro a quadro","não depende de atores filmados em cena"],
+  Celular:["cabe facilmente no bolso","tem tela sensível ao toque em muitos modelos","é usado para chamadas, mensagens e aplicativos"],
+  Notebook:["tem teclado integrado","possui uma tela dobrável sobre a base","pode funcionar longe de uma tomada por algum tempo"],
+  Videogame:["usa controles para interagir com jogos","pode ter partidas online","é ligado a telas para exibir a imagem"],
+  Drone:["é controlado remotamente","pode permanecer no ar usando hélices","é muito usado para captar imagens aéreas"],
+  Robô:["pode executar tarefas programadas","alguns possuem sensores para perceber o ambiente","pode ter movimentos automatizados"],
+  Smartwatch:["é usado no pulso","pode mostrar notificações do celular","alguns modelos monitoram atividades físicas"],
+  Sofá:["normalmente tem espaço para várias pessoas","fica geralmente na sala","pode ter almofadas e braços laterais"],
+  Geladeira:["mantém alimentos em baixa temperatura","possui uma porta ou mais","normalmente fica na cozinha"],
+  Cama:["tem colchão como parte principal","é usada principalmente durante o sono","pode ter cabeceira"],
+  Chuveiro:["fica normalmente acima da cabeça","libera água para o banho","pode ter controle de temperatura"],
+  Televisão:["tem uma tela grande para exibir imagens","pode receber canais ou aplicativos","normalmente fica voltada para quem está sentado"],
+  "Micro-ondas":["aquece comida em poucos minutos","possui uma porta na frente","costuma ter um painel de comandos"],
+  "Guarda-sol":["é usado para criar sombra","tem uma haste central","é comum em praias e áreas externas"],
+  Areia:["é formada por muitos grãos pequenos","pode ficar quente sob o sol","aparece em grande quantidade nas praias"],
+  Prancha:["é usada para deslizar sobre a água","normalmente precisa ser equilibrada com o corpo","pode ser usada para surfar"],
+  Biquíni:["é uma roupa de banho dividida em duas partes","é usado principalmente em praias e piscinas","pode ter diferentes estampas e modelos"],
+  Quente:["descreve algo com temperatura elevada","é uma sensação comum em dias de verão","é o oposto de frio"],
+  "Protetor solar":["é aplicado diretamente na pele","ajuda a proteger contra radiação ultravioleta","é muito usado antes de ficar exposto ao sol"],
+  Prova:["pode ter questões de múltipla escolha ou dissertativas","serve para avaliar o conhecimento","normalmente acontece em uma data marcada"],
+  Caderno:["tem páginas encadernadas","é usado para fazer anotações","pode ter linhas ou folhas em branco"],
+  Mochila:["é carregada nas costas","tem alças para os ombros","costuma guardar materiais e objetos"],
+  Professor:["prepara aulas e atividades","trabalha diretamente com estudantes","costuma avaliar o aprendizado"],
+  Recreio:["acontece entre períodos de aula","é um momento de pausa para estudantes","costuma acontecer no pátio ou em áreas comuns"],
+  Lápis:["pode ser apontado quando perde a ponta","usa grafite para escrever","também é muito usado para desenhar"],
+  Avião:["tem asas e motores","decola e pousa em aeroportos","transporta passageiros em grandes distâncias"],
+  Hotel:["oferece quartos para hóspedes","pode ter recepção e serviço de limpeza","é comum em destinos turísticos"],
+  Passaporte:["tem páginas para registros de viagem","é usado em deslocamentos internacionais","é emitido pelas autoridades de um país"],
+  Mala:["tem espaço para guardar roupas","pode ter rodinhas","é comum em viagens"],
+  Aeroporto:["tem pistas para pousos e decolagens","possui áreas de embarque","tem terminais para passageiros"],
+  Mapa:["pode mostrar ruas, países ou regiões","usa símbolos para representar lugares","ajuda a encontrar caminhos"],
+  Montanha:["possui uma elevação muito acima do terreno ao redor","pode ter neve no topo em algumas regiões","é comum encontrar trilhas em suas encostas"],
+  Cachoeira:["a água despenca de uma altura","pode formar uma piscina natural","é comum em regiões com rios e relevo acidentado"],
+  Floresta:["é dominada por árvores e vegetação","abriga muitos animais","pode ocupar grandes extensões de território"],
+  Vulcão:["pode liberar lava e cinzas","tem uma abertura por onde materiais podem sair","alguns ficam em áreas de encontro de placas tectônicas"],
+  Deserto:["recebe pouca chuva","pode ter grandes áreas de areia","as temperaturas podem variar bastante entre dia e noite"],
+  Rio:["a água corre por um leito","pode desaguar em outro rio, lago ou oceano","pode atravessar cidades e áreas rurais"],
+  Violão:["tem cordas e um corpo oco","é tocado com as mãos","é muito usado para acompanhar cantores"],
+  Piano:["tem teclas pretas e brancas","produz som por meio de cordas internas","pode ser encontrado em salas de concerto"],
+  Bateria:["é formada por vários tambores e pratos","é tocada principalmente com baquetas","marca o ritmo de muitas bandas"],
+  Microfone:["capta a voz para amplificação ou gravação","é comum em palcos","pode ficar preso a um pedestal"],
+  Show:["acontece diante de um público","pode ter iluminação de palco","normalmente envolve uma apresentação musical ou artística"],
+  Cantor:["usa a voz como instrumento","pode se apresentar acompanhado por uma banda","precisa trabalhar respiração e afinação"],
+  Vestido:["é uma peça geralmente de uma só estrutura","pode ser longo ou curto","é usado em ocasiões casuais ou formais"],
+  Tênis:["é um calçado fechado","pode ter solado de borracha","é usado tanto para esporte quanto no dia a dia"],
+  Jaqueta:["cobre a parte superior do corpo","pode ter zíper ou botões","é comum em dias frios ou de vento"],
+  Bolsa:["serve para carregar objetos pessoais","pode ser usada no ombro ou na mão","existem modelos grandes e pequenos"],
+  Boné:["tem uma aba na parte da frente","é usado na cabeça","é comum em looks esportivos e casuais"],
+  Óculos:["ficam apoiados sobre o nariz e as orelhas","podem ter lentes para corrigir a visão","também existem modelos usados apenas como acessório"],
+  Carro:["normalmente tem quatro rodas","possui volante para direção","pode transportar algumas pessoas no interior"],
+  Ônibus:["transporta muitos passageiros","costuma ter várias fileiras de bancos","circula por rotas definidas nas cidades"],
+  Metrô:["circula sobre trilhos","transporta muitos passageiros por viagem","muitas linhas passam por túneis"],
+  Navio:["é construído para navegar na água","pode transportar cargas ou passageiros","possui um casco de grande porte"],
+  Bicicleta:["tem duas rodas","é movida principalmente por pedais","usa guidão para mudar de direção"],
+  Motocicleta:["tem duas rodas e motor","é conduzida com guidão","normalmente exige capacete para o condutor"],
+  Aniversário:["é celebrado uma vez por ano para cada pessoa","pode ter bolo e velas","a data é ligada ao nascimento"],
+  Casamento:["costuma reunir familiares e amigos","pode ter uma cerimônia","é associado à união de um casal"],
+  Carnaval:["pode ter desfiles e blocos","fantasias são muito comuns","no Brasil é marcado por música e dança"],
+  Réveillon:["acontece na virada do ano","muitas pessoas fazem contagem regressiva","fogos de artifício são comuns em algumas celebrações"],
+  Balada:["normalmente acontece à noite","costuma ter música alta","pode ter pista de dança"],
+  Formatura:["marca a conclusão de uma etapa de estudos","pode ter cerimônia e entrega de certificados","é comum usar roupas formais na celebração"],
+  Chave:["tem dentes ou ranhuras em muitos modelos","é usada para abrir fechaduras","pode ser presa a um chaveiro"],
+  Relógio:["tem mostrador ou tela","é usado no pulso ou em paredes","serve para acompanhar a passagem das horas"],
+  Óculos:["ficam apoiados sobre o nariz e as orelhas","podem ter lentes para corrigir a visão","também existem modelos usados apenas como acessório"],
+  "Guarda-chuva":["abre para formar uma cobertura","é carregado pela haste","protege da chuva"],
+  Tesoura:["tem duas lâminas que se cruzam","possui duas alças para os dedos","é usada para cortar materiais"],
+  Mochila:["é carregada nas costas","tem alças para os ombros","costuma guardar materiais e objetos"],
+  Chocolate:["é produzido a partir do cacau","pode ser ao leite, amargo ou branco","derrete quando aquecido"],
+  Sorvete:["é servido congelado","pode ter muitos sabores","começa a derreter fora do congelador"],
+  Brigadeiro:["é um doce brasileiro","costuma levar leite condensado e chocolate","normalmente é enrolado em pequenas porções"],
+  Bolo:["é assado em forno","pode receber cobertura","é comum em comemorações"],
+  Donut:["tem formato de anel em muitos modelos","pode receber cobertura colorida","é muito associado à culinária norte-americana"],
+  Picolé:["é congelado em torno de um palito","pode ter sabores de frutas ou doces","é consumido segurando o palito"],
+  Herói:["costuma proteger outras pessoas","geralmente enfrenta grandes ameaças","é comum ter habilidades especiais em histórias"],
+  Vilão:["normalmente cria obstáculos para o protagonista","pode ter planos para dominar ou destruir algo","é o antagonista em muitas histórias"],
+  Máscara:["cobre parte do rosto","pode esconder a identidade","é usada por muitos personagens de histórias"],
+  Capa:["pode ser usada sobre os ombros","é um elemento visual clássico de heróis","pode se mover bastante durante cenas de ação"],
+  Poder:["é uma habilidade fora do comum","pode ser usada para enfrentar inimigos","em histórias pode ter origem sobrenatural ou tecnológica"],
+  Quartel:["serve como base de operações","pode guardar equipamentos","é onde um grupo pode se reunir e planejar ações"],
+};
+
 function clueFor(seed:number, theme:Theme, themeIdx:number, player:Player, round:number) {
   const imp = playerIsImpostor(seed, player);
   if (imp) {
-    const vague = ["é bem conhecido","tem a ver com o tema","muita gente conhece","pode aparecer em vários lugares","depende bastante da situação","é algo que chama atenção"];
-    return vague[hash(seed, 4000 + PLAYERS.indexOf(player) * 13 + round) % vague.length];
+    const secret = theme.items[wordIndex(seed, themeIdx)];
+    const hint = WORD_HINTS[secret] ?? "tem características bem específicas";
+    const variants = [
+      `Eu lembraria de algo que ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
+      `Uma pista que me vem à cabeça: ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
+      `Eu iria por este detalhe: ${hint.charAt(0).toLowerCase() + hint.slice(1)}`,
+    ];
+    return variants[round % variants.length];
   }
-  return theme.clues[hash(seed, themeIdx * 100 + PLAYERS.indexOf(player) * 17 + round) % theme.clues.length];
+  const secret = theme.items[wordIndex(seed, themeIdx)];
+  const bank = CPU_CLUES[secret] ?? theme.clues;
+  const used = new Set<string>();
+  for (let i=0;i<PLAYERS.length;i++) {
+    const candidate = bank[(hash(seed, 4000 + themeIdx * 71 + PLAYERS.indexOf(player) * 19 + round * 37 + i) % bank.length)];
+    if (!used.has(candidate)) { used.add(candidate); return candidate; }
+  }
+  return bank[round % bank.length];
 }
 
 function resetState(): ImpState {
