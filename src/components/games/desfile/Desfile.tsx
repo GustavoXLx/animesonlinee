@@ -160,24 +160,40 @@ function DesfileInner({ me }: { me: Me }) {
   /* ---------- telas ---------- */
   if (state.phase === "lobby") {
     return (
-      <div className="relative flex h-full flex-col items-center justify-center gap-6 overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#831843_0%,#1e1b4b_45%,#09090b_100%)] p-6 text-center">
-        <div className="absolute inset-x-0 top-0 h-40 animate-pulse bg-[conic-gradient(from_180deg_at_50%_0%,transparent,rgba(255,255,255,0.12),transparent)]" />
-        <p className="text-xs uppercase tracking-[0.4em] text-pink-200/80">Fashion Week do casal</p>
-        <h3 className="text-4xl font-black italic">Desfile</h3>
-        <p className="max-w-sm text-sm text-white/70">
-          Um tema aparece, cada um monta o look em {DRESS_SECS / 60 > 2 ? "2min30" : `${DRESS_SECS}s`} e vocês desfilam na passarela. Os jurados de IA escolhem quem arrasou.
-        </p>
-        <p className="text-sm text-white/60">
-          Placar: {NAME.gu} {state.wins.gu} x {state.wins.li} {NAME.li}
-        </p>
-        <button disabled={!peerOnline} onClick={() => { void enterLandscape(); newRound(); }} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-8 py-3 text-lg font-black shadow-xl shadow-pink-500/30 transition hover:scale-105 disabled:opacity-40">
-          Sortear tema
-        </button>
-        {!peerOnline && <p className="text-sm text-amber-300">Esperando {NAME[other(me)]} entrar…</p>}
+      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[#09070d] p-4 text-center text-white sm:p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,.28),transparent_35%),radial-gradient(circle_at_10%_80%,rgba(168,85,247,.18),transparent_30%)]" />
+        <div className="relative z-10 w-full max-w-4xl">
+          <div className="mb-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.35em] text-pink-200/70"><Sparkles size={14} /> Fashion Week</div>
+          <h3 className="text-4xl font-black italic sm:text-6xl">DESFILE</h3>
+          <p className="mx-auto mt-2 max-w-lg text-xs text-white/50 sm:text-sm">Monte o look, encare o tema e leve sua criação para a passarela.</p>
+          <div className="mt-6 grid gap-3 md:grid-cols-[1fr_1.35fr_1fr]">
+            {(["gu","li"] as Me[]).map((w) => {
+              const online = w === me || peerOnline;
+              const done = !!state.subs[w];
+              return (
+                <div key={w} className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 text-left shadow-2xl backdrop-blur-xl">
+                  <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">{w === me ? "Você" : "Parceiro"}</span><span className={online ? "h-2 w-2 rounded-full bg-emerald-400" : "h-2 w-2 rounded-full bg-white/20"} /></div>
+                  <div className="mt-3 flex items-center gap-3"><div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-pink-400/10 text-xl">👗</div><div><p className="font-black">{NAME[w]}</p><p className="text-[10px] text-white/40">{online ? "Na sala" : "Aguardando"}</p></div></div>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5"><div className={done ? "h-full w-full rounded-full bg-emerald-400" : online ? "h-full w-1/2 rounded-full bg-pink-400" : "h-full w-1/5 rounded-full bg-white/10"} /></div>
+                </div>
+              );
+            })}
+            <div className="order-first rounded-3xl border border-pink-300/20 bg-gradient-to-br from-pink-500/15 to-transparent p-5 shadow-2xl backdrop-blur-xl md:order-none">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[26px] border border-pink-200/20 bg-pink-400/10"><Sparkles size={34} className="text-pink-200" /></div>
+              <p className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-pink-200/60">Próxima rodada</p><p className="mt-1 text-lg font-black">Tema surpresa</p><p className="mt-1 text-[10px] text-white/40">O tema é revelado quando vocês começarem.</p>
+            </div>
+          </div>
+          <div className="mx-auto mt-4 grid max-w-2xl grid-cols-3 gap-2">
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">150s</p><p className="text-[9px] uppercase tracking-wider text-white/35">para criar</p></div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">IA</p><p className="text-[9px] uppercase tracking-wider text-white/35">como jurada</p></div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">{state.wins.gu + state.wins.li}</p><p className="text-[9px] uppercase tracking-wider text-white/35">vitórias na sala</p></div>
+          </div>
+          <button disabled={!peerOnline} onClick={() => { void enterLandscape(); newRound(); }} className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-9 py-3.5 text-sm font-black shadow-xl transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-35"><Sparkles size={17} /> Sortear tema e começar</button>
+          {!peerOnline && <p className="mt-3 text-xs font-medium text-amber-300">Esperando {NAME[other(me)]} entrar na sala…</p>}
+        </div>
       </div>
     );
   }
-
   if (state.phase === "dress" || state.phase === "judging") {
     const partnerDone = !!state.subs[other(me)];
     return (
