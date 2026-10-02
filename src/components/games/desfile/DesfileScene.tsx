@@ -131,7 +131,7 @@ function Crowd({ flashLevel }: { flashLevel: React.MutableRefObject<number> }) {
   );
 }
 
-function Confetti({ on }: { on: boolean }) {
+function Confetti({ onRef }: { onRef: React.MutableRefObject<boolean> }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const N = 220;
   const p = useMemo(() => Array.from({ length: N }, () => ({ pos: new THREE.Vector3(), vel: new THREE.Vector3(), rot: new THREE.Euler(), a: 0 })), []);
@@ -147,6 +147,7 @@ function Confetti({ on }: { on: boolean }) {
   }, []);
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05);
+    const on = onRef.current;
     if (on && !fired.current) {
       fired.current = true;
       p.forEach((x) => {
@@ -290,13 +291,11 @@ function Stage({ p }: { p: ShowProps }) {
   const strips = useRef<THREE.MeshStandardMaterial>(null);
   const spot = useRef<THREE.SpotLight>(null);
   const flash = useRef(0.2);
-  const [winnerOn, setWinnerOn] = [useRef(false), () => {}];
-  void setWinnerOn;
+  const winnerOn = useRef(false);
   useFrame(({ clock }) => {
     if (strips.current) strips.current.emissiveIntensity = 1.4 + Math.sin(clock.elapsedTime * 4) * 0.5;
     winnerOn.current = !!p.winner && (performance.now() - p.startRef.current) / 1000 > FINAL_AT + 2.5;
   });
-  const t = typeof performance !== "undefined" ? (performance.now() - p.startRef.current) / 1000 : 0;
   return (
     <>
       <Rig p={p} flash={flash} />
@@ -333,7 +332,7 @@ function Stage({ p }: { p: ShowProps }) {
         </mesh>
       ))}
       <Crowd flashLevel={flash} />
-      <Confetti on={!!p.winner && t > FINAL_AT + 2.5} />
+      <Confetti onRef={winnerOn} />
       <spotLight ref={spot} position={[0, 7, END_Z + 2]} angle={0.35} penumbra={0.6} intensity={60} distance={20} color="#fff1f8" />
       <spotLight position={[-4, 6, END_Z]} angle={0.5} penumbra={0.8} intensity={25} distance={18} color="#c4b5fd" target-position={[0, 0.5, END_Z - 1]} />
       {p.order.map((w, i) => (
