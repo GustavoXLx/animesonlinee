@@ -116,7 +116,7 @@ function useBallTex() {
 }
 
 /* ---------------- pessoas ---------------- */
-type AnimRef = React.MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
+type AnimRef = MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
 
 function Person({ model, groupRef, anim, height = 1.82 }: { model: string; groupRef: React.RefObject<THREE.Group | null>; anim: AnimRef; height?: number }) {
   const gltf = useGLTF(charUrl(model));
@@ -175,7 +175,7 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
 }
 
 /* ---------------- cenário ---------------- */
-function Goal({ solRef, timeRef }: { solRef: React.MutableRefObject<Solved | null>; timeRef: React.MutableRefObject<number> }) {
+function Goal({ solRef, timeRef }: { solRef: MutableRefObject<Solved | null>; timeRef: MutableRefObject<number> }) {
   const back = useRef<THREE.Mesh>(null);
   const geo = useMemo(() => new THREE.PlaneGeometry(GOAL_W, GOAL_H, 36, 12), []);
   const base = useMemo(() => Float32Array.from(geo.attributes.position.array as Float32Array), [geo]);
@@ -645,7 +645,7 @@ function Game(p: SceneProps) {
 
       {/* plano invisível para mirar */}
       <mesh
-        position={[0, 2.2, 0.06]}
+        position={[0, 2.2, 0.22]}
         onPointerDown={(e) => {
           dragging.current = true;
           setAim(e);
@@ -654,7 +654,7 @@ function Game(p: SceneProps) {
         onPointerUp={() => (dragging.current = false)}
         onPointerLeave={() => (dragging.current = false)}
       >
-        <planeGeometry args={[14, 6]} />
+        <planeGeometry args={[18, 7]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       <group ref={reticle}>
