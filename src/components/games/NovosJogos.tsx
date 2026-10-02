@@ -75,6 +75,7 @@ type AlienRound = {
 
 type AlienStateLocal = {
   phase:"home"|"playing"|"vote-driver"|"vote-investigator"|"done";
+  ready:Ready;
   passengers:Passenger[];
   alien:number;
   rounds:AlienRound[];
@@ -195,6 +196,7 @@ function makeAlienGame():AlienStateLocal{
   passengers[alien]={...passengers[alien],secret:alienSecret};
   return {
     phase:"home",
+    ready:{gu:false,li:false},
     passengers,
     alien,
     rounds:[],
@@ -219,17 +221,25 @@ function answerFor(game:AlienStateLocal,passenger:number,question:number){
   return ALIEN_RESPONSES[question](p);
 }
 
-export function AlienBancoTras({me:_me}:{me:Me}){
-  const [game,setGame]=useState<AlienStateLocal>(()=>makeAlienGame());
+export function AlienBancoTras({me}:{me:Me}){
+  const initial=useMemo(()=>makeAlienGame(),[]);
+  const {state:shared,setState,peerOnline}=useGameChannel<AlienStateLocal>("alien-banco",me,initial);
+  const game=shared;
   const [selected,setSelected]=useState<number|null>(null);
   const [question,setQuestion]=useState(0);
   const [lastAnswer,setLastAnswer]=useState("");
   const [clueIndex,setClueIndex]=useState(0);
 
+  const ready=()=>{
+    setState(g=>({...g,ready:{...g.ready,[me]:true}}));
+  };
+
   const start=()=>{
+    if(!peerOnline||!game.ready.gu||!game.ready.li)return;
     const fresh=makeAlienGame();
     fresh.phase="playing";
-    setGame(fresh);
+    fresh.ready=game.ready;
+    setState(fresh);
     setSelected(null);
     setQuestion(0);
     setLastAnswer("");
@@ -239,7 +249,7 @@ export function AlienBancoTras({me:_me}:{me:Me}){
   const ask=()=>{
     if(selected===null)return;
     const answer=answerFor(game,selected,question);
-    setGame(g=>({...g,rounds:[...g.rounds,{passenger:selected,question:QUESTIONS[question],answer}]}));
+    setState(g=>({...g,rounds:[...g.rounds,{passenger:selected,question:QUESTIONS[question],answer}]}));
     setLastAnswer(answer);
   };
 
@@ -250,14 +260,19 @@ export function AlienBancoTras({me:_me}:{me:Me}){
   };
 
   const voteDriver=(value:number)=>{
-    setGame(g=>({...g,driverVote:value,phase:"vote-investigator"}));
+    setState(g=>({...g,driverVote:value,phase:"vote-investigator"}));
   };
 
   const voteInvestigator=(value:number)=>{
-    setGame(g=>({...g,investigatorVote:value,phase:"done"}));
+    setState(g=>({...g,investigatorVote:value,phase:"done"}));
   };
 
-  if(game.phase==="home") return <div className="h-full overflow-y-auto p-4"><div className="mx-auto flex min-h-[520px] max-w-2xl items-center justify-center"><div className="w-full overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-gradient-to-br from-[#0b1720] via-[#101522] to-[#171024] p-7 shadow-2xl"><div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10"><Car className="text-cyan-200" size={34}/></div><p className="text-center text-xs font-black uppercase tracking-[0.25em] text-cyan-200/70">jogo para 2 jogadores</p><h1 className="mt-2 text-center text-3xl font-black tracking-tight">ALIENÍGENA NO BANCO DE TRÁS</h1><p className="mx-auto mt-4 max-w-lg text-center text-sm leading-6 text-white/60">Um dos passageiros não é humano. Descubram quem é antes que seja tarde demais.</p><div className="mt-7 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-cyan-200/70">Jogador 1</p><p className="mt-1 font-black">MOTORISTA</p><p className="mt-1 text-xs text-white/45">Faz perguntas aos passageiros.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-violet-200/70">Jogador 2</p><p className="mt-1 font-black">INVESTIGADOR</p><p className="mt-1 text-xs text-white/45">Recebe pistas diferentes e compara as respostas.</p></div></div><button onClick={start} className="mt-7 w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 py-4 text-sm font-black shadow-lg shadow-cyan-950/30">COMEÇAR</button></div></div></div>;
+  if(game.phase==="home") return <div className="h-full overflow-y-auto p-4"><div className="mx-auto flex min-h-[520px] max-w-2xl items-center justify-center"><div className="w-full overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-gradient-to-br from-[#0b1720] via-[#101522] to-[#171024] p-7 shadow-2xl"><div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10"><Car className="text-cyan-200" size={34}/></div><p className="text-center text-xs font-black uppercase tracking-[0.25em] text-cyan-200/70">jogo para 2 jogadores</p><h1 className="mt-2 text-center text-3xl font-black tracking-tight">ALIENÍGENA NO BANCO DE TRÁS</h1><p className="mx-auto mt-4 max-w-lg text-center text-sm leading-6 text-white/60">Um dos passageiros não é humano. Descubram quem é antes que seja tarde demais.</p><div className="mt-7 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-cyan-200/70">Jogador 1</p><p className="mt-1 font-black">MOTORISTA</p><p className="mt-1 text-xs text-white/45">Faz perguntas aos passageiros.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-violet-200/70">Jogador 2</p><p className="mt-1 font-black">INVESTIGADOR</p><p className="mt-1 text-xs text-white/45">Recebe pistas diferentes e compara as respostas.</p></div></div><div className="mt-7 grid grid-cols-2 gap-3">
+<div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-cyan-200/60">MOTORISTA</p><p className="mt-1 font-bold">{game.ready.gu?"Pronto":"Aguardando"}</p></div>
+<div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-black uppercase tracking-widest text-violet-200/60">INVESTIGADOR</p><p className="mt-1 font-bold">{game.ready.li?"Pronto":peerOnline?"Online — aguardando pronto":"Offline — entre no jogo"}</p></div>
+</div>
+<button onClick={ready} disabled={game.ready[me]||!peerOnline} className="mt-4 w-full rounded-2xl bg-white/10 py-3 text-sm font-black disabled:opacity-30">{game.ready[me]?"Você está pronto":!peerOnline?"Aguardando o outro jogador":"Estou pronto"}</button>
+<button onClick={start} disabled={!peerOnline||!game.ready.gu||!game.ready.li} className="mt-2 w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 py-4 text-sm font-black shadow-lg shadow-cyan-950/30 disabled:opacity-30">{!peerOnline?"Aguardando BB Li entrar":!game.ready.gu||!game.ready.li?"Os dois precisam estar prontos":"COMEÇAR"}</button></div></div></div>;
 
   if(game.phase==="playing"){
     const recent=game.rounds[game.rounds.length-1];
@@ -270,7 +285,7 @@ export function AlienBancoTras({me:_me}:{me:Me}){
 
   const driverCorrect=game.driverVote===game.alien;
   const investigatorCorrect=game.investigatorVote===game.alien;
-  return <div className="h-full overflow-y-auto p-4"><div className="mx-auto max-w-xl rounded-3xl border border-emerald-300/15 bg-gradient-to-br from-emerald-500/[0.08] to-violet-500/[0.05] p-7 text-center"><Shield className="mx-auto mb-3 text-emerald-300" size={34}/><p className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Resultado</p><h2 className="mt-2 text-3xl font-black">{game.passengers[game.alien].name} era o alienígena</h2><p className="mt-3 text-sm text-white/60">{game.passengers[game.alien].secret}</p><div className="mt-6 grid grid-cols-2 gap-3 text-left"><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs text-white/40">Motorista</p><p className="mt-1 font-black">{driverCorrect?"Acertou":"Errou"}</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs text-white/40">Investigador</p><p className="mt-1 font-black">{investigatorCorrect?"Acertou":"Errou"}</p></div></div><button onClick={start} className="mt-6 w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 py-3 font-black">Jogar novamente</button></div></div>;
+  return <div className="h-full overflow-y-auto p-4"><div className="mx-auto max-w-xl rounded-3xl border border-emerald-300/15 bg-gradient-to-br from-emerald-500/[0.08] to-violet-500/[0.05] p-7 text-center"><Shield className="mx-auto mb-3 text-emerald-300" size={34}/><p className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Resultado</p><h2 className="mt-2 text-3xl font-black">{game.passengers[game.alien].name} era o alienígena</h2><p className="mt-3 text-sm text-white/60">{game.passengers[game.alien].secret}</p><div className="mt-6 grid grid-cols-2 gap-3 text-left"><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs text-white/40">Motorista</p><p className="mt-1 font-black">{driverCorrect?"Acertou":"Errou"}</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><p className="text-xs text-white/40">Investigador</p><p className="mt-1 font-black">{investigatorCorrect?"Acertou":"Errou"}</p></div></div><button onClick={()=>{const fresh=makeAlienGame();fresh.phase="home";setState(fresh);setSelected(null);setQuestion(0);setLastAnswer("");setClueIndex(0);}} className="mt-6 w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 py-3 font-black">Jogar novamente</button></div></div>;
 }
 
 /* FEITIÇO ERRADO */
