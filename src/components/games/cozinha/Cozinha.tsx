@@ -142,16 +142,14 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
   }, [peerOnline]);
 
   const bothReady = state.players.gu.ready && state.players.li.ready;
-  useEffect(() => {
-    if (isHost && state.stage === "espera" && bothReady && peerOnline) {
-      const seed = Math.floor(Math.random() * 1e6) + 1;
-      const w0 = initialWorld(seed);
-      worldRef.current = w0;
-      setWorld(w0);
-      setState((p) => ({ ...p, stage: "jogando", seed, startAt: Date.now(), world: w0 }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, state.stage, bothReady, peerOnline]);
+  const startGame = () => {
+    if (!isHost || state.stage !== "espera" || !bothReady || !peerOnline) return;
+    const seed = Math.floor(Math.random() * 1e6) + 1;
+    const w0 = initialWorld(seed);
+    worldRef.current = w0;
+    setWorld(w0);
+    setState((p) => ({ ...p, stage: "jogando", seed, startAt: Date.now(), world: w0 }));
+  };
 
   const showBubble = (who: Me, text: string) => {
     const id = Date.now() + Math.random();
@@ -340,7 +338,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
 
     return (
       <LandscapeGate>
-        <div className="fixed inset-0 h-dvh w-screen overflow-hidden bg-[#17131a] text-white">
+        <div className="fixed inset-0 h-dvh w-screen overflow-y-auto bg-[#17131a] text-white">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl animate-pulse" />
             <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl animate-pulse [animation-delay:700ms]" />
@@ -357,7 +355,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
             <X size={18} />
           </button>
 
-          <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col justify-center gap-4 px-4 py-5 md:px-8">
+          <div className="relative z-10 mx-auto flex min-h-full w-full max-w-6xl flex-col justify-center gap-4 px-4 py-6 md:px-8">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/80">
@@ -455,6 +453,17 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                     <Check size={18} />
                     {state.players[me].ready ? "Você está pronto!" : "Estou pronto para cozinhar"}
                   </button>
+                  {isHost && (
+                    <button
+                      type="button"
+                      onClick={startGame}
+                      disabled={!bothReady || !peerOnline}
+                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200/20 bg-amber-300/10 px-5 py-3 text-sm font-black text-amber-100 transition hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      <Play size={17} />
+                      {bothReady ? "Iniciar cozinha" : "Aguardando os dois ficarem prontos"}
+                    </button>
+                  )}
                 </div>
               </div>
 
