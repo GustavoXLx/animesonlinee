@@ -155,23 +155,39 @@ function emptyState():ImpState{return{phase:"lobby",seed:0,themeIndex:0,round:0,
 
 function Character({player,size="md"}:{player:Player;size?: "sm"|"md"}) {
   const female=GENDER[player]==="female";
-  const scale=size==="sm" ? "h-16 w-12" : "h-24 w-16";
-  return <div className={`relative ${scale} shrink-0`}>
-    <div className={`absolute left-1/2 top-0 -translate-x-1/2 rounded-full border-2 border-black/20 ${size==="sm"?"h-8 w-8":"h-11 w-11"} ${female?"bg-[#f3c9a8]":"bg-[#dca77f]"}`}>
-      <div className={`absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#231b20] ${female?"shadow-[6px_0_0_#231b20]":"shadow-[6px_0_0_#231b20]"}`}/>
-      <div className={`absolute left-1/2 -top-1 -translate-x-1/2 rounded-t-full ${size==="sm"?"h-3 w-8":"h-4 w-11"} ${female?"bg-[#6d3f2e]":"bg-[#302a35]"}`}/>
+  const compact=size==="sm";
+  const skin=female?"bg-[#f2c6a4]":"bg-[#d9a078]";
+  const hair=female?"bg-[#6f4030]":"bg-[#29242f]";
+  const outfit=female?"bg-[#c94f82]":"bg-[#416fc4]";
+  const accent=female?"bg-[#f6d6e4]":"bg-[#9db8f2]";
+  return <div className={`relative shrink-0 ${compact?"h-[72px] w-[58px]":"h-[126px] w-[92px]"}`}>
+    <div className={`absolute left-1/2 top-0 -translate-x-1/2 rounded-full border-2 border-black/20 shadow-lg ${compact?"h-9 w-9":"h-14 w-14"} ${skin}`}>
+      <div className={`absolute left-1/2 ${compact?"top-[12px]":"top-[18px]"} flex -translate-x-1/2 gap-2`}>
+        <span className={`rounded-full bg-[#241c22] ${compact?"h-1.5 w-1.5":"h-2 w-2"}`}/>
+        <span className={`rounded-full bg-[#241c22] ${compact?"h-1.5 w-1.5":"h-2 w-2"}`}/>
+      </div>
+      <div className={`absolute left-1/2 -translate-x-1/2 rounded-full border border-black/10 ${compact?"top-5 h-1 w-3":"top-8 h-1.5 w-4"} bg-[#b56f66]`}/>
+      <div className={`absolute left-1/2 -top-1 -translate-x-1/2 rounded-t-full ${compact?"h-3 w-9":"h-5 w-14"} ${hair}`}/>
+      {female&&<div className={`absolute -left-1 -top-1 rounded-full ${compact?"h-7 w-2":"h-11 w-3"} ${hair} shadow-[calc(100%+30px)_0_0_var(--tw-shadow-color)]`}/>}
     </div>
-    <div className={`absolute left-1/2 top-${size==="sm"?"7":"10"} -translate-x-1/2 rounded-t-2xl rounded-b-xl border border-black/20 ${size==="sm"?"h-9 w-10":"h-12 w-14"} ${female?"bg-[#c45b83]":"bg-[#3d67b1]"}`}/>
-    <div className={`absolute left-1/2 top-${size==="sm"?"14":"20"} -translate-x-1/2 ${size==="sm"?"h-4 w-8":"h-5 w-10"} rounded-full ${female?"bg-[#c45b83]":"bg-[#3d67b1]"}`}/>
-    <div className={`absolute left-1/2 bottom-0 -translate-x-1/2 rounded-b-lg ${size==="sm"?"h-3 w-7":"h-4 w-9"} bg-[#29232b] shadow-[8px_0_0_#29232b]`}/>
+    <div className={`absolute left-1/2 ${compact?"top-8 h-7 w-10":"top-12 h-12 w-16"} -translate-x-1/2 rounded-t-[18px] rounded-b-xl border border-black/20 shadow-md ${outfit}`}>
+      <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 rounded-full ${compact?"h-2 w-2":"h-3 w-3"} ${accent}`}/>
+    </div>
+    <div className={`absolute left-1/2 ${compact?"top-[59px]":"top-[101px]"} -translate-x-1/2 rounded-full ${compact?"h-2 w-8":"h-3 w-12"} bg-[#25202a]`}/>
   </div>;
 }
-
 function CharacterCard({player,clue}:{player:Player;clue?:string}){
-  return <div className="relative flex min-h-[205px] flex-col items-center justify-end rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.07] to-black/20 px-3 pb-3 pt-14">
-    {clue && <div className="absolute left-1/2 top-2 z-10 w-[calc(100%-16px)] -translate-x-1/2 rounded-2xl border border-white/15 bg-white px-3 py-2 text-center text-[11px] font-semibold leading-4 text-[#211a25] shadow-xl"><span className="absolute bottom-[-6px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-white/15 bg-white"/></div>}
-    <Character player={player}/>
-    <div className="mt-2 text-center"><p className="text-sm font-black">{NAMES[player]}</p><p className="text-[10px] uppercase tracking-wider text-white/35">{player.startsWith("cpu")?"CPU":"jogador"}</p></div>
+  const text=clue?.trim()||"Pensando em uma pista...";
+  return <div className="relative flex min-h-[230px] flex-col items-center rounded-[26px] border border-white/10 bg-gradient-to-b from-white/[0.07] via-white/[0.025] to-black/20 px-3 pb-4 pt-3 shadow-lg">
+    <div className="relative z-10 flex min-h-[74px] w-full items-center justify-center rounded-[20px] border border-black/10 bg-white px-4 py-3 text-center text-[14px] font-extrabold leading-5 text-[#211a25] shadow-[0_8px_24px_rgba(0,0,0,.28)]">
+      <span>{text}</span>
+      <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-black/10 bg-white"/>
+    </div>
+    <div className="mt-5"><Character player={player}/></div>
+    <div className="-mt-1 text-center">
+      <p className="text-[15px] font-black">{NAMES[player]}</p>
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">{player.startsWith("cpu")?"CPU":"jogador"}</p>
+    </div>
   </div>;
 }
 
@@ -217,7 +233,7 @@ export function Impostor({me}:{me:Me}){
 
       {state.phase==="cards"&&<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-fuchsia-300">Tema: {theme.name}</p><h2 className="mt-3 text-3xl font-black">Sua carta</h2>{!state.seenCard[me]?<><div className="mx-auto mt-6 grid max-w-sm place-items-center rounded-3xl border border-white/10 bg-black/20 p-10"><LockKeyhole size={42} className="text-white/40"/><p className="mt-4 text-sm text-white/50">Só você deve olhar sua carta.</p></div><button onClick={revealCard} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-fuchsia-500 px-6 py-3 font-bold"><Eye size={18}/> Ver minha carta</button></>:<><div className={`mx-auto mt-6 max-w-sm rounded-3xl border p-7 ${myImpostor?"border-red-400/30 bg-red-500/10":"border-emerald-400/30 bg-emerald-500/10"}`}>{myImpostor?<Skull className="mx-auto text-red-300" size={40}/>:<Shield className="mx-auto text-emerald-300" size={40}/>}<p className="mt-4 text-2xl font-black">{myImpostor?"VOCÊ É O IMPOSTOR":"VOCÊ É INOCENTE"}</p><p className="mt-3 text-sm text-white/60">{myImpostor?`Sua dica: ${HINTS[secretWord]??"observe as pistas dos outros sem entregar que você não sabe a palavra."}`:`A palavra é: ${secretWord}`}</p></div><button onClick={startRounds} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-fuchsia-500 px-6 py-3 font-bold"><Play size={18}/> Continuar</button></>}</section>}
 
-      {state.phase==="round"&&<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-fuchsia-300">Rodada {state.round+1} de 3</p><h2 className="mt-1 text-xl font-black">{theme.name}</h2></div><div className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/55">Tema compartilhado</div></div><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{PLAYERS.map(p=><CharacterCard key={p} player={p} clue={state.clues[p]?.[state.round]}/>)}</div>{!state.clueSubmitted[me]?<div className="mt-5 rounded-2xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-4"><p className="text-sm font-bold">Sua pista</p><p className="mt-1 text-xs text-white/45">Não diga a palavra diretamente. Dê uma característica.</p><div className="mt-3 flex gap-2"><input value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submitClue()} maxLength={100} placeholder="Ex.: costuma ser servido quente" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-fuchsia-400/50"/><button onClick={submitClue} disabled={!draft.trim()} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-fuchsia-500 disabled:opacity-30"><Check size={18}/></button></div></div>:state.round<2?<button onClick={nextRound} className="mt-5 w-full rounded-2xl bg-white/10 py-3 font-bold hover:bg-white/15">Próxima rodada</button>:<p className="mt-5 text-center text-xs text-white/40">As pistas foram registradas. Preparando a votação...</p>}</section>}
+      {state.phase==="round"&&<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-fuchsia-300">Rodada {state.round+1} de 3</p><h2 className="mt-1 text-xl font-black">{theme.name}</h2></div><div className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/55">Tema compartilhado</div></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{PLAYERS.map(p=><CharacterCard key={p} player={p} clue={state.clues[p]?.[state.round]}/>)}</div>{!state.clueSubmitted[me]?<div className="mt-5 rounded-2xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-4"><p className="text-sm font-bold">Sua pista</p><p className="mt-1 text-xs text-white/45">Não diga a palavra diretamente. Dê uma característica.</p><div className="mt-3 flex gap-2"><input value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submitClue()} maxLength={100} placeholder="Ex.: costuma ser servido quente" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-fuchsia-400/50"/><button onClick={submitClue} disabled={!draft.trim()} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-fuchsia-500 disabled:opacity-30"><Check size={18}/></button></div></div>:state.round<2?<button onClick={nextRound} className="mt-5 w-full rounded-2xl bg-white/10 py-3 font-bold hover:bg-white/15">Próxima rodada</button>:<p className="mt-5 text-center text-xs text-white/40">As pistas foram registradas. Preparando a votação...</p>}</section>}
 
       {state.phase==="vote"&&<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"><div className="text-center"><Vote className="mx-auto text-fuchsia-300" size={30}/><p className="mt-3 text-xs font-black uppercase tracking-widest text-white/40">Votação final</p><h2 className="mt-1 text-2xl font-black">Quem é o impostor?</h2><p className="mt-2 text-sm text-white/50">Escolha um jogador. Seu voto não pode ser alterado.</p></div><div className="mt-6 grid gap-2 sm:grid-cols-2">{PLAYERS.filter(p=>p!==me).map(p=><button key={p} onClick={()=>vote(p)} disabled={Boolean(state.votes[me])} className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${state.votes[me]===p?"border-fuchsia-400/50 bg-fuchsia-500/15":"border-white/10 bg-black/15 hover:bg-white/[0.07]"} disabled:opacity-70`}><Character player={p} size="sm"/><div className="flex-1"><p className="font-bold">{NAMES[p]}</p><p className="text-xs text-white/40">votar neste jogador</p></div>{state.votes[me]===p&&<Check size={17} className="text-fuchsia-300"/>}</button>)}</div>{state.votes[me]&&<p className="mt-4 text-center text-xs text-white/40">Seu voto foi registrado. Aguarde a outra pessoa.</p>}</section>}
 
