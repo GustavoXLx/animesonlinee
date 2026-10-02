@@ -18,16 +18,32 @@ export function vapidPublicKey() {
   return b64url(p256.getPublicKey(vapidSecret(), false));
 }
 
-function vapidJwt(aud: string) {
+let signKey: Promise<CryptoKey> | null = null;
+function getSignKey() {
+  if (!signKey) {
+    const d = vapidSecret();
+    const pub = p256.getPublicKey(d, false);
+    signKey = crypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", d: b64url(d), x: b64url(pub.slice(1, 33)), y: b64url(pub.slice(33, 65)), ext: true },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
+  }
+  return signKey;
+}
+
+/** JWT ES256 assinado com WebCrypto (SHA-256 + assinatura r||s de 64 bytes, como o padrão exige). */
+async function vapidJwt(aud: string) {
   const enc = new TextEncoder();
   const head = b64url(enc.encode(JSON.stringify({ typ: "JWT", alg: "ES256" })));
   const body = b64url(
     enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: "https://animesonlinee.lovable.app" })),
   );
   const unsigned = `${head}.${body}`;
-  const sig = p256.sign(enc.encode(unsigned), vapidSecret()) as unknown as { toBytes: (f: string) => Uint8Array } | Uint8Array;
-  const raw = sig instanceof Uint8Array ? sig : sig.toBytes("compact");
-  return `${unsigned}.${b64url(raw)}`;
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, await getSignKey(), enc.encode(unsigned));
+  return `${unsigned}.${b64url(new Uint8Array(sig))}`;
 }
 
 /** Envia um "ping" para cada inscrição; devolve as que expiraram (404/410). */
@@ -41,15 +57,16 @@ export async function sendPushes(endpoints: string[]) {
         const res = await fetch(ep, {
           method: "POST",
           headers: {
-            Authorization: `vapid t=${vapidJwt(aud)}, k=${key}`,
+            Authorization: `vapid t=${await vapidJwt(aud)}, k=${key}`,
             TTL: "86400",
             Urgency: "high",
             "Content-Length": "0",
           },
         });
         if (res.status === 404 || res.status === 410) dead.push(ep);
-      } catch {
-        /* rede */
+        else if (!res.ok) console.error("push falhou", res.status, (await res.text()).slice(0, 200));
+      } catch (e) {
+        console.error("push rede", e);
       }
     }),
   );
