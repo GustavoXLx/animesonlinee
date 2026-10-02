@@ -347,12 +347,83 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   makeHeldVisual(item:HeldItem){
    const c=this.add.container(0,0);
    if(!item)return c;
-   const dish=["hamburguer","sanduiche","pizza","cupcake","suco"].includes(item);
-   const color=itemColor(item);
-   c.add(this.add.circle(0,0,dish?11:8,color).setStrokeStyle(2,0x2d2529,.85));
-   if(item==="pizza"||item==="pizza_crua")c.add(this.add.arc(0,0,10,-.2,Math.PI+.2,true,0xf6d88e,1));
-   if(item==="hamburguer")c.add(this.add.rectangle(0,-2,13,4,0x3b302e));
-   if(item==="suco")c.add(this.add.rectangle(7,-7,3,8,0xffffff));
+   const shadow=this.add.ellipse(1,8,24,7,0x20191b,.22);
+   c.add(shadow);
+
+   const addPlate=(fill=0xfff4dd)=>{
+    c.add(this.add.ellipse(0,3,30,10,0x6d5a52,.22));
+    c.add(this.add.ellipse(0,1,27,9,fill,.96).setStrokeStyle(1.5,0x5a4640,.7));
+   };
+   const addBun=(y:number)=>{
+    c.add(this.add.ellipse(0,y,26,12,0xd89a4b).setStrokeStyle(1.5,0x74462a,.75));
+    c.add(this.add.ellipse(0,y-2,22,7,0xf1c36c,.7));
+    for(const sx of [-7,0,7]) c.add(this.add.ellipse(sx,y-4,2.5,1.2,0xffefbf,.8));
+   };
+
+   if(item==="pao"){
+    addBun(0);
+   }else if(item==="carne"||item==="carne_cozida"){
+    c.add(this.add.rectangle(0,0,22,13,item==="carne_cozida"?0x6f3928:0x9d4d3e).setStrokeStyle(1.5,0x542b27,.8));
+    c.add(this.add.rectangle(0,-3,16,2,0xd47a5d,.35));
+    c.add(this.add.rectangle(0,3,17,2,0x4a2926,.35));
+   }else if(item==="queijo"){
+    c.add(this.add.rectangle(0,1,25,15,0xf6c94f).setStrokeStyle(1.5,0x8b6723,.7));
+    c.add(this.add.circle(-6,-1,2,0xffe98a,.8));c.add(this.add.circle(5,4,1.6,0xe9ae31,.75));
+   }else if(item==="tomate"||item==="tomate_cortado"){
+    if(item==="tomate"){
+     c.add(this.add.circle(0,0,11,0xd94b45).setStrokeStyle(1.5,0x7d2d2e,.8));
+     c.add(this.add.circle(-3,-3,3,0xf47b66,.45));c.add(this.add.circle(0,-10,3,0x4f8e50));
+    }else{
+     c.add(this.add.circle(-5,0,6,0xe65c4e).setStrokeStyle(1,0x8b302d,.7));
+     c.add(this.add.circle(5,0,6,0xe65c4e).setStrokeStyle(1,0x8b302d,.7));
+     c.add(this.add.circle(0,-4,1.5,0xffd7a1,.8));
+    }
+   }else if(item==="massa"||item==="pizza_crua"){
+    addPlate();
+    c.add(this.add.ellipse(0,-1,23,14,0xd9a56a).setStrokeStyle(1.2,0x795033,.7));
+    if(item==="pizza_crua"){
+     c.add(this.add.ellipse(0,-1,20,11,0xf4d17d,.9));
+     for(const [x,y] of [[-6,-2],[2,1],[7,-3]]) c.add(this.add.circle(x,y,2,0xb94a3d,.9));
+    }
+   }else if(item==="molho"){
+    c.add(this.add.ellipse(0,2,22,13,0xc9493e).setStrokeStyle(1.5,0x702b29,.8));
+    c.add(this.add.ellipse(-4,-1,8,3,0xf17b61,.35));
+   }else if(item==="fruta"){
+    c.add(this.add.circle(0,1,10,0xf0b84f).setStrokeStyle(1.5,0x80572b,.75));
+    c.add(this.add.arc(2,-7,7,-2.7,-.6,false,0x69a653,1.2));
+    c.add(this.add.circle(-3,-2,2.5,0xffdf80,.5));
+   }else if(item==="massa_cupcake"||item==="cupcake_assado"){
+    c.add(this.add.rectangle(0,4,17,11,item==="cupcake_assado"?0xb96d42:0xe5bd74).setStrokeStyle(1.2,0x704331,.7));
+    c.add(this.add.ellipse(0,-3,19,13,item==="cupcake_assado"?0xc98150:0xe9c988).setStrokeStyle(1.2,0x704331,.7));
+    if(item==="cupcake_assado")c.add(this.add.circle(0,-7,5,0xf0d6b0,.8));
+   }else if(item==="cobertura"){
+    c.add(this.add.circle(0,1,10,0xf3a0c5).setStrokeStyle(1.2,0x8c4967,.7));
+    c.add(this.add.circle(-3,-3,3,0xffd3e2,.45));
+   }else if(item==="hamburguer"||item==="sanduiche"){
+    addPlate();addBun(-6);
+    c.add(this.add.rectangle(0,1,22,5,0x6f3a29).setStrokeStyle(1,0x4d2a24,.7));
+    c.add(this.add.rectangle(0,5,23,3,0xf5cf4d));
+    c.add(this.add.ellipse(0,9,25,7,0x78a852).setStrokeStyle(1,0x4d7039,.6));
+    if(item==="sanduiche")c.add(this.add.rectangle(0,-1,21,3,0xe5c9a2));
+   }else if(item==="pizza"){
+    addPlate();c.add(this.add.ellipse(0,-1,25,16,0xd89b50).setStrokeStyle(1.3,0x75472d,.7));
+    c.add(this.add.ellipse(0,-2,21,12,0xe4d16f));
+    c.add(this.add.arc(0,-2,17,0,Math.PI*2,false,0xc94c3f,.95));
+    for(const [x,y] of [[-6,-3],[2,1],[7,-4],[-1,-5]])c.add(this.add.circle(x,y,2,0xd95a42));
+   }else if(item==="cupcake"){
+    addPlate();c.add(this.add.rectangle(0,5,16,10,0xb66a42).setStrokeStyle(1,0x704331,.7));
+    c.add(this.add.circle(0,-3,10,0xf2d4df).setStrokeStyle(1,0x8c536d,.6));
+    c.add(this.add.circle(-5,-4,5,0xf7dbe5,.8));c.add(this.add.circle(5,-4,5,0xe99fc0,.75));
+   }else if(item==="suco"){
+    c.add(this.add.rectangle(0,2,17,19,0xf0a84e).setStrokeStyle(1.5,0x794c28,.7));
+    c.add(this.add.rectangle(0,-2,13,10,0xffcf70,.5));
+    c.add(this.add.rectangle(6,-10,3,11,0xf4f1e5).setAngle(18));
+   }else if(item==="queimado"){
+    c.add(this.add.circle(0,1,10,0x29252a).setStrokeStyle(1.5,0x151316,.9));
+    c.add(this.add.circle(-3,-3,2,0x6e4938,.7));
+   }else{
+    c.add(this.add.circle(0,0,9,itemColor(item)).setStrokeStyle(1.5,0x2d2529,.85));
+   }
    return c;
   }
 
