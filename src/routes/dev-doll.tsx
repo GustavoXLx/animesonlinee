@@ -34,7 +34,7 @@ function Page() {
   const base = DEFAULT_LOOKS.gu;
   const list = CATS[cat] ?? HAIRS;
   const looks: Look[] = useMemo(() => {
-    return list.map((o) => {
+    return list.slice(Number(url?.searchParams.get("from") ?? 0), Number(url?.searchParams.get("from") ?? 0) + 12).map((o) => {
       const l = { ...base };
       if (cat === "pattern") {
         l.topP = o.id;
@@ -48,7 +48,7 @@ function Page() {
 
   const cols = 6;
   const headY = 0.83;
-  const cam: [number, number, number] = view === "body" ? [0, 0.5, 1.9] : [0, headY - 0.03, 0.55];
+  const cam: [number, number, number] = view === "body" ? [0, 0.5, 1.9] : [0, headY - 0.02, 0.85];
   const fov = view === "body" ? 30 : 26;
   const camRotY = view === "head34" ? 0.5 : 0;
 
