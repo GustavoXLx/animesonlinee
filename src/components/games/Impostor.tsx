@@ -155,7 +155,8 @@ function clueFor(seed:number,themeIndex:number,player:Player,round:number){
   const offset=hash(seed,500+PLAYERS.indexOf(player)*31)%bank.length;
   return bank[(offset+round)%bank.length];
 }
-function emptyState():ImpState{return{phase:"lobby",seed:0,themeIndex:0,round:0,ready:{gu:false,li:false},seenCard:{gu:false,li:false},clues:{gu:[],li:[],cpu1:[],cpu2:[],cpu3:[]},clueSubmitted:{gu:false,li:false},votes:{gu:null,li:null,cpu1:null,cpu2:null,cpu3:null},voteDone:[],aiVotes:{cpu1:null,cpu2:null,cpu3:null},aiAnalysis:{gu:0,li:0,cpu1:0,cpu2:0,cpu3:0},aiStatus:"idle"};}}
+function emptyState():ImpState{return{phase:"lobby",seed:0,themeIndex:0,round:0,ready:{gu:false,li:false},seenCard:{gu:false,li:false},clues:{gu:[],li:[],cpu1:[],cpu2:[],cpu3:[]},clueSubmitted:{gu:false,li:false},votes:{gu:null,li:null,cpu1:null,cpu2:null,cpu3:null},voteDone:[],aiVotes:{cpu1:null,cpu2:null,cpu3:null},aiAnalysis:{gu:0,li:0,cpu1:0,cpu2:0,cpu3:0},aiStatus:"idle"};
+}
 
 function Character({player,size="md"}:{player:Player;size?: "sm"|"md"}) {
   const female=GENDER[player]==="female";
