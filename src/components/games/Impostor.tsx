@@ -56,6 +56,7 @@ const initial: ImpState = {
   round:0,
   clues:{ gu:[], li:[], cpu1:[], cpu2:[], cpu3:[] },
   votes:{ gu:null, li:null, cpu1:null, cpu2:null, cpu3:null },
+  ready:{ gu:false, li:false },
   voteDone:[],
 };
 
