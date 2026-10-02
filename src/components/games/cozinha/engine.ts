@@ -132,7 +132,31 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    plant.add(leaves);
    this.add.text(COLS*TILE-24,ROWS*TILE-24,"TABLE 02",{fontFamily:"Arial",fontSize:"8px",fontStyle:"bold",color:"#fff2d2aa",letterSpacing:2}).setOrigin(1,.5).setDepth(6);
 
-   this.add.text(22,19,"KITCHEN // SERVICE",{
+   // Decorative kitchen props: backsplash, utensils and a small service clock.
+   const back=this.add.graphics().setDepth(1);
+   back.fillStyle(0x30262b,.9).fillRoundedRect(96,82,COLS*TILE-192,30,8);
+   for(let x=110;x<COLS*TILE-100;x+=34){
+    back.lineStyle(1,0x6b5058,.32).strokeRect(x,86,30,22);
+   }
+   const utensil=this.add.graphics().setDepth(4);
+   for(let k=0;k<6;k++){
+    const x=170+k*52;
+    utensil.lineStyle(2,0xb7a8a4,.55).lineBetween(x,72,x,87);
+    utensil.fillStyle(0xe0d6d0,.5).fillEllipse(x,70,7,10);
+    utensil.fillStyle(0x6e5960,.35).fillRect(x-2,73,4,12);
+   }
+   const clock=this.add.container(COLS*TILE-70,48).setDepth(6);
+   clock.add(this.add.circle(0,0,17,0x171318,.92).setStrokeStyle(2,0xe5c477,.65));
+   clock.add(this.add.circle(0,0,12,0xefe0bd,.12));
+   clock.add(this.add.rectangle(0,-5,2,10,0xffdf91,.9));
+   clock.add(this.add.rectangle(4,0,9,2,0xffdf91,.9));
+   clock.add(this.add.circle(0,0,2,0xffdf91,.95));
+   const menu=this.add.container(34,95).setDepth(5);
+   menu.add(this.add.graphics().fillStyle(0x3a2928,.95).fillRoundedRect(0,0,64,36,5));
+   menu.add(this.add.graphics().lineStyle(2,0xc79a59,.55).strokeRoundedRect(0,0,64,36,5));
+   menu.add(this.add.text(32,7,"TODAY",{fontFamily:"Arial",fontSize:"7px",fontStyle:"bold",color:"#ffe5aa"}).setOrigin(.5));
+   menu.add(this.add.text(32,19,"SPECIALS",{fontFamily:"Arial",fontSize:"6px",fontStyle:"bold",color:"#fff2d2"}).setOrigin(.5));
+   menu.add(this.add.text(22,19,"KITCHEN // SERVICE",{
     fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
    }).setDepth(6);
   }
