@@ -226,20 +226,20 @@ export function Futebol({ me }: { me: Me }) {
         />
       </Suspense>
 
-      {/* placar */}
-      <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-2 backdrop-blur">
+      {/* placar glassmorphism */}
+      <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3">
+        <div className="flex items-center gap-2 rounded-3xl border border-white/15 bg-slate-950/55 px-2 py-2 shadow-2xl backdrop-blur-xl">
           {(["gu", "li"] as Me[]).map((w, i) => (
-            <div key={w} className={`flex items-center gap-2 ${i ? "flex-row-reverse" : ""}`}>
-              <span className={`text-sm font-bold ${kicker === w && !t.over ? "text-pink-300" : "text-white/80"}`}>{NAME[w]}</span>
-              <div className="flex gap-1">
-                {dots(w).map((k, j) => (
-                  <span key={j} className={`h-2.5 w-2.5 rounded-full ${k === undefined ? "bg-white/20" : k.goal ? "bg-emerald-400" : "bg-red-500"}`} />
-                ))}
+            <div key={w} className="flex min-w-[132px] items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.045] px-3 py-2">
+              <div className={`h-8 w-8 rounded-xl border border-white/10 bg-gradient-to-br ${w === "gu" ? "from-emerald-300/20 to-emerald-950/50" : "from-violet-300/20 to-violet-950/50"} flex items-center justify-center text-[11px] font-black`}>{w === "gu" ? "G" : "L"}</div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[9px] font-black uppercase tracking-widest ${kicker === w && !t.over ? "text-emerald-300" : "text-white/45"}`}>{NAME[w]}</div>
+                <div className="mt-1 flex gap-1">{dots(w).map((k, j) => <span key={j} className={`h-1.5 w-4 rounded-full ${k === undefined ? "bg-white/10" : k.goal ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,.7)]" : "bg-white/20"}`} />)}</div>
               </div>
-              <span className="w-5 text-center text-xl font-black tabular-nums">{t.score[w]}</span>
+              <span className="text-2xl font-black tabular-nums text-white">{t.score[w]}</span>
             </div>
           ))}
+          <div className="hidden px-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/25 sm:block">1V1</div>
         </div>
       </div>
       {t.sudden && !t.over && <p className="pointer-events-none absolute inset-x-0 top-14 text-center text-xs font-bold uppercase tracking-widest text-amber-300">Alternadas</p>}
@@ -268,21 +268,19 @@ export function Futebol({ me }: { me: Me }) {
               <span className="ml-2 text-[10px] text-white/45">Arraste a mira para escolher onde a bola vai passar</span>
             </div>
           )}
-          <div className="flex w-full max-w-md flex-col gap-2">
-            <div className="flex items-center justify-between px-1 text-[10px] font-black uppercase tracking-wider">
-              <span className="text-white/45">3 • POTÊNCIA</span>
-              <span className={power > 0.88 ? "text-red-300" : power > 0.55 ? "text-yellow-200" : "text-emerald-300"}>{Math.round(power * 100)}%</span>
+          <div className="flex w-full max-w-md items-end justify-center gap-4">
+            <div className="relative h-24 w-24 shrink-0">
+              <div className="absolute inset-1 rounded-full border border-white/10 bg-slate-950/70 shadow-2xl backdrop-blur-xl" />
+              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#powerGradient)" strokeWidth="8" strokeLinecap="round" strokeDasharray="251.2" strokeDashoffset={`${251.2 * (1-power)}`} />
+                <defs><linearGradient id="powerGradient"><stop offset="0%" stopColor="#34d399"/><stop offset="55%" stopColor="#fde047"/><stop offset="100%" stopColor="#ef4444"/></linearGradient></defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-black">{Math.round(power*100)}%</span><span className="text-[7px] font-black uppercase tracking-widest text-white/35">força</span></div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-                <div ref={powerBarRef} className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${power * 100}%` }} />
-                <div className="absolute inset-y-0 left-[55%] w-px bg-white/50" />
-                <div className="absolute inset-y-0 left-[85%] w-px bg-white/50" />
-              </div>
-              <button disabled={waitingKeeper} onPointerDown={() => setCharging(true)} onPointerUp={fire} onPointerLeave={fire} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-7 py-3 text-xs font-black uppercase tracking-wide shadow-lg shadow-pink-950/40 transition active:scale-95 disabled:opacity-40">
-                {charging ? "Solte!" : "Segure para chutar"}
-              </button>
-            </div>
+            <button disabled={waitingKeeper} onPointerDown={() => setCharging(true)} onPointerUp={fire} onPointerLeave={fire} className="h-16 flex-1 rounded-2xl border border-white/10 bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500 p-[1px] shadow-2xl disabled:opacity-40">
+              <span className="flex h-full items-center justify-center rounded-[15px] bg-slate-950/90 px-5 text-xs font-black uppercase tracking-[0.12em] text-white transition active:scale-[0.98]">{charging ? "Solte para chutar" : "Segure para chutar"}</span>
+            </button>
           </div>
           <p className="flex items-center gap-1.5 text-[10px] text-white/35"><Crosshair className="h-3 w-3" /> Arraste a mira dentro do gol para escolher altura e canto. <Gauge className="ml-1 h-3 w-3" /> Use a força para definir a velocidade.</p>
         </div>
