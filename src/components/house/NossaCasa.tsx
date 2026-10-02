@@ -4,7 +4,7 @@ import { ImagePlus, MessageCircle, Send, Trash2, X, Heart, Hammer, ShoppingBag, 
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
-  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
+  CATALOG, CAT_BY_KEY, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
   type Home, type Pet, type HomeAction, type PlacedItem, type Who,
 } from "@/lib/home";
 import { LookEditor } from "@/components/avatar/LookEditor";
