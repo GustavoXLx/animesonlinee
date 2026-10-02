@@ -32,6 +32,7 @@ import { SPECTRA_EXTRA } from "./sintoniaExtra";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
 import { Leilao } from "./Leilao";
 import { Impostor } from "./Impostor";
+import { MalaTetris, Acampamento, AlienBancoTras, FeiticoErrado } from "./NovosJogos";
 
 type GameKey =
   | "sintonia"
@@ -50,7 +51,11 @@ type GameKey =
   | "futebol"
   | "desfile"
   | "cozinha"
-  | "impostor";
+  | "impostor"
+  | "mala-tetris"
+  | "acampamento"
+  | "alien-banco"
+  | "feitico-errado";
 
 const GAMES: {
   key: GameKey;
@@ -59,6 +64,34 @@ const GAMES: {
   icon: React.ComponentType<{ size?: number }>;
   gradient: string;
 }[] = [
+  {
+    key: "mala-tetris",
+    name: "Mala Tetris",
+    desc: "encaixem tudo na mesma mala antes da viagem",
+    icon: Backpack,
+    gradient: "from-cyan-500 to-blue-600",
+  },
+  {
+    key: "acampamento",
+    name: "Acampamento",
+    desc: "sobrevivam a três noites com funções diferentes",
+    icon: TentTree,
+    gradient: "from-emerald-500 to-teal-700",
+  },
+  {
+    key: "alien-banco",
+    name: "Alienígena no Banco de Trás",
+    desc: "conversem, observem e descubram quem não é humano",
+    icon: Car,
+    gradient: "from-cyan-500 to-violet-600",
+  },
+  {
+    key: "feitico-errado",
+    name: "Feitiço Errado",
+    desc: "combinem símbolos e descubram o efeito certo",
+    icon: WandSparkles,
+    gradient: "from-violet-500 to-fuchsia-600",
+  },
   {
     key: "impostor",
     name: "Impostor",
@@ -254,6 +287,10 @@ export function GamesPanel({
           {active === "forca" && <Forca me={me} />}
           {active === "verdade" && <VerdadeDesafio me={me} />}
           {active === "impostor" && <Impostor me={me} />}
+          {active === "mala-tetris" && <MalaTetris me={me} />}
+          {active === "acampamento" && <Acampamento me={me} />}
+          {active === "alien-banco" && <AlienBancoTras me={me} />}
+          {active === "feitico-errado" && <FeiticoErrado me={me} />}
           {active === "leilao" && <Leilao me={me} />}
           {active === "stop" && <Stop me={me} />}
           {active === "quemsoueu" && <QuemSouEu me={me} />}
