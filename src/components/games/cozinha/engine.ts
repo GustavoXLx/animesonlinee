@@ -163,7 +163,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     if(s.type==="entrega")color=C.green;
     if(s.type==="lixeira")color=0x596268;
     if(s.type==="liquidificador")color=0x8d75b7;
-    this.stationBox(x,y,TILE-8,TILE-10,color);
+    const box=this.stationBox(x,y,TILE-8,TILE-10,color);
+    if(s.type==="fogao"||s.type==="forno"||s.type==="entrega") box.postFX.addGlow(s.type==="entrega"?0x8ff0bf:0xffb65b,2,1,false,.45,5);
     const g=this.add.graphics();
     if(s.type==="geladeira"){
      g.fillStyle(0xd9f2fa,.8).fillRoundedRect(x-16,y-13,32,27,5);
@@ -203,6 +204,11 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     this.add.text(x,y+22,s.label??"",{
      fontFamily:"Arial",fontSize:"7px",fontStyle:"bold",color:"#2e2528",stroke:"#f4dfb7",strokeThickness:2
     }).setOrigin(.5).setDepth(3);
+
+    if(s.type==="fogao"||s.type==="forno"){
+      const flame=this.add.circle(x,y-20,3,0xffc45b,.55).setDepth(4);
+      this.tweens.add({targets:flame,scale:{from:0.7,to:1.25},alpha:{from:.3,to:.8},duration:520,yoyo:true,repeat:-1,ease:"Sine.easeInOut",delay:(s.x+s.y)*70});
+    }
    }
   }
 
