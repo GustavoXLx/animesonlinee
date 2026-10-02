@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as ExplorarRouteImport } from './routes/explorar'
-import { Route as DevCozinhaRouteImport } from './routes/dev-cozinha'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnimeAnimeIdRouteImport } from './routes/anime.$animeId'
 
@@ -31,11 +30,6 @@ const ExplorarRoute = ExplorarRouteImport.update({
   path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevCozinhaRoute = DevCozinhaRouteImport.update({
-  id: '/dev-cozinha',
-  path: '/dev-cozinha',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,7 +43,6 @@ const AnimeAnimeIdRoute = AnimeAnimeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dev-cozinha': typeof DevCozinhaRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -57,7 +50,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dev-cozinha': typeof DevCozinhaRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -66,7 +58,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dev-cozinha': typeof DevCozinhaRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -74,25 +65,12 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/dev-cozinha'
-    | '/explorar'
-    | '/minha-lista'
-    | '/perfil'
-    | '/anime/$animeId'
+  fullPaths: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/dev-cozinha'
-    | '/explorar'
-    | '/minha-lista'
-    | '/perfil'
-    | '/anime/$animeId'
+  to: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
   id:
     | '__root__'
     | '/'
-    | '/dev-cozinha'
     | '/explorar'
     | '/minha-lista'
     | '/perfil'
@@ -101,7 +79,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DevCozinhaRoute: typeof DevCozinhaRoute
   ExplorarRoute: typeof ExplorarRoute
   MinhaListaRoute: typeof MinhaListaRoute
   PerfilRoute: typeof PerfilRoute
@@ -131,13 +108,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev-cozinha': {
-      id: '/dev-cozinha'
-      path: '/dev-cozinha'
-      fullPath: '/dev-cozinha'
-      preLoaderRoute: typeof DevCozinhaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -157,7 +127,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DevCozinhaRoute: DevCozinhaRoute,
   ExplorarRoute: ExplorarRoute,
   MinhaListaRoute: MinhaListaRoute,
   PerfilRoute: PerfilRoute,
