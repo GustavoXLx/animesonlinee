@@ -71,11 +71,10 @@ export function useChatNotifier(active: boolean) {
   const lastIdRef = useRef<string | null>(null);
   const [unread, setUnread] = useState(false);
   const [identityVersion, setIdentityVersion] = useState(0);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(() =>
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported",
-  );
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
 
   useEffect(() => {
+    setPermission("Notification" in window ? Notification.permission : "unsupported");
     const refresh = () => setIdentityVersion((value) => value + 1);
     window.addEventListener("as-notify-identity", refresh);
     window.addEventListener("storage", refresh);
