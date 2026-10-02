@@ -107,7 +107,7 @@ export function Futebol({ me }: { me: Me }) {
   const fire = async () => {
     if (!charging) return;
     setCharging(false);
-    const pw = Math.max(0.12, power);
+    const pw = Math.max(0.12, powerRef.current || power);
     let dive: Dive | null = null;
     if (state.mode === "penalti") {
       setWaitingKeeper(true);
@@ -141,8 +141,10 @@ export function Futebol({ me }: { me: Me }) {
     setState((p) => ({ ...p, skins: { ...(p.skins ?? { gu: "default", li: "default" }), [me]: skin } }));
   };
 
-  const start = (mode: Mode) =>
+  const start = (mode: Mode) => {
+    if (!peerOnline) return;
     setState((p) => ({ ...p, mode, first: Math.random() < 0.5 ? "gu" : "li", kicks: [], kickId: 0, shot: null, seed: (Math.random() * 1e6) | 0 }));
+  };
 
   /* ---------- menu ---------- */
   if (!state.mode) {
