@@ -174,9 +174,9 @@ function DesfileInner({ me }: { me: Me }) {
   /* ---------- telas ---------- */
   if (state.phase === "lobby") {
     return (
-      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[#09070d] p-4 text-center text-white sm:p-6">
+      <div className="fixed inset-0 flex min-h-0 flex-col items-center justify-start overflow-y-auto bg-[#09070d] p-4 text-center text-white sm:p-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(236,72,153,.28),transparent_35%),radial-gradient(circle_at_10%_80%,rgba(168,85,247,.18),transparent_30%)]" />
-        <div className="relative z-10 w-full max-w-4xl">
+        <div className="relative z-10 my-auto w-full max-w-4xl py-4">
           <div className="mb-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.35em] text-pink-200/70"><Sparkles size={14} /> Fashion Week</div>
           <h3 className="text-4xl font-black italic sm:text-6xl">DESFILE</h3>
           <p className="mx-auto mt-2 max-w-lg text-xs text-white/50 sm:text-sm">Monte o look, encare o tema e leve sua criação para a passarela.</p>
