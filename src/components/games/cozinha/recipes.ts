@@ -113,10 +113,25 @@ export function applyAction(world: WorldSnapshot, stationId: string, held: HeldI
       return null;
     }
     case "tabua": {
-      if (held === "tomate" && !st.held) {
-        return { world: withStation({ ...st, held: "tomate_cortado" }), held: null };
+      // Cortar exige várias ações, como em Overcooked: levar o ingrediente,
+      // repetir a ação até concluir e só então carregar o ingrediente preparado.
+      if (held === "tomate" && !st.held && !st.prep) {
+        return {
+          world: withStation({ ...st, held: "tomate", prep: { item: "tomate", hits: 1, needed: 3 } }),
+          held: null,
+        };
       }
-      if (!held && st.held) {
+      if (!held && st.held === "tomate" && st.prep?.item === "tomate") {
+        const hits = st.prep.hits + 1;
+        if (hits >= st.prep.needed) {
+          return { world: withStation({ ...st, held: "tomate_cortado", prep: undefined }), held: null };
+        }
+        return { world: withStation({ ...st, prep: { ...st.prep, hits } }), held: null };
+      }
+      if (!held && st.held && st.held !== "tomate") {
+        return { world: withStation({ ...st, held: null, prep: undefined }), held: st.held };
+      }
+      if (!held && st.held === "tomate" && !st.prep) {
         return { world: withStation({ ...st, held: null }), held: st.held };
       }
       return null;
