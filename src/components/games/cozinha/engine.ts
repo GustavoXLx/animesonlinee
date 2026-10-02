@@ -597,26 +597,31 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   }
 
   updateProcessFx(){
-   for(const g of this.processFx)g.destroy();
-   this.processFx=[];
    const world=hooks.getWorld();
+   let index=0;
    for(const s of STATIONS){
     if(!["fogao","forno","liquidificador"].includes(s.type))continue;
     const p=world.stations[s.id]?.process;
     if(!p?.itemIn||!p.startedAt)continue;
     const d=COOK_DURATIONS[p.itemIn];
     if(!d)continue;
+    let g=this.processFx[index++];
+    if(!g){
+     g=this.add.graphics().setDepth(115);
+     this.processFx.push(g);
+    }
+    g.clear();
     const elapsed=Math.max(0,Date.now()-p.startedAt);
     const ratio=Math.min(1,elapsed/d.ready);
     const x=(s.x+.5)*TILE,y=(s.y+.5)*TILE;
-    const g=this.add.graphics().setDepth(115);
     g.lineStyle(5,0x241d20,.42).strokeCircle(x,y-25,10);
     g.lineStyle(5,p.burnt?0xe24f45:p.ready?0x65d99b:0xffc85b,.95);
     g.beginPath();g.arc(x,y-25,10,-Math.PI/2,-Math.PI/2+Math.PI*2*ratio,false);g.strokePath();
-    if(p.ready&&!p.burnt){
-      g.fillStyle(0x65d99b,.18).fillCircle(x,y-25,7);
-    }
-    this.processFx.push(g);
+    if(p.ready&&!p.burnt)g.fillStyle(0x65d99b,.18).fillCircle(x,y-25,7);
+   }
+   while(this.processFx.length>index){
+    const g=this.processFx.pop();
+    g?.destroy();
    }
   }
 
