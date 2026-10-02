@@ -1,9 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useGameChannel, type Me } from "../useGameChannel";
-import { footSpot, solve, tally, timeline, type Dive, type Foot, type Kick, type Mode, type Shot } from "./sim";
-import { LandscapeGate, enterLandscape } from "@/components/games/Landscape";
-import { LookEditor } from "@/components/avatar/LookEditor";
-import { DEFAULT_LOOKS, sanitizeLook, type Look } from "@/lib/look";
+import { footSpot, solve, tally, timeline, type Dive, type Kick, type Mode, type Shot } from "./sim";
 
 const FutebolScene = lazy(() => import("./FutebolScene"));
 
@@ -21,17 +18,8 @@ const MODEL: Record<Me, string> = { gu: "male-c", li: "female-a" };
 const other = (w: Me): Me => (w === "gu" ? "li" : "gu");
 
 const RESULT_TXT = { goal: "GOOOOL!", save: "DEFENDEU!", wall: "NA BARREIRA!", miss: "PRA FORA!", post: "NA TRAVE!" };
-const MAX_YAW = (Math.PI / 180) * 60;
 
 export function Futebol({ me }: { me: Me }) {
-  return (
-    <LandscapeGate>
-      <FutebolInner me={me} />
-    </LandscapeGate>
-  );
-}
-
-function FutebolInner({ me }: { me: Me }) {
   const { state, setState, peerOnline, sendEvent, onEvent } = useGameChannel<St>("futebol3d", me, init);
   const kicker: Me = state.kickId % 2 === 0 ? state.first : other(state.first);
   const keeperWho = other(kicker);
@@ -41,75 +29,29 @@ function FutebolInner({ me }: { me: Me }) {
 
   const [aim, setAim] = useState({ x: 2.2, y: 1.2 });
   const [curve, setCurve] = useState(0);
-  const [foot, setFoot] = useState<Foot>("direita");
   const [power, setPower] = useState(0);
   const [charging, setCharging] = useState(false);
   const [waitingKeeper, setWaitingKeeper] = useState(false);
   const [myDive, setMyDive] = useState<Dive | null>(null);
   const [overlay, setOverlay] = useState<{ txt: string; good: boolean } | null>(null);
   const [replay, setReplay] = useState(false);
-  const [orbitMode, setOrbitMode] = useState(false);
-  const [camYaw, setCamYaw] = useState(0);
-  const [showLook, setShowLook] = useState(false);
   const diveRef = useRef<{ id: number; d: Dive } | null>(null);
   const startRef = useRef(0);
   const shotKey = useRef("");
-  const timersRef = useRef<number[]>([]);
-  const finishRef = useRef<(() => void) | null>(null);
-
-  /* ---------- visual (looks compartilhados) ---------- */
-  const [looks, setLooks] = useState<Record<Me, Look>>({ gu: DEFAULT_LOOKS.gu, li: DEFAULT_LOOKS.li });
-  const [draftLook, setDraftLook] = useState<Look>(() => DEFAULT_LOOKS[me]);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`anistream-futebol-look-${me}`);
-      const l = sanitizeLook(raw ? JSON.parse(raw) : null, me);
-      setDraftLook(l);
-      setLooks((p) => ({ ...p, [me]: l }));
-    } catch {}
-  }, [me]);
-  useEffect(() => onEvent("look", (d) => {
-    const v = d as { who: Me; look: Look };
-    setLooks((p) => ({ ...p, [v.who]: sanitizeLook(v.look, v.who) }));
-  }), [onEvent]);
-  const saveLook = (l: Look) => {
-    setDraftLook(l);
-    setLooks((p) => ({ ...p, [me]: l }));
-    try { localStorage.setItem(`anistream-futebol-look-${me}`, JSON.stringify(l)); } catch {}
-    sendEvent("look", { who: me, look: l });
-  };
 
   // novo chute: zera tudo
   useEffect(() => {
     setMyDive(null);
     setPower(0);
-    setFoot("direita");
-    setCurve(-0.35);
+    setCurve(0);
     setAim({ x: state.mode === "falta" ? (spot.x >= 0 ? -2.3 : 2.3) : 2.2, y: state.mode === "falta" ? 1.9 : 1.1 });
     setWaitingKeeper(false);
-    setOrbitMode(false);
-    setCamYaw(0);
   }, [state.kickId, state.mode, spot.x]);
-
-  const toggleFoot = (f: Foot) => {
-    setFoot(f);
-    // curva natural segue o pé: destro curva da direita p/ esquerda, canhoto o contrário
-    setCurve(f === "direita" ? -0.35 : 0.35);
-  };
 
   useEffect(() => onEvent("dive", (d) => {
     const v = d as { id: number; d: Dive };
     diveRef.current = v;
   }), [onEvent]);
-
-  const skipReplay = () => {
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-    setOverlay(null);
-    setReplay(false);
-    finishRef.current?.();
-    finishRef.current = null;
-  };
 
   // chute recebido: inicia relógio, avisos e avanço
   useEffect(() => {
@@ -128,14 +70,14 @@ function FutebolInner({ me }: { me: Me }) {
       timers.push(window.setTimeout(() => setReplay(true), (tl.live + 0.6) * 1000));
       timers.push(window.setTimeout(() => setReplay(false), (tl.total - 0.5) * 1000));
     }
-    const id = state.kickId;
-    const finish = () => {
-      if (!iKick) return;
-      setState((p) => (p.kickId !== id ? p : { ...p, kicks: [...p.kicks, { who: kicker, goal: sol.result === "goal" }], kickId: id + 1, shot: null }));
-    };
-    finishRef.current = finish;
-    if (iKick) timers.push(window.setTimeout(finish, tl.total * 1000));
-    timersRef.current = timers;
+    if (iKick) {
+      const id = state.kickId;
+      timers.push(
+        window.setTimeout(() => {
+          setState((p) => (p.kickId !== id ? p : { ...p, kicks: [...p.kicks, { who: kicker, goal: sol.result === "goal" }], kickId: id + 1, shot: null }));
+        }, tl.total * 1000),
+      );
+    }
     return () => {
       timers.forEach(clearTimeout);
       setReplay(false);
@@ -177,7 +119,6 @@ function FutebolInner({ me }: { me: Me }) {
       ty: aim.y,
       power: +pw.toFixed(3),
       curve: state.mode === "falta" ? curve : 0,
-      foot,
       seed: (Math.random() * 1e9) | 0,
       dive,
     };
@@ -190,10 +131,8 @@ function FutebolInner({ me }: { me: Me }) {
     sendEvent("dive", { id: state.kickId, d });
   };
 
-  const start = (mode: Mode) => {
-    void enterLandscape();
+  const start = (mode: Mode) =>
     setState({ mode, first: Math.random() < 0.5 ? "gu" : "li", kicks: [], kickId: 0, shot: null, seed: (Math.random() * 1e6) | 0 });
-  };
 
   /* ---------- menu ---------- */
   if (!state.mode) {
@@ -222,23 +161,7 @@ function FutebolInner({ me }: { me: Me }) {
             </button>
           ))}
         </div>
-        <button onClick={() => setShowLook(true)} className="rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm font-bold hover:bg-white/20">
-          Visual
-        </button>
         {!peerOnline && <p className="text-sm text-amber-300">Esperando {NAME[other(me)]} entrar no jogo…</p>}
-        {showLook && (
-          <div className="fixed inset-0 z-[80] flex flex-col bg-neutral-950/95 p-3">
-            <div className="flex shrink-0 items-center justify-between pb-2">
-              <p className="text-sm font-bold text-white/80">Seu visual em campo</p>
-              <button onClick={() => setShowLook(false)} className="rounded-full bg-pink-500 px-4 py-1.5 text-sm font-black">
-                Salvar e fechar
-              </button>
-            </div>
-            <div className="min-h-0 flex-1">
-              <LookEditor look={draftLook} onChange={saveLook} />
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -258,109 +181,78 @@ function FutebolInner({ me }: { me: Me }) {
           spot={spot}
           kickerModel={MODEL[kicker]}
           keeperModel={state.mode === "penalti" ? MODEL[keeperWho] : "male-a"}
-          kickerLook={looks[kicker]}
-          keeperLook={state.mode === "penalti" ? looks[keeperWho] : undefined}
           view={iKick ? "kicker" : state.mode === "penalti" ? "keeper" : "watch"}
           shot={state.shot}
           startRef={startRef}
           aim={aim}
           curve={curve}
-          foot={foot}
-          camYaw={camYaw}
-          orbitMode={orbitMode}
-          onOrbit={setCamYaw}
           onAim={(x, y) => setAim({ x, y })}
         />
       </Suspense>
 
-      {/* placar compacto */}
-      <div className="pointer-events-none absolute inset-x-0 top-1 flex justify-center">
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-1 backdrop-blur">
+      {/* placar */}
+      <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-2 backdrop-blur">
           {(["gu", "li"] as Me[]).map((w, i) => (
-            <div key={w} className={`flex items-center gap-1.5 ${i ? "flex-row-reverse" : ""}`}>
-              <span className={`text-xs font-bold ${kicker === w && !t.over ? "text-pink-300" : "text-white/80"}`}>{NAME[w]}</span>
-              <div className="flex gap-0.5">
+            <div key={w} className={`flex items-center gap-2 ${i ? "flex-row-reverse" : ""}`}>
+              <span className={`text-sm font-bold ${kicker === w && !t.over ? "text-pink-300" : "text-white/80"}`}>{NAME[w]}</span>
+              <div className="flex gap-1">
                 {dots(w).map((k, j) => (
-                  <span key={j} className={`h-2 w-2 rounded-full ${k === undefined ? "bg-white/20" : k.goal ? "bg-emerald-400" : "bg-red-500"}`} />
+                  <span key={j} className={`h-2.5 w-2.5 rounded-full ${k === undefined ? "bg-white/20" : k.goal ? "bg-emerald-400" : "bg-red-500"}`} />
                 ))}
               </div>
-              <span className="w-4 text-center text-base font-black tabular-nums">{t.score[w]}</span>
+              <span className="w-5 text-center text-xl font-black tabular-nums">{t.score[w]}</span>
             </div>
           ))}
         </div>
       </div>
-      {t.sudden && !t.over && <p className="pointer-events-none absolute inset-x-0 top-8 text-center text-[10px] font-bold uppercase tracking-widest text-amber-300">Alternadas</p>}
+      {t.sudden && !t.over && <p className="pointer-events-none absolute inset-x-0 top-14 text-center text-xs font-bold uppercase tracking-widest text-amber-300">Alternadas</p>}
 
       {replay && (
-        <>
-          <div className="pointer-events-none absolute left-2 top-10 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-0.5 text-xs font-black tracking-widest">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> REPLAY
-          </div>
-          <button onClick={skipReplay} className="absolute right-2 top-10 rounded-md bg-black/70 px-3 py-1 text-xs font-bold text-white/90 hover:bg-black/90">
-            Pular ▶
-          </button>
-        </>
+        <div className="pointer-events-none absolute left-3 top-16 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1 text-sm font-black tracking-widest">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" /> REPLAY
+        </div>
       )}
       {overlay && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className={`animate-scale-in text-5xl font-black italic drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)] ${overlay.good ? "text-emerald-300" : "text-white"}`}>{overlay.txt}</p>
+          <p className={`animate-scale-in text-6xl font-black italic drop-shadow-[0_6px_20px_rgba(0,0,0,0.8)] ${overlay.good ? "text-emerald-300" : "text-white"}`}>{overlay.txt}</p>
         </div>
       )}
 
-      {/* controles do batedor: pé e câmera na borda esquerda, força na direita */}
+      {/* controles do batedor */}
       {aiming && iKick && (
-        <>
-          <div className="absolute inset-y-0 left-1 flex flex-col justify-center gap-2">
-            {state.mode === "falta" && (
-              <div className="flex flex-col gap-1 rounded-xl bg-black/50 p-1.5">
-                <span className="text-center text-[9px] text-white/60">Perna</span>
-                <button onClick={() => toggleFoot("esquerda")} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${foot === "esquerda" ? "bg-pink-500" : "bg-white/10"}`}>
-                  Esquerda
-                </button>
-                <button onClick={() => toggleFoot("direita")} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${foot === "direita" ? "bg-pink-500" : "bg-white/10"}`}>
-                  Direita
-                </button>
-              </div>
-            )}
-            {state.mode === "falta" && (
-              <button
-                onClick={() => setOrbitMode((v) => !v)}
-                className={`rounded-xl px-2 py-1.5 text-[10px] font-bold ${orbitMode ? "bg-emerald-500" : "bg-white/10"}`}
-              >
-                {orbitMode ? "Câmera" : "Mirar"}
-              </button>
-            )}
-          </div>
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/80 to-transparent p-3 pb-4">
+          <p className="text-xs text-white/70">{waitingKeeper ? `Esperando ${NAME[keeperWho]} escolher o canto…` : "Arraste no gol para mirar"}</p>
           {state.mode === "falta" && (
-            <div className="absolute left-1/2 top-1 -translate-x-1/2 flex items-center gap-1.5 rounded-xl bg-black/50 px-2 py-1 text-[10px]">
+            <div className="flex items-center gap-2 text-xs">
               <span className="text-white/60">Efeito</span>
-              <input type="range" min={-1} max={1} step={0.05} value={curve} onChange={(e) => setCurve(+e.target.value)} className="w-24 accent-pink-500" />
-              <span className="w-8 tabular-nums">{curve > 0.05 ? "→" : curve < -0.05 ? "←" : "reto"}</span>
+              <input type="range" min={-1} max={1} step={0.05} value={curve} onChange={(e) => setCurve(+e.target.value)} className="w-40 accent-pink-500" />
+              <span className="w-10 tabular-nums">{curve > 0.05 ? "→" : curve < -0.05 ? "←" : "reto"}</span>
             </div>
           )}
-          <div className="absolute inset-y-0 right-1 flex flex-col items-center justify-center gap-2">
-            <p className="max-w-[90px] text-center text-[9px] text-white/70">{waitingKeeper ? `Esperando ${NAME[keeperWho]}…` : orbitMode ? "Arraste p/ girar câmera" : "Arraste no gol p/ mirar"}</p>
-            <div className="relative h-28 w-4 overflow-hidden rounded-full bg-white/10">
-              <div className="absolute bottom-0 w-full rounded-full bg-gradient-to-t from-emerald-400 via-yellow-300 to-red-500" style={{ height: `${power * 100}%` }} />
+          <div className="flex w-full max-w-sm items-center gap-3">
+            <div className="relative h-4 flex-1 overflow-hidden rounded-full bg-white/10">
+              <div className="absolute inset-y-0 right-0 w-[14%] bg-red-500/40" />
+              <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${power * 100}%` }} />
             </div>
             <button
               disabled={waitingKeeper}
               onPointerDown={() => setCharging(true)}
               onPointerUp={fire}
               onPointerLeave={fire}
-              className="rounded-full bg-pink-500 px-4 py-2.5 text-[11px] font-black uppercase tracking-wide shadow-lg shadow-pink-500/30 active:scale-95 disabled:opacity-50"
+              className="rounded-full bg-pink-500 px-6 py-3 text-sm font-black uppercase tracking-wide shadow-lg shadow-pink-500/30 active:scale-95 disabled:opacity-50"
             >
-              Chutar
+              Segure e solte
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* goleiro humano */}
       {aiming && !iKick && state.mode === "penalti" && (
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/80 to-transparent p-2 pb-3">
-          <p className="text-[11px] text-white/80">{myDive ? "Canto escolhido. Agora reza!" : `Você é o goleiro. Escolha onde pular antes de ${NAME[kicker]} chutar`}</p>
-          <div className="grid grid-cols-3 gap-1.5">
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/80 to-transparent p-3 pb-4">
+          <p className="text-xs text-white/80">{myDive ? "Canto escolhido. Agora reza!" : `Você é o goleiro. Escolha onde pular antes de ${NAME[kicker]} chutar`}</p>
+          <div className="grid grid-cols-3 gap-2">
             {[true, false].flatMap((high) =>
               // câmera do goleiro olha para o batedor: esquerda da tela = +x do mundo
               ([1, 0, -1] as const).map((x) => {
@@ -370,7 +262,7 @@ function FutebolInner({ me }: { me: Me }) {
                     key={`${x}${high}`}
                     disabled={!!myDive}
                     onClick={() => pickDive({ x, high })}
-                    className={`h-10 w-16 rounded-lg border text-[10px] font-bold transition ${sel ? "border-pink-400 bg-pink-500/60" : "border-white/20 bg-white/10 hover:bg-white/20"} disabled:cursor-default`}
+                    className={`h-12 w-20 rounded-xl border text-xs font-bold transition ${sel ? "border-pink-400 bg-pink-500/60" : "border-white/20 bg-white/10 hover:bg-white/20"} disabled:cursor-default`}
                   >
                     {x === 0 ? "Meio" : x === 1 ? "Esquerda" : "Direita"} {high ? "alto" : "baixo"}
                   </button>
@@ -381,7 +273,7 @@ function FutebolInner({ me }: { me: Me }) {
         </div>
       )}
       {aiming && !iKick && state.mode === "falta" && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-xs text-white/80">{NAME[kicker]} está ajeitando a bola…</p>
+        <p className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-sm text-white/80">{NAME[kicker]} está ajeitando a bola…</p>
       )}
 
       {t.over && !state.shot && (

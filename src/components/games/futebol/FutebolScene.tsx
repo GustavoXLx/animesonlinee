@@ -3,8 +3,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
 import { Environment, Lightformer, Line, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { BALL_R, GOAL_H, GOAL_W, RUN, sample, solve, wallLayout, type Foot, type Mode, type Shot, type Solved } from "./sim";
-import type { Look } from "@/lib/look";
+import { BALL_R, GOAL_H, GOAL_W, RUN, sample, solve, wallLayout, type Mode, type Shot, type Solved } from "./sim";
 
 export type View = "kicker" | "keeper" | "watch";
 export type SceneProps = {
@@ -12,22 +11,15 @@ export type SceneProps = {
   spot: { x: number; z: number };
   kickerModel: string;
   keeperModel: string;
-  kickerLook?: Look;
-  keeperLook?: Look;
   view: View;
   shot: Shot | null;
   startRef: React.MutableRefObject<number>;
   aim: { x: number; y: number };
   curve: number;
-  foot: Foot;
-  camYaw: number;
-  orbitMode: boolean;
-  onOrbit: (yaw: number) => void;
   onAim: (x: number, y: number) => void;
 };
 
 const HW = GOAL_W / 2;
-const MAX_YAW = (Math.PI / 180) * 60;
 const DEPTH = 2;
 const charUrl = (m: string) => `/house/chars/character-${m}.glb`;
 
@@ -125,29 +117,20 @@ function useBallTex() {
 /* ---------------- pessoas ---------------- */
 type AnimRef = React.MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
 
-function Person({ model, groupRef, anim, height = 1.8, look }: { model: string; groupRef: React.RefObject<THREE.Group | null>; anim: AnimRef; height?: number; look?: Look }) {
+function Person({ model, groupRef, anim, height = 1.82 }: { model: string; groupRef: React.RefObject<THREE.Group | null>; anim: AnimRef; height?: number }) {
   const gltf = useGLTF(charUrl(model));
   const { obj, scale } = useMemo(() => {
     const o = skClone(gltf.scene);
     o.traverse((m) => {
       if ((m as THREE.Mesh).isMesh) {
-        const mesh = m as THREE.Mesh;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        if (look) {
-          const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as THREE.MeshStandardMaterial;
-          if (mat?.color) {
-            const cl = mat.clone() as THREE.MeshStandardMaterial;
-            cl.color.set(look.skin);
-            mesh.material = cl;
-          }
-        }
+        (m as THREE.Mesh).castShadow = true;
+        (m as THREE.Mesh).receiveShadow = true;
       }
     });
     const box = new THREE.Box3().setFromObject(o);
     const h = box.max.y - box.min.y || 1;
     return { obj: o, scale: height / h };
-  }, [gltf.scene, height, look]);
+  }, [gltf.scene, height]);
   const inner = useRef<THREE.Group>(null);
   const { actions } = useAnimations(gltf.animations, inner);
   const cur = useRef("");
@@ -171,30 +154,6 @@ function Person({ model, groupRef, anim, height = 1.8, look }: { model: string; 
     <group ref={groupRef}>
       <group ref={inner} scale={scale}>
         <primitive object={obj} />
-        {look && (
-          <group>
-            <mesh position={[0, 0.42, 0]}>
-              <boxGeometry args={[0.46, 0.34, 0.26]} />
-              <meshStandardMaterial color={look.topC} roughness={0.7} />
-            </mesh>
-            <mesh position={[0, 0.2, 0]}>
-              <boxGeometry args={[0.42, 0.18, 0.24]} />
-              <meshStandardMaterial color={look.botC} roughness={0.7} />
-            </mesh>
-            <mesh position={[0.1, 0.02, 0.06]}>
-              <boxGeometry args={[0.14, 0.06, 0.22]} />
-              <meshStandardMaterial color={look.shoeC} roughness={0.5} />
-            </mesh>
-            <mesh position={[-0.1, 0.02, 0.06]}>
-              <boxGeometry args={[0.14, 0.06, 0.22]} />
-              <meshStandardMaterial color={look.shoeC} roughness={0.5} />
-            </mesh>
-            <mesh position={[0, 0.78, 0.02]}>
-              <sphereGeometry args={[0.13, 10, 8]} />
-              <meshStandardMaterial color={look.hairC} roughness={0.9} />
-            </mesh>
-          </group>
-        )}
       </group>
     </group>
   );
@@ -448,11 +407,10 @@ function Game(p: SceneProps) {
     return { d, perp: new THREE.Vector3(-d.z, 0, d.x) };
   }, [sx, sz]);
   const k0 = p.mode === "falta" ? -(sx >= 0 ? 1 : -1) * 0.45 : 0;
-  const footSign = p.foot === "direita" ? 1 : -1;
 
   const preview = useMemo(() => {
     if (p.view !== "kicker" || p.shot || p.mode !== "falta") return null;
-    const s = solve({ mode: "falta", sx, sz, tx: p.aim.x, ty: p.aim.y, power: 0.6, curve: p.curve, seed: 1, dive: null, foot: "direita" });
+    const s = solve({ mode: "falta", sx, sz, tx: p.aim.x, ty: p.aim.y, power: 0.6, curve: p.curve, seed: 1, dive: null });
     const pts: THREE.Vector3[] = [];
     // sem dispersão: recalcula só a curva ideal
     for (let i = 0; i <= 18; i++) {
@@ -518,8 +476,8 @@ function Game(p: SceneProps) {
     // batedor
     const kg = kicker.current;
     if (kg) {
-      const start = tmp.set(sx, 0, sz).addScaledVector(dir.d, -2.3).addScaledVector(dir.perp, footSign * 1.1);
-      const plant = new THREE.Vector3(sx, 0, sz).addScaledVector(dir.d, -0.42).addScaledVector(dir.perp, footSign * 0.32);
+      const start = tmp.set(sx, 0, sz).addScaledVector(dir.d, -2.3).addScaledVector(dir.perp, 1.1);
+      const plant = new THREE.Vector3(sx, 0, sz).addScaledVector(dir.d, -0.42).addScaledVector(dir.perp, 0.32);
       const face = Math.atan2(dir.d.x, dir.d.z);
       if (!sol || t <= 0.05) {
         kg.position.copy(start);
@@ -603,20 +561,7 @@ function Game(p: SceneProps) {
       target.set(sx * 0.5, 1.0, sz * 0.5);
       fov = 55;
     } else {
-      const offD = dir.d.clone().multiplyScalar(-7.6);
-      const offP = dir.perp.clone().multiplyScalar(-2.4);
-      let ox = offD.x + offP.x;
-      let oz = offD.z + offP.z;
-      if (p.view === "kicker" && !p.shot) {
-        const yaw = THREE.MathUtils.clamp(p.camYaw, -MAX_YAW, MAX_YAW);
-        const cs = Math.cos(yaw);
-        const sn = Math.sin(yaw);
-        const nx = ox * cs - oz * sn;
-        const nz = ox * sn + oz * cs;
-        ox = nx;
-        oz = nz;
-      }
-      want.set(sx + ox, 0, sz + oz);
+      want.set(sx, 0, sz).addScaledVector(dir.d, -7.6).addScaledVector(dir.perp, -2.4);
       want.y = p.mode === "falta" ? 3.0 : 2.5;
       target.set(0, 1.25, 0);
       if (sol && tk > 0) {
@@ -650,20 +595,6 @@ function Game(p: SceneProps) {
     const y = THREE.MathUtils.clamp(e.point.y, 0.15, 3.3);
     p.onAim(+x.toFixed(2), +y.toFixed(2));
   };
-  const orbitDrag = (e: ThreeEvent<PointerEvent>) => {
-    const mv = (e.nativeEvent as PointerEvent).movementX || 0;
-    const next = THREE.MathUtils.clamp(p.camYaw - mv * 0.004, -MAX_YAW, MAX_YAW);
-    p.onOrbit(next);
-  };
-  const onDown = (e: ThreeEvent<PointerEvent>) => {
-    dragging.current = true;
-    if (!p.orbitMode) setAim(e);
-  };
-  const onMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!dragging.current) return;
-    if (p.orbitMode) orbitDrag(e);
-    else setAim(e);
-  };
 
   return (
     <>
@@ -692,16 +623,19 @@ function Game(p: SceneProps) {
       ))}
 
       <Suspense fallback={null}>
-        <Person model={p.kickerModel} groupRef={kicker} anim={kAnim} look={p.kickerLook} />
-        <Person model={p.keeperModel} groupRef={keeper} anim={gAnim} height={1.8} look={p.keeperLook} />
+        <Person model={p.kickerModel} groupRef={kicker} anim={kAnim} />
+        <Person model={p.keeperModel} groupRef={keeper} anim={gAnim} height={1.9} />
         {wall && wallRefs.map((r, i) => <Person key={i} model={["male-b", "male-d", "male-e", "male-f"][i]} groupRef={r} anim={wAnim} />)}
       </Suspense>
 
       {/* plano invisível para mirar */}
       <mesh
         position={[0, 2.2, 0.06]}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
+        onPointerDown={(e) => {
+          dragging.current = true;
+          setAim(e);
+        }}
+        onPointerMove={(e) => dragging.current && setAim(e)}
         onPointerUp={() => (dragging.current = false)}
         onPointerLeave={() => (dragging.current = false)}
       >
