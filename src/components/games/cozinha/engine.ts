@@ -160,7 +160,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    menu.add(this.add.text(32,19,"SPECIALS",{fontFamily:"Arial",fontSize:"6px",fontStyle:"bold",color:"#fff2d2"}).setOrigin(.5));
    menu.add(this.add.text(22,19,"KITCHEN // SERVICE",{
     fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2
-   }).setDepth(6);
+   }).setDepth(6));
   }
 
    const vignette=this.add.graphics().setDepth(20);
