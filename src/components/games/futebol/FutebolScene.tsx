@@ -178,8 +178,6 @@ function FootballKit({ model, skin = "default" }: { model: string; skin?: "defau
 
 type AnimRef = MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
 
-const PLAYER_ASSET = "https://raw.githubusercontent.com/kendrekaran/striker-3d/main/assets/player.glb";
-
 function Person({
   model,
   groupRef,
@@ -193,7 +191,7 @@ function Person({
   height?: number;
   skin?: "default" | "neymar";
 }) {
-  const gltf = useGLTF(PLAYER_ASSET);
+  const gltf = useGLTF(charUrl(model));
   const inner = useRef<THREE.Group>(null);
   const { actions } = useAnimations(gltf.animations, inner);
   const current = useRef("");
@@ -205,18 +203,21 @@ function Person({
       const mesh = node as THREE.Mesh;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      mesh.material = materials.map((source) => {
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mesh.material = mats.map((source) => {
         const mat = source.clone() as THREE.MeshStandardMaterial;
-        const name = String(mat.name || "");
-        const neymar = skin === "neymar";
-        if (/shirt/i.test(name)) mat.color.set(neymar ? "#f7c948" : model.includes("female") ? "#f5f5f5" : "#eef2f7");
-        else if (/pants|short/i.test(name)) mat.color.set(neymar ? "#075d35" : "#172033");
-        else if (/sock/i.test(name)) mat.color.set("#f5f5f5");
-        else if (/shoe/i.test(name)) mat.color.set(neymar ? "#2563eb" : "#111827");
-        else if (neymar && /hair/i.test(name)) mat.color.set("#17120e");
-        mat.roughness = Math.min(0.78, Math.max(0.38, mat.roughness || 0.55));
-        mat.metalness = Math.min(0.12, mat.metalness || 0);
+        const name = String(mat.name || "").toLowerCase();
+        if (/shirt|top|body/.test(name)) {
+          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#f7c948" : "#e8edf5"), 0.45);
+        }
+        if (/pants|short/.test(name)) {
+          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#075d35" : "#111827"), 0.55);
+        }
+        if (/shoe|boot/.test(name)) {
+          mat.color.lerp(new THREE.Color(skin === "neymar" ? "#2563eb" : "#111827"), 0.55);
+        }
+        if (skin === "neymar" && /hair/.test(name)) mat.color.set("#17120e");
+        mat.roughness = Math.min(0.82, Math.max(0.38, mat.roughness || 0.58));
         return mat;
       });
     });
@@ -226,33 +227,30 @@ function Person({
     root.scale.setScalar(s);
     root.position.y = -box.min.y * s;
     return root;
-  }, [gltf.scene, height, model, skin]);
+  }, [gltf.scene, height, skin]);
 
   useFrame(() => {
-    const want = anim.current.name;
-    const map: Record<string, string> = {
-      idle: "Idle",
-      sprint: "Run",
-      "attack-kick-right": "Punch",
-      jump: "Jump",
-      "emote-yes": "Clapping",
-      "emote-no": "Idle",
+    const requested = anim.current.name;
+    const aliases: Record<string, string[]> = {
+      idle: ["Idle", "idle", "Standing"],
+      sprint: ["Run", "run", "Walk"],
+      "attack-kick-right": ["Kick", "Punch", "kick", "Idle"],
+      jump: ["Jump", "jump"],
+      "emote-yes": ["Clapping", "Celebrate", "Idle"],
+      "emote-no": ["Idle", "Standing"],
     };
-    const clipName = map[want] ?? "Idle";
-    if (current.current === clipName) return;
-    const next = actions[clipName] ?? actions[Object.keys(actions)[0]];
+    const names = aliases[requested] ?? aliases.idle;
+    const clipName = names.find((name) => !!actions[name]) ?? Object.keys(actions)[0];
+    if (!clipName || current.current === clipName) return;
+    const next = actions[clipName];
     if (!next) return;
-    const prev = current.current ? actions[current.current] : null;
+    const prev = current.current ? actions[current.current] : undefined;
     next.reset();
     next.timeScale = anim.current.speed ?? 1;
-    if (anim.current.once) {
-      next.setLoop(THREE.LoopOnce, 1);
-      next.clampWhenFinished = true;
-    } else {
-      next.setLoop(THREE.LoopRepeat, Infinity);
-    }
-    next.fadeIn(0.12).play();
-    prev?.fadeOut(0.12);
+    next.setLoop(anim.current.once ? THREE.LoopOnce : THREE.LoopRepeat, anim.current.once ? 1 : Infinity);
+    next.clampWhenFinished = !!anim.current.once;
+    next.fadeIn(0.1).play();
+    prev?.fadeOut(0.1);
     current.current = clipName;
   });
 
