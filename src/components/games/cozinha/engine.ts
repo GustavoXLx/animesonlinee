@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
 import { COLS, ROWS, STATIONS, TILE, buildSolidGrid, stationAt } from "./layout";
-import { applyAction, DISH_LABEL, ITEM_LABEL, RECIPE_NEEDS } from "./recipes";
+import { DISH_LABEL, ITEM_LABEL, RECIPE_NEEDS } from "./recipes";
 import type { ActMsg, HeldItem, Me, PosMsg, StationType, WorldSnapshot } from "./types";
 
 const PALETTE = {
@@ -29,7 +29,7 @@ export interface EngineHooks {
   onPos: (cb: (p: PosMsg, from: Me) => void) => () => void;
   sendAct: (a: ActMsg) => void;
   onAct: (cb: (a: ActMsg, from: Me) => void) => () => void;
-  applyHostAction: (stationId: string, held: HeldItem) => { world: WorldSnapshot; held: HeldItem } | null;
+  applyHostAction: (stationId: string, held: HeldItem, forPlayer?: Me) => { world: WorldSnapshot; held: HeldItem } | null;
   onWorldChanged: (world: WorldSnapshot) => void;
   onHeldChanged: (held: HeldItem) => void;
   onStationFocus: (stationId: string | null) => void;
@@ -61,6 +61,8 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
   const joy = { vx: 0, vy: 0 };
   let actionPressed = false;
   let focusStation: string | null = null;
+  let lastSeenWorldVersion = -1;
+  const lastSeqByPlayer: Partial<Record<Me, number>> = {};
 
   class Scene extends Phaser.Scene {
     bubbles: Record<Me, { text: string; until: number } | null> = { gu: null, li: null };
@@ -270,7 +272,7 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
     tryAction() {
       if (!focusStation) return;
       if (hooks.isHost) {
-        const res = hooks.applyHostAction(focusStation, localHeld);
+        const res = hooks.applyHostAction(focusStation, localHeld, hooks.me);
         if (res) {
           localHeld = res.held;
           hooks.onHeldChanged(localHeld);
@@ -278,8 +280,8 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
         }
       } else {
         seq += 1;
-        hooks.sendAct({ seq, stationId: focusStation });
-        // otimista: tentativa simples (sem mutar estado compartilhado) - só feedback visual via reconciliação
+        hooks.sendAct({ seq, stationId: focusStation, held: localHeld });
+        // sem predição local: aguarda o host validar e devolver via snapshot (world.heldBy[me])
       }
     }
 
@@ -289,6 +291,19 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
       if (actionPressed) {
         actionPressed = false;
         this.tryAction();
+      }
+
+      // reconciliação: não-host sincroniza o item em mãos a partir do snapshot do host
+      if (!hooks.isHost) {
+        const w = hooks.getWorld();
+        if (w.version !== lastSeenWorldVersion) {
+          lastSeenWorldVersion = w.version;
+          const mine = w.heldBy?.[hooks.me] ?? null;
+          if (mine !== localHeld) {
+            localHeld = mine;
+            hooks.onHeldChanged(localHeld);
+          }
+        }
       }
 
       const now = performance.now();
@@ -436,11 +451,12 @@ export async function createCozinhaGame(container: HTMLDivElement, hooks: Engine
 
   const unsubAct = hooks.isHost
     ? hooks.onAct((a, from) => {
-        const world = hooks.getWorld();
-        const res = applyAction(world, a.stationId, null, Date.now());
-        // Para ações remotas não sabemos o item em mãos do remoto localmente;
-        // a validação real usa o "held" relatado na última posição conhecida.
-        void res;
+        // dedupe por seq por jogador: ignora ações antigas/repetidas
+        const lastSeq = lastSeqByPlayer[from];
+        if (lastSeq !== undefined && a.seq <= lastSeq) return;
+        lastSeqByPlayer[from] = a.seq;
+        const res = hooks.applyHostAction(a.stationId, a.held, from);
+        if (res) hooks.onWorldChanged(res.world);
       })
     : () => {};
 

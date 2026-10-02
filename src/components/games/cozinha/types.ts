@@ -77,6 +77,7 @@ export interface WorldSnapshot {
   timeLeft: number;
   score: number;
   streak: number;
+  heldBy: Record<Me, HeldItem>;
 }
 
 export type Stage = "espera" | "jogando" | "pausa" | "fim";
@@ -102,6 +103,7 @@ export interface PosMsg {
 export interface ActMsg {
   seq: number;
   stationId: string;
+  held: HeldItem;
 }
 
 export interface ChatMsg {

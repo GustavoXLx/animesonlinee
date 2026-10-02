@@ -15,3 +15,4 @@
 - Nossa Casa renders without realtime shadow maps (static contact shadows + blob shadows); why: shadow passes were the main mobile frame-rate cost.
 - Turn-based 3D games (futebol, desfile) sync only inputs/results and simulate deterministically on both devices; one side is authority for writes; why: avoids per-frame network traffic.
 - Chat alerts for bb gu use payloadless Web Push (public/push-sw.js, VAPID key derived from SESSION_SECRET, subscriptions in push_subs) plus in-page polling; why: mobile browsers suspend background tabs, and the push carries no message content.
+- cozinha netcode: each player simulates own movement and broadcasts ~15Hz; bb gu's device is world authority; actions deduped by seq.

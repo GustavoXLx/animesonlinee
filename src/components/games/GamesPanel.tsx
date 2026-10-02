@@ -25,6 +25,7 @@ import { Gartic } from "./Gartic";
 import { HeadBall } from "./HeadBall";
 import { Futebol } from "./futebol/Futebol";
 import { Desfile } from "./desfile/Desfile";
+import { Cozinha } from "./cozinha/Cozinha";
 import { GameChat } from "./GameChat";
 import { SPECTRA_EXTRA } from "./sintoniaExtra";
 import { Lig4, Memoria, Forca, VerdadeDesafio } from "./MiniGames";
@@ -45,7 +46,8 @@ type GameKey =
   | "quemsoueu"
   | "embraza"
   | "futebol"
-  | "desfile";
+  | "desfile"
+  | "cozinha";
 
 const GAMES: {
   key: GameKey;
@@ -54,6 +56,13 @@ const GAMES: {
   icon: React.ComponentType<{ size?: number }>;
   gradient: string;
 }[] = [
+  {
+    key: "cozinha",
+    name: "Cozinha a Dois",
+    desc: "cozinhem juntos e entreguem os pedidos",
+    icon: Trophy,
+    gradient: "from-rose-500 to-orange-500",
+  },
   {
     key: "desfile",
     name: "Desfile 3D",
@@ -208,6 +217,7 @@ export function GamesPanel({
           {active === "headball" && <HeadBall me={me} />}
           {active === "futebol" && <Futebol me={me} />}
           {active === "desfile" && <Desfile me={me} />}
+          {active === "cozinha" && <Cozinha me={me} />}
           {active === "lig4" && <Lig4 me={me} />}
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}

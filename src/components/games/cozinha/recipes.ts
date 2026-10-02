@@ -65,7 +65,7 @@ export function initialWorld(seed: number): WorldSnapshot {
     }
     stations[s.id] = st;
   }
-  return { version: 1, ts: Date.now(), stations, orders: [], timeLeft: 180000, score: 0, streak: 0 };
+  return { version: 1, ts: Date.now(), stations, orders: [], timeLeft: 180000, score: 0, streak: 0, heldBy: { gu: null, li: null } };
 }
 
 function matchesRecipe(items: Exclude<HeldItem, null>[]): Dish | null {
