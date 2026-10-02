@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, MessageCircle, RotateCcw, Shield, Skull, Sparkles, Users, Vote, Check, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, MessageCircle, RotateCcw, Shield, Skull, Sparkles, Users, Vote, Check, Clock3, Play, LockKeyhole, UserCheck } from "lucide-react";
 import { useGameChannel, type Me } from "./useGameChannel";
 
 type Player = "gu" | "li" | "cpu1" | "cpu2" | "cpu3";
@@ -45,6 +45,7 @@ type ImpState = {
   round: number;
   clues: Record<Player, string[]>;
   votes: Record<Player, Player | null>;
+  ready: Record<"gu" | "li", boolean>;
   voteDone: Player[];
 };
 
@@ -57,6 +58,71 @@ const initial: ImpState = {
   votes:{ gu:null, li:null, cpu1:null, cpu2:null, cpu3:null },
   voteDone:[],
 };
+
+const WORD_HINTS: Record<string, string> = {
+  Pizza:"É redonda e costuma levar queijo por cima.", Hambúrguer:"É montado em camadas e costuma ir dentro de um pão.",
+  Sushi:"É pequeno, geralmente servido em pedaços e tem origem japonesa.", Lasanha:"É feita em camadas e costuma levar molho e queijo.",
+  Pudim:"É uma sobremesa macia, moldada e normalmente servida gelada.", Coxinha:"É um salgado de massa recheado, muito comum em festas.",
+  Brasil:"Tem uma grande faixa litorânea e é conhecido por suas cores verde e amarelo.", Japão:"É um país insular conhecido por tecnologia e cultura tradicional.",
+  Itália:"É famosa por sua culinária e por cidades históricas.", França:"É conhecida por sua gastronomia, arte e monumentos.",
+  Egito:"É muito associado às pirâmides e ao rio Nilo.", Canadá:"É conhecido pelo frio, grandes áreas naturais e uma folha em sua bandeira.",
+  Leão:"É um grande felino conhecido pela juba.", Golfinho:"É um animal marinho conhecido por sua inteligência.",
+  Elefante:"É um animal muito grande, com tromba e grandes orelhas.", Pinguim:"É uma ave que não voa e está muito ligada a regiões frias.",
+  Cachorro:"É um animal doméstico conhecido por ser companheiro das pessoas.", Girafa:"É um animal alto, com pescoço muito comprido.",
+  Paris:"É uma cidade europeia famosa por sua torre mais conhecida.", Tóquio:"É uma enorme cidade asiática conhecida por tecnologia e movimento.",
+  "Nova York":"É uma cidade com arranha-céus e uma famosa praça cheia de luzes.", "Rio de Janeiro":"É uma cidade brasileira conhecida por praias e uma grande estátua no alto.",
+  Londres:"É uma capital europeia conhecida por ônibus de dois andares e um grande relógio.", Dubai:"É uma cidade conhecida por construções muito altas e luxo.",
+  Futebol:"É jogado com uma bola e dois times tentando marcar gols.", Basquete:"É jogado em uma quadra e envolve arremessos em uma cesta.",
+  Tênis:"É disputado com raquete e uma rede dividindo os lados.", Vôlei:"É jogado com uma rede alta e uma bola que não pode tocar o chão.",
+  Boxe:"É uma luta em que os competidores usam luvas.", Natação:"É um esporte praticado dentro da água.",
+  Médico:"É um profissional que cuida da saúde das pessoas.", Professor:"É um profissional ligado ao ensino e à aprendizagem.",
+  Chef:"É um profissional especializado em preparar e comandar uma cozinha.", Bombeiro:"É um profissional treinado para combater incêndios e fazer resgates.",
+  Piloto:"É quem conduz uma aeronave durante um voo.", Fotógrafo:"É um profissional que trabalha registrando imagens.",
+  Comédia:"É um gênero feito para provocar humor e diversão.", Terror:"É um gênero que busca provocar medo e tensão.",
+  Ação:"É um gênero conhecido por perseguições, lutas e cenas intensas.", Romance:"É um gênero que costuma colocar relacionamentos no centro da história.",
+  "Ficção científica":"É um gênero que costuma explorar tecnologia, espaço ou futuros possíveis.", Animação:"É um formato em que personagens e cenários são criados quadro a quadro.",
+  Celular:"É um aparelho portátil usado para comunicação e vários aplicativos.", Notebook:"É um computador portátil que pode ser levado de um lugar para outro.",
+  Videogame:"É um aparelho ou sistema usado para jogar jogos eletrônicos.", Drone:"É um equipamento voador controlado remotamente.",
+  Robô:"É uma máquina criada para executar tarefas automaticamente.", Smartwatch:"É um relógio que também possui funções digitais e aplicativos.",
+  Sofá:"É um móvel comprido usado principalmente para sentar ou deitar.", Geladeira:"É um eletrodoméstico usado para manter alimentos refrigerados.",
+  Cama:"É um móvel usado principalmente para dormir.", Chuveiro:"É usado para tomar banho com água caindo de cima.",
+  Televisão:"É um aparelho usado para assistir a programas e vídeos.", "Micro-ondas":"É um aparelho usado para aquecer alimentos rapidamente.",
+  "Guarda-sol":"É usado para criar sombra em locais abertos.", Areia:"É formada por muitos pequenos grãos e aparece bastante no litoral.",
+  Prancha:"É usada por quem quer deslizar sobre a água.", Biquíni:"É uma peça de roupa de banho formada por duas partes.",
+  Quente:"É uma característica associada a temperaturas elevadas.", "Protetor solar":"É usado para proteger a pele da exposição ao sol.",
+  Prova:"É uma atividade usada para avaliar o conhecimento de estudantes.", Caderno:"É usado para escrever e organizar anotações.",
+  Mochila:"É carregada nas costas e serve para transportar objetos.", Recreio:"É um intervalo comum na rotina escolar.",
+  Lápis:"É um instrumento usado para escrever e desenhar.", Avião:"É um meio de transporte que viaja pelo ar.",
+  Hotel:"É um lugar onde viajantes podem se hospedar.", Passaporte:"É um documento usado em viagens internacionais.",
+  Mala:"É usada para transportar roupas e objetos durante viagens.", Aeroporto:"É um local de embarque e desembarque de aviões.",
+  Mapa:"É usado para representar lugares e ajudar na localização.", Montanha:"É uma elevação natural de grande tamanho.",
+  Cachoeira:"É um trecho em que a água de um rio cai de uma altura.", Floresta:"É uma grande área coberta principalmente por árvores.",
+  Vulcão:"É uma formação geológica que pode liberar lava e gases.", Deserto:"É uma região muito seca, com pouca chuva.",
+  Rio:"É um curso natural de água que percorre uma determinada região.", Violão:"É um instrumento de cordas muito usado em músicas.",
+  Piano:"É um instrumento com teclas e muitas cordas internas.", Bateria:"É um conjunto de instrumentos de percussão tocado com baquetas.",
+  Microfone:"É usado para captar a voz e outros sons.", Show:"É uma apresentação feita para um público.", Cantor:"É uma pessoa que usa a voz como instrumento musical.",
+  Vestido:"É uma peça de roupa geralmente formada por uma parte única.", Tênis:"É um calçado muito usado no dia a dia.",
+  Jaqueta:"É uma peça usada principalmente na parte de cima do corpo.", Bolsa:"É usada para carregar objetos pessoais.",
+  Boné:"É um acessório usado na cabeça com uma aba na frente.", Óculos:"É um acessório usado diante dos olhos e pode corrigir a visão.",
+  Carro:"É um veículo comum usado para transportar pessoas.", Ônibus:"É um veículo grande que transporta vários passageiros.",
+  Metrô:"É um transporte coletivo que circula principalmente por trilhos.", Navio:"É um grande meio de transporte que viaja pela água.",
+  Bicicleta:"É um veículo de duas rodas movido principalmente por pedais.", Motocicleta:"É um veículo de duas rodas equipado com motor.",
+  Aniversário:"É uma comemoração que acontece todos os anos na mesma data.", Casamento:"É uma celebração ligada à união de duas pessoas.",
+  Carnaval:"É uma festa conhecida por música, fantasias e desfiles.", Réveillon:"É uma celebração que marca a chegada de um novo ano.",
+  Balada:"É uma festa noturna geralmente ligada a música e dança.", Formatura:"É uma cerimônia que marca a conclusão de uma etapa de estudos.",
+  Chave:"É pequena e costuma ser usada para abrir ou fechar algo.", Relógio:"É usado para indicar as horas.",
+  Tesoura:"É um objeto com duas lâminas usado para cortar.", Chocolate:"É um doce feito principalmente a partir de cacau.",
+  Sorvete:"É uma sobremesa gelada e cremosa.", Brigadeiro:"É um doce brasileiro pequeno, geralmente feito com chocolate.",
+  Bolo:"É uma sobremesa assada muito comum em festas.", Donut:"É um doce geralmente redondo com um furo no centro.", Picolé:"É uma sobremesa congelada presa a um palito.",
+  Herói:"É um personagem que costuma proteger pessoas e enfrentar perigos.", Vilão:"É um personagem que normalmente se opõe ao protagonista.",
+  Máscara:"É usada para cobrir parte do rosto.", Capa:"É uma peça que pode ser usada sobre a roupa e aparece muito em personagens.",
+  Poder:"É uma habilidade extraordinária que um personagem pode possuir.", Quartel:"É um local que pode servir como base para um grupo de heróis.",
+};
+
+function impostorHint(seed:number, theme:Theme) {
+  const word = theme.items[wordIndex(seed, THEMES.indexOf(theme))];
+  return WORD_HINTS[word] ?? theme.clues[0];
+}
 
 function hash(seed:number, salt:number) {
   let x = (seed ^ (salt * 0x45d9f3b)) >>> 0;
@@ -116,21 +182,19 @@ export function Impostor({ me }: { me: Me }) {
   const myImpostor = state.seed ? playerIsImpostor(state.seed, me) : false;
   const impostor = state.seed ? PLAYERS[roleIndex(state.seed)] : null;
 
-  const allClues = useMemo(() => PLAYERS.map((p) => ({
-    player:p,
-    clue:state.clues[p]?.[state.round] ?? "",
-  })), [state.clues, state.round]);
+  const bothReady = state.ready.gu && state.ready.li;
+  const myReady = state.ready[me];
+
+  const toggleReady = () => {
+    if (!peerOnline || state.phase !== "lobby") return;
+    setState((prev) => ({ ...prev, ready:{ ...prev.ready, [me]:!prev.ready[me] } }));
+  };
 
   const start = () => {
-    if (me !== "gu" || !peerOnline || state.phase !== "lobby") return;
+    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !bothReady) return;
     const seed = Math.floor(Math.random() * 0x7fffffff) + 1;
     const ti = themeIndex(seed);
-    setState({
-      ...resetState(),
-      phase:"cards",
-      seed,
-      themeIndex:ti,
-    });
+    setState({ ...resetState(), phase:"cards", seed, themeIndex:ti });
   };
 
   useEffect(() => {
@@ -248,68 +312,94 @@ export function Impostor({ me }: { me: Me }) {
           </div>
 
           {state.phase === "lobby" && (
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
-              <section className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-2xl">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-200"><Sparkles size={22} /></div>
+            <section className="space-y-4">
+              <div className="relative overflow-hidden rounded-[30px] border border-violet-300/15 bg-gradient-to-br from-violet-950/70 via-[#11111d] to-fuchsia-950/40 p-5 shadow-2xl sm:p-7">
+                <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/15 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
+                <div className="relative grid gap-6 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
                   <div>
-                    <h2 className="text-lg font-black">Descubram quem está blefando</h2>
-                    <p className="text-xs text-white/45">Um impostor. Um tema. Três rodadas de pistas.</p>
+                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-200/10 bg-white/[0.05] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-violet-200/70">
+                      <LockKeyhole size={12} /> Sala privada
+                    </div>
+                    <h2 className="max-w-xl text-3xl font-black tracking-tight sm:text-4xl">Quem está escondendo a palavra?</h2>
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/50">
+                      Vocês dois precisam apertar <strong className="text-white/75">Iniciar</strong>. Só depois da confirmação dos dois a partida é criada e as cartas são distribuídas.
+                    </p>
+                    <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                      {[
+                        ["1","Confirmem","Você e BB Li apertam Iniciar."],
+                        ["2","Recebam a carta","Apenas o impostor recebe uma dica curta."],
+                        ["3","Descubram","Três rodadas de pistas e votação."],
+                      ].map(([n,t,d]) => (
+                        <div key={n} className="rounded-2xl border border-white/8 bg-black/20 p-3">
+                          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/10 text-[10px] font-black text-violet-200">{n}</div>
+                          <p className="text-xs font-black">{t}</p>
+                          <p className="mt-1 text-[10px] leading-relaxed text-white/35">{d}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-[26px] border border-white/10 bg-black/25 p-4 sm:p-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/35">Preparação</p>
+                        <p className="mt-1 text-sm font-black">{bothReady ? "Tudo pronto" : "Aguardando confirmação"}</p>
+                      </div>
+                      <div className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${bothReady ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
+                        {bothReady ? "2 de 2" : `${Number(state.ready.gu) + Number(state.ready.li)} de 2`}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {(["gu","li"] as const).map((p) => {
+                        const isMe = p === me;
+                        const ready = state.ready[p];
+                        return (
+                          <div key={p} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3">
+                            <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-[10px] font-black`}>
+                              {p === "gu" ? "GU" : "LI"}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-black">{playerName(p)}{isMe ? " • você" : ""}</p>
+                              <p className="mt-0.5 text-[9px] uppercase tracking-wider text-white/30">{ready ? "Pronto para iniciar" : "Ainda não confirmou"}</p>
+                            </div>
+                            {ready ? <UserCheck size={17} className="text-emerald-300" /> : <span className="h-2.5 w-2.5 rounded-full bg-white/15" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleReady}
+                      disabled={!peerOnline}
+                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-35 ${myReady ? "border border-emerald-300/20 bg-emerald-400/10 text-emerald-200" : "bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white shadow-xl shadow-violet-950/30"}`}
+                    >
+                      {myReady ? <Check size={17} /> : <Play size={17} />}
+                      {myReady ? "Início confirmado" : "Iniciar partida"}
+                    </button>
+                    <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-white/30">
+                      <Users size={12} /> {peerOnline ? "BB Li está conectado" : "Aguardando BB Li entrar"}
+                    </div>
                   </div>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {[
-                    ["01","Recebam a carta","Cada jogador recebe secretamente seu papel."],
-                    ["02","Dê uma pista","Todos falam uma característica por rodada."],
-                    ["03","Votem","Depois de 3 rodadas, todos escolhem um suspeito."],
-                  ].map(([n,t,d]) => (
-                    <div key={n} className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                      <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/10 text-[10px] font-black text-violet-200">{n}</div>
-                      <p className="text-xs font-black">{t}</p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-white/40">{d}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-2xl border border-amber-200/10 bg-amber-200/5 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/60">Como funciona</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white/55">
-                    Os dois jogadores reais participam com mais três CPUs. Só uma das cinco pessoas é o impostor. O inocente vê a palavra secreta; o impostor vê apenas o tema.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={start}
-                  disabled={me !== "gu" || !peerOnline}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-600 px-5 py-3.5 text-sm font-black shadow-xl shadow-violet-950/30 transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  <Sparkles size={17} /> {me !== "gu" ? "Aguardando bb gu" : peerOnline ? "Começar partida" : "Aguardando os dois jogadores"}
-                </button>
-              </section>
+              </div>
 
-              <section className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-2xl">
-                <div className="mb-4 flex items-center gap-2">
-                  <Users size={18} className="text-cyan-200" />
-                  <div>
-                    <p className="text-sm font-black">Mesa</p>
-                    <p className="text-[10px] text-white/40">5 lugares nesta partida</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {PLAYERS.map((p, i) => (
-                    <div key={p} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-black/20 p-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-xs font-black`}>
-                        {p === "gu" || p === "li" ? p === me ? "VOCÊ" : p === "li" ? "LI" : "GU" : `0${i}`}
-                      </div>
-                      <div className="min-w-0 flex-1">
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(["cpu1","cpu2","cpu3"] as const).map((p, i) => (
+                  <div key={p} className="rounded-[24px] border border-white/8 bg-white/[0.035] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-[10px] font-black`}>0{i+1}</div>
+                      <div className="min-w-0">
                         <p className="text-xs font-black">{playerName(p)}</p>
-                        <p className="text-[9px] uppercase tracking-wider text-white/35">{p.startsWith("cpu") ? "CPU" : "jogador"}</p>
+                        <p className="text-[9px] uppercase tracking-wider text-violet-200/40">CPU • entra automaticamente</p>
                       </div>
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
                     </div>
-                  ))}
-                </div>
-              </section>
-            </div>
+                    <div className="mt-3 flex items-center gap-2 text-[10px] text-white/35">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Pronto para jogar
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
 
           {state.phase === "cards" && (
@@ -333,11 +423,11 @@ export function Impostor({ me }: { me: Me }) {
                       <p className={`text-[11px] font-black uppercase tracking-[0.25em] ${myImpostor ? "text-red-300" : "text-emerald-200"}`}>
                         {myImpostor ? "VOCÊ É O IMPOSTOR" : "VOCÊ É INOCENTE"}
                       </p>
-                      <p className="mt-3 text-xs text-white/45">{myImpostor ? "Você conhece apenas o tema." : "Você conhece a palavra secreta."}</p>
+                      <p className="mt-3 text-xs text-white/45">{myImpostor ? "Você não vê a palavra. Recebe uma dica curta para tentar se encaixar." : "Você conhece a palavra secreta."}</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 px-6 py-4">
                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35">Tema</p>
                         <p className="mt-1 text-xl font-black">{theme.name}</p>
-                        {!myImpostor && <><p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-200/50">Palavra</p><p className="mt-1 text-2xl font-black text-emerald-100">{secret}</p></>}
+                        {myImpostor ? <><p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200/50">Dica</p><p className="mt-1 max-w-xs text-sm font-bold leading-relaxed text-amber-100">{impostorHint(state.seed, theme)}</p></> : <><p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-200/50">Palavra</p><p className="mt-1 text-2xl font-black text-emerald-100">{secret}</p></>}
                       </div>
                     </>
                   ) : (
