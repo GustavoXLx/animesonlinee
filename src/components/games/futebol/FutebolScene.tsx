@@ -16,6 +16,7 @@ export type SceneProps = {
   startRef: React.MutableRefObject<number>;
   aim: { x: number; y: number };
   curve: number;
+  power: number;
   onAim: (x: number, y: number) => void;
 };
 
@@ -672,7 +673,13 @@ function Game(p: SceneProps) {
           </mesh>
         ))}
       </group>
-      {preview && <Line points={preview} color="#ffffff" lineWidth={2} dashed dashSize={0.35} gapSize={0.25} transparent opacity={0.7} />}
+      {p.view === "kicker" && !p.shot && p.mode === "falta" && (
+        <group position={[p.aim.x, p.aim.y, 0.01]}>
+          <mesh rotation={[0, 0, Math.PI / 4]}><planeGeometry args={[0.18, 0.18]} /><meshBasicMaterial color="#ffffff" transparent opacity={0.9} depthTest={false} /></mesh>
+          <mesh><ringGeometry args={[0.16, 0.2, 24]} /><meshBasicMaterial color={p.power > 0.85 ? "#f97316" : "#22c55e"} transparent opacity={0.95} depthTest={false} /></mesh>
+        </group>
+      )}
+      {preview && <Line points={preview} color="#ffffff" lineWidth={3} dashed dashSize={0.3} gapSize={0.18} transparent opacity={0.75} />}
     </>
   );
 }
