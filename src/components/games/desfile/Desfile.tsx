@@ -188,8 +188,8 @@ function DesfileInner({ me }: { me: Me }) {
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">IA</p><p className="text-[9px] uppercase tracking-wider text-white/35">como jurada</p></div>
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3"><p className="text-sm font-black">{state.wins.gu + state.wins.li}</p><p className="text-[9px] uppercase tracking-wider text-white/35">vitórias na sala</p></div>
           </div>
-          <button disabled={!peerOnline} onClick={() => { void enterLandscape(); newRound(); }} className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-9 py-3.5 text-sm font-black shadow-xl transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-35"><Sparkles size={17} /> Sortear tema e começar</button>
-          {!peerOnline && <p className="mt-3 text-xs font-medium text-amber-300">Esperando {NAME[other(me)]} entrar na sala…</p>}
+          <button onClick={() => { void enterLandscape(); newRound(); }} className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-9 py-3.5 text-sm font-black shadow-xl transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-35"><Sparkles size={17} /> Sortear tema e começar</button>
+          {!peerOnline && <p className="mt-3 text-xs font-medium text-amber-300">Você pode começar; {NAME[other(me)]} pode entrar depois.</p>}
         </div>
       </div>
     );
