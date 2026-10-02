@@ -781,6 +781,11 @@ function Game(p: SceneProps) {
     cam.position.y = THREE.MathUtils.damp(cam.position.y, want.y, snap, dt);
     cam.position.z = THREE.MathUtils.damp(cam.position.z, want.z, snap, dt);
     look.current.lerp(target, 1 - Math.exp(-snap * dt));
+    if (sol && sol.result === "post" && tk >= sol.flight - 0.08 && tk <= sol.flight + 0.18) {
+      const shake = 0.055 * Math.max(0, 1 - Math.abs(tk - sol.flight) * 5);
+      cam.position.x += Math.sin(clock.elapsedTime * 90) * shake;
+      cam.position.y += Math.cos(clock.elapsedTime * 76) * shake * 0.7;
+    }
     if (excite.current > 0.7) {
       const sh = (excite.current - 0.7) * 0.25;
       cam.position.x += (Math.random() - 0.5) * sh;
