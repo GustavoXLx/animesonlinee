@@ -694,6 +694,7 @@ function Game(p: SceneProps) {
   const kickImpact = useRef(0);
   const firedFor = useRef<Solved | null>(null);
   const impactFiredFor = useRef<Solved | null>(null);
+  const groundImpactFor = useRef<Solved | null>(null);
 
   const ball = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
@@ -765,7 +766,8 @@ function Game(p: SceneProps) {
         ball.current.rotation.y += (p.shot?.curve ?? 0) * 12 * dt;
       }
     }
-    if (sol && tk > 0 && bp[1] < BALL_R + 0.07 && Math.abs(tk - sol.flight * 0.72) < 0.06) {
+    if (sol && tk > 0 && bp[1] < BALL_R + 0.07 && Math.abs(tk - sol.flight * 0.72) < 0.06 && groundImpactFor.current !== sol) {
+      groundImpactFor.current = sol;
       kickImpact.current++;
     }
     if (shadow.current) {
