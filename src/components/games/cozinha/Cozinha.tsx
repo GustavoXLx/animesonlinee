@@ -371,15 +371,15 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                   Cozinha a Dois
                 </div>
                 <h2 className="text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-                  Monte sua dupla de chefs
+                  Preparem a cozinha
                 </h2>
                 <p className="mt-1 max-w-xl text-xs text-white/55 sm:text-sm">
-                  Escolha seu estilo, confira seu parceiro e entre quando estiver pronto para o turno.
+                  Personalize seu chef, confirme a conexão e deixe os dois prontos para começar o turno.
                 </p>
               </div>
               <div className="hidden items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-300/10 px-3 py-2 text-[10px] font-bold text-emerald-200 sm:flex">
                 <Wifi size={13} />
-                Sala online
+                COZINHA ONLINE
               </div>
             </div>
 
@@ -459,7 +459,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-3.5 text-sm font-black text-white shadow-xl shadow-pink-950/30 transition duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0"
                   >
                     <Check size={18} />
-                    {state.players[me].ready ? "Você está pronto!" : "Estou pronto para cozinhar"}
+                    {state.players[me].ready ? "Chef pronto" : "Entrar no turno"}
                   </button>
                   {isHost && (
                     <button
@@ -469,7 +469,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                       className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200/20 bg-amber-300/10 px-5 py-3 text-sm font-black text-amber-100 transition hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       <Play size={17} />
-                      {bothReady ? "Iniciar cozinha" : "Aguardando os dois ficarem prontos"}
+                      {bothReady ? "Começar o turno" : "Aguardando os dois chefs"}
                     </button>
                   )}
                 </div>
@@ -479,11 +479,11 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                 <div className="rounded-[28px] border border-white/10 bg-white/[0.055] p-4 shadow-2xl backdrop-blur-xl sm:p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Sua equipe</p>
-                      <p className="mt-1 text-lg font-black">Dupla de cozinha</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Sua brigada</p>
+                      <p className="mt-1 text-lg font-black">2 chefs • 1 turno</p>
                     </div>
                     <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white/60">
-                      <Users size={13} /> 2 jogadores
+                      <Users size={13} /> 2 chefs
                     </div>
                   </div>
 
