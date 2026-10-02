@@ -145,10 +145,12 @@ function Home() {
         )}
       </header>
 
-      {notifier.canRequest && notifier.permission === "default" && (
+      {notifier.canRequest && notifier.permission !== "granted" && (
         <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-neutral-900 px-3 py-2.5">
           <Bell size={17} className="shrink-0 text-fuchsia-400" />
-          <p className="min-w-0 flex-1 text-xs text-white/70">Ative os avisos de novos episódios.</p>
+          <p className="min-w-0 flex-1 text-xs text-white/70">
+            {notifier.permission === "denied" ? "Avisos bloqueados neste navegador." : "Ative os avisos de novos episódios."}
+          </p>
           <button
             onClick={async () => {
               const result = await notifier.requestPermission();
@@ -165,7 +167,7 @@ function Home() {
             }}
             className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black"
           >
-            Ativar
+            {notifier.permission === "denied" ? "Como liberar" : "Ativar"}
           </button>
         </div>
       )}
