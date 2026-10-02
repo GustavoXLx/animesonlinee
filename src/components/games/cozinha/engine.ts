@@ -82,7 +82,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   }
 
   fitCamera(){
-   const w=this.scale.width,h=this.scale.height;
+   const w=COLS*TILE,h=ROWS*TILE;
    const zx=w/(COLS*TILE),zy=h/(ROWS*TILE);
    this.cameras.main.setZoom(Math.min(zx,zy)*0.98);
    this.cameras.main.centerOn(COLS*TILE/2,ROWS*TILE/2);
