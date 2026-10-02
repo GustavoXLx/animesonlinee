@@ -9,18 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ZzFuttestRouteImport } from './routes/zz-futtest'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnimeAnimeIdRouteImport } from './routes/anime.$animeId'
 
-const ZzFuttestRoute = ZzFuttestRouteImport.update({
-  id: '/zz-futtest',
-  path: '/zz-futtest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -52,7 +46,6 @@ export interface FileRoutesByFullPath {
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
-  '/zz-futtest': typeof ZzFuttestRoute
   '/anime/$animeId': typeof AnimeAnimeIdRoute
 }
 export interface FileRoutesByTo {
@@ -60,7 +53,6 @@ export interface FileRoutesByTo {
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
-  '/zz-futtest': typeof ZzFuttestRoute
   '/anime/$animeId': typeof AnimeAnimeIdRoute
 }
 export interface FileRoutesById {
@@ -69,33 +61,19 @@ export interface FileRoutesById {
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
-  '/zz-futtest': typeof ZzFuttestRoute
   '/anime/$animeId': typeof AnimeAnimeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/explorar'
-    | '/minha-lista'
-    | '/perfil'
-    | '/zz-futtest'
-    | '/anime/$animeId'
+  fullPaths: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/explorar'
-    | '/minha-lista'
-    | '/perfil'
-    | '/zz-futtest'
-    | '/anime/$animeId'
+  to: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
   id:
     | '__root__'
     | '/'
     | '/explorar'
     | '/minha-lista'
     | '/perfil'
-    | '/zz-futtest'
     | '/anime/$animeId'
   fileRoutesById: FileRoutesById
 }
@@ -104,19 +82,11 @@ export interface RootRouteChildren {
   ExplorarRoute: typeof ExplorarRoute
   MinhaListaRoute: typeof MinhaListaRoute
   PerfilRoute: typeof PerfilRoute
-  ZzFuttestRoute: typeof ZzFuttestRoute
   AnimeAnimeIdRoute: typeof AnimeAnimeIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/zz-futtest': {
-      id: '/zz-futtest'
-      path: '/zz-futtest'
-      fullPath: '/zz-futtest'
-      preLoaderRoute: typeof ZzFuttestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -160,7 +130,6 @@ const rootRouteChildren: RootRouteChildren = {
   ExplorarRoute: ExplorarRoute,
   MinhaListaRoute: MinhaListaRoute,
   PerfilRoute: PerfilRoute,
-  ZzFuttestRoute: ZzFuttestRoute,
   AnimeAnimeIdRoute: AnimeAnimeIdRoute,
 }
 export const routeTree = rootRouteImport
