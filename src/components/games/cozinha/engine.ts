@@ -343,6 +343,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    if(hooks.getStage()!=="jogando")return;
    this.move(dt);
    this.nearestStation();
+   if(Phaser.Input.Keyboard.JustDown(this.keys?.Q))thr=true;
    if(act){act=false;this.action();}
    if(thr){thr=false;this.throwItem();}
 

@@ -649,6 +649,16 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
         className="absolute left-[max(1.25rem,env(safe-area-inset-left))] bottom-[max(1.25rem,env(safe-area-inset-bottom))] w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none backdrop-blur-sm grid place-items-center"
       ><div ref={joyKnobRef} className="w-11 h-11 rounded-full bg-foreground/65 shadow-lg pointer-events-none transition-transform duration-75" /></div>
 
+      {/* arremesso rápido */}
+      <button
+        type="button"
+        onPointerDown={() => engineRef.current?.pressThrow()}
+        aria-label="Arremessar ingrediente"
+        className="absolute right-[max(1.25rem,env(safe-area-inset-right))] bottom-[max(7.2rem,calc(env(safe-area-inset-bottom)+7.2rem))] z-20 h-14 w-28 rounded-2xl border border-white/20 bg-slate-900/80 text-[10px] font-black tracking-wide text-white shadow-xl backdrop-blur-md touch-none active:scale-95"
+      >
+        ARREMESSAR
+      </button>
+
       {/* botão de ação (mobile) */}
       <button
         onPointerDown={handleActDown}
