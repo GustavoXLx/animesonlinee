@@ -3,7 +3,7 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Doll, type DollAnim } from "@/components/avatar/Doll";
-import { HAIRS, TOPS, BOTTOMS, SHOES, HATS, GLASSES, ACCS, HANDS, PATTERNS, DEFAULT_LOOKS, type Look } from "@/lib/look";
+import { FACES, HAIRS, TOPS, BOTTOMS, SHOES, HATS, GLASSES, ACCS, HANDS, PATTERNS, DEFAULT_LOOKS, type Look } from "@/lib/look";
 
 export const Route = createFileRoute("/dev-doll")({
   component: Page,
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/dev-doll")({
 });
 
 const CATS: Record<string, { id: string; name: string }[]> = {
-  hair: HAIRS, top: TOPS, bottom: BOTTOMS, shoes: SHOES, hat: HATS, glasses: GLASSES, acc: ACCS, hand: HANDS, pattern: PATTERNS,
+  face: FACES, hair: HAIRS, top: TOPS, bottom: BOTTOMS, shoes: SHOES, hat: HATS, glasses: GLASSES, acc: ACCS, hand: HANDS, pattern: PATTERNS,
 };
 
 function Cell({ look, close }: { look: Look; close?: boolean }) {
