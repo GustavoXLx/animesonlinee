@@ -17,6 +17,10 @@ import {
   Gavel,
   Hand as HandStop,
   UserSearch,
+  Backpack,
+  TentTree,
+  Car,
+  WandSparkles,
 } from "lucide-react";
 import { QuemSouEu } from "./QuemSouEu";
 import { Embraza } from "./Embraza";
