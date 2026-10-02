@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X, Clock3 } from "lucide-react";
+import { Check, ChefHat, CookingPot, Gauge, Palette, Pause, Play, RotateCcw, Shirt, Sparkles, Users, Wifi, X, Clock3, Star } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
 import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld, DISH_LABEL, ITEM_LABEL, RECIPE_NEEDS } from "./recipes";
@@ -555,7 +555,14 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
           <X size={18} />
         </button>
         <p className="text-xs uppercase tracking-[0.3em] text-primary">Fim do turno</p>
+        <div className="flex items-center gap-1" aria-label={`${Math.min(3, Math.max(1, Math.floor(world.score / 300) + 1))} estrelas`}>
+          {[0, 1, 2].map((i) => {
+            const stars = Math.min(3, Math.max(1, Math.floor(world.score / 300) + 1));
+            return <Star key={i} size={30} className={i < stars ? "fill-amber-400 text-amber-400" : "text-muted-foreground/25"} />;
+          })}
+        </div>
         <p className="text-3xl font-black text-foreground">{world.score} pontos</p>
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">Desempenho do turno</p>
         <p className="text-lg text-muted-foreground max-w-sm">{endMessage}</p>
         <button onClick={playAgain} className="rounded-md bg-primary px-6 py-3 font-bold text-primary-foreground mt-2 inline-flex items-center gap-2">
           <RotateCcw size={18} /> Jogar de novo
