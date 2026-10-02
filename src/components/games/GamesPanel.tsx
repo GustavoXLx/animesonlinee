@@ -193,6 +193,13 @@ export function GamesPanel({
   // ==== Fullscreen game view ====
   if (active) {
     const game = GAMES.find((g) => g.key === active)!;
+    if (active === "cozinha") {
+      return (
+        <div className="fixed inset-0 z-[100] h-dvh w-screen overflow-hidden bg-neutral-950 text-white animate-fade-in">
+          <Cozinha me={me} onExit={() => setActive(null)} />
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
         <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10 shrink-0">
@@ -217,7 +224,6 @@ export function GamesPanel({
           {active === "headball" && <HeadBall me={me} />}
           {active === "futebol" && <Futebol me={me} />}
           {active === "desfile" && <Desfile me={me} />}
-          {active === "cozinha" && <Cozinha me={me} />}
           {active === "lig4" && <Lig4 me={me} />}
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}
