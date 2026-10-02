@@ -329,6 +329,47 @@ const box = (x: number, y: number, z: number) => geo(`b${x}:${y}:${z}`, () => ne
 const cone = (r: number, h: number, s = 14) => geo(`k${r}:${h}:${s}`, () => new THREE.ConeGeometry(r, h, s));
 const tor = (r: number, t: number, arc = Math.PI * 2, rs = 10, ts = 24) => geo(`t${r}:${t}:${arc}:${rs}:${ts}`, () => new THREE.TorusGeometry(r, t, rs, ts, arc));
 const capSph = (r: number, theta: number) => geo(`h${r}:${theta}`, () => new THREE.SphereGeometry(r, 24, 16, 0, Math.PI * 2, 0, theta));
+/** casca de cabelo aberta na frente (deixa o rosto livre). */
+const shellSph = (r: number, theta: number, win = 2.5) =>
+  geo(`hs${r}:${theta}:${win}`, () => new THREE.SphereGeometry(r, 28, 18, Math.PI / 2 + win / 2, Math.PI * 2 - win, 0, theta));
+/** franja: só a parte da frente. */
+const frontSph = (r: number, theta: number, win = 2.2) =>
+  geo(`hf${r}:${theta}:${win}`, () => new THREE.SphereGeometry(r, 20, 12, Math.PI / 2 - win / 2, win, 0, theta));
+
+function strandTex() {
+  const key = "hairStrands";
+  const hit = texCache.get(key);
+  if (hit) return hit;
+  const W = 128;
+  const cv = document.createElement("canvas");
+  cv.width = W;
+  cv.height = 64;
+  const g = cv.getContext("2d")!;
+  g.fillStyle = "#c8c8c8";
+  g.fillRect(0, 0, W, 64);
+  for (let i = 0; i < 90; i++) {
+    const x = Math.random() * W;
+    const v = 120 + Math.random() * 135;
+    g.strokeStyle = `rgb(${v},${v},${v})`;
+    g.lineWidth = 0.6 + Math.random() * 1.6;
+    g.beginPath();
+    g.moveTo(x, 0);
+    g.lineTo(x + (Math.random() - 0.5) * 4, 64);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(5, 1);
+  t.colorSpace = THREE.SRGBColorSpace;
+  texCache.set(key, t);
+  return t;
+}
+function hairMat(color: string): THREE.Material {
+  return special("hair" + color, () => {
+    const t = strandTex();
+    return new THREE.MeshStandardMaterial({ color, map: t, bumpMap: t, bumpScale: 1.5, roughness: 0.42, metalness: 0.04, side: THREE.DoubleSide });
+  });
+}
 const shapeGeo = (key: string, draw: (s: THREE.Shape) => void, depth = 0.01) =>
   geo(`sh${key}${depth}`, () => {
     const s = new THREE.Shape();
@@ -406,13 +447,20 @@ const R = 0.14; // raio da cabeça
 
 /* ---------------- partes ---------------- */
 function Hair({ l }: { l: Look }) {
-  const m = mat(l.hairC, "solid");
-  const base = (theta = 1.75, tilt = -0.42, rr = 1.07) => <mesh geometry={capSph(R * rr, theta)} material={m} rotation={[tilt, 0, 0]} />;
+  const m = hairMat(l.hairC);
+  // topo até a linha do cabelo (acima das sobrancelhas) + casca nas laterais/nuca aberta para o rosto
+  const base = (len = 1.8, _tilt = 0, rr = 1.07) => (
+    <>
+      <mesh geometry={capSph(R * rr, 1.08)} material={m} rotation={[-0.2, 0, 0]} />
+      <mesh geometry={shellSph(R * (rr + 0.01), len)} material={m} />
+    </>
+  );
+  const bangs = (theta = 1.2) => <mesh geometry={frontSph(R * 1.09, theta)} material={m} />;
   switch (l.hair) {
     case "none":
       return null;
     case "buzz":
-      return base(1.55, -0.35, 1.02);
+      return base(1.62, 0, 1.02);
     case "short":
       return (
         <>
@@ -495,7 +543,12 @@ function Hair({ l }: { l: Look }) {
         </>
       );
     case "bob":
-      return <mesh geometry={capSph(R * 1.12, 2.15)} material={m} rotation={[-0.38, 0, 0]} />;
+      return (
+        <>
+          {base(2.2, 0, 1.1)}
+          {bangs(1.18)}
+        </>
+      );
     case "mohawk":
       return (
         <>
@@ -521,8 +574,8 @@ function Hair({ l }: { l: Look }) {
     case "fringe":
       return (
         <>
-          {base(1.8, -0.1, 1.07)}
-          <mesh geometry={box(0.22, 0.12, 0.08)} material={m} position={[0, -0.12, -0.1]} />
+          {base(1.9)}
+          {bangs(1.2)}
         </>
       );
     case "mullet":
