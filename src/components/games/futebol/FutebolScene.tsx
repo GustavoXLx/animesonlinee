@@ -178,6 +178,8 @@ function FootballKit({ model, skin = "default" }: { model: string; skin?: "defau
 
 type AnimRef = MutableRefObject<{ name: string; once?: boolean; speed?: number }>;
 
+const PLAYER_ASSET = "https://raw.githubusercontent.com/kendrekaran/striker-3d/main/assets/player.glb";
+
 function Person({
   model,
   groupRef,
@@ -191,164 +193,73 @@ function Person({
   height?: number;
   skin?: "default" | "neymar";
 }) {
-  const rig = useRef<THREE.Group>(null);
-  const leftArm = useRef<THREE.Group>(null);
-  const rightArm = useRef<THREE.Group>(null);
-  const leftLeg = useRef<THREE.Group>(null);
-  const rightLeg = useRef<THREE.Group>(null);
-  const head = useRef<THREE.Group>(null);
-  const scale = height / 1.82;
+  const gltf = useGLTF(PLAYER_ASSET);
+  const inner = useRef<THREE.Group>(null);
+  const { actions } = useAnimations(gltf.animations, inner);
+  const current = useRef("");
 
-  const colors = useMemo(() => {
-    if (skin === "neymar") {
-      return { shirt: "#f7c948", trim: "#087f3f", shorts: "#075d35", skin: "#9a5b3a", hair: "#17120e", socks: "#f5f5f5", boots: "#2563eb" };
-    }
-    const variant = model.charCodeAt(model.length - 1) % 3;
-    return variant === 0
-      ? { shirt: "#f4f7fb", trim: "#2563eb", shorts: "#172033", skin: "#a96845", hair: "#2b211b", socks: "#f5f5f5", boots: "#111827" }
-      : variant === 1
-        ? { shirt: "#f4f7fb", trim: "#16a34a", shorts: "#172033", skin: "#8b5338", hair: "#241a16", socks: "#f5f5f5", boots: "#111827" }
-        : { shirt: "#f4f7fb", trim: "#dc2626", shorts: "#202535", skin: "#c47a50", hair: "#30221a", socks: "#f5f5f5", boots: "#111827" };
-  }, [model, skin]);
+  const rig = useMemo(() => {
+    const root = skClone(gltf.scene);
+    root.traverse((node) => {
+      if (!(node as THREE.Mesh).isMesh) return;
+      const mesh = node as THREE.Mesh;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mesh.material = materials.map((source) => {
+        const mat = source.clone() as THREE.MeshStandardMaterial;
+        const name = String(mat.name || "");
+        const neymar = skin === "neymar";
+        if (/shirt/i.test(name)) mat.color.set(neymar ? "#f7c948" : model.includes("female") ? "#f5f5f5" : "#eef2f7");
+        else if (/pants|short/i.test(name)) mat.color.set(neymar ? "#075d35" : "#172033");
+        else if (/sock/i.test(name)) mat.color.set("#f5f5f5");
+        else if (/shoe/i.test(name)) mat.color.set(neymar ? "#2563eb" : "#111827");
+        else if (neymar && /hair/i.test(name)) mat.color.set("#17120e");
+        mat.roughness = Math.min(0.78, Math.max(0.38, mat.roughness || 0.55));
+        mat.metalness = Math.min(0.12, mat.metalness || 0);
+        return mat;
+      });
+    });
+    const box = new THREE.Box3().setFromObject(root);
+    const h = Math.max(0.001, box.max.y - box.min.y);
+    const s = height / h;
+    root.scale.setScalar(s);
+    root.position.y = -box.min.y * s;
+    return root;
+  }, [gltf.scene, height, model, skin]);
 
-  useFrame(({ clock }) => {
-    const g = rig.current;
-    if (!g) return;
-    const t = clock.elapsedTime;
-    const name = anim.current.name;
-    const sprint = name === "sprint";
-    const kick = name === "attack-kick-right";
-    const jump = name === "jump";
-    const celebration = name === "emote-yes";
-    const defeat = name === "emote-no";
-
-    const run = sprint ? Math.sin(t * 11) : Math.sin(t * 2.2) * 0.06;
-    const arm = sprint ? Math.sin(t * 11 + Math.PI) * 0.62 : Math.sin(t * 2.2 + Math.PI) * 0.04;
-
-    leftLeg.current!.rotation.x = run * 0.78;
-    rightLeg.current!.rotation.x = -run * 0.78;
-    leftArm.current!.rotation.x = arm;
-    rightArm.current!.rotation.x = -arm;
-
-    if (kick) {
-      const k = Math.min(1, Math.max(0, (t * 1.6) % 1));
-      const swing = Math.sin(k * Math.PI);
-      rightLeg.current!.rotation.x = -1.45 * swing;
-      leftLeg.current!.rotation.x = 0.18 * swing;
-      leftArm.current!.rotation.x = -0.5 * swing;
-      rightArm.current!.rotation.x = 0.65 * swing;
-      g.rotation.z = 0.12 * swing;
-    } else if (jump) {
-      const pulse = 0.22 + Math.abs(Math.sin(t * 8)) * 0.18;
-      leftArm.current!.rotation.z = -0.9;
-      rightArm.current!.rotation.z = 0.9;
-      leftArm.current!.rotation.x = -pulse;
-      rightArm.current!.rotation.x = -pulse;
-      g.rotation.z = Math.sin(t * 5) * 0.06;
-    } else if (celebration) {
-      leftArm.current!.rotation.z = -1.15;
-      rightArm.current!.rotation.z = 1.15;
-      leftArm.current!.rotation.x = -0.45;
-      rightArm.current!.rotation.x = -0.45;
-      g.rotation.z = Math.sin(t * 4) * 0.04;
-    } else if (defeat) {
-      leftArm.current!.rotation.x = 0.15;
-      rightArm.current!.rotation.x = 0.15;
-      g.rotation.z = 0.08;
+  useFrame(() => {
+    const want = anim.current.name;
+    const map: Record<string, string> = {
+      idle: "Idle",
+      sprint: "Run",
+      "attack-kick-right": "Punch",
+      jump: "Jump",
+      "emote-yes": "Clapping",
+      "emote-no": "Idle",
+    };
+    const clipName = map[want] ?? "Idle";
+    if (current.current === clipName) return;
+    const next = actions[clipName] ?? actions[Object.keys(actions)[0]];
+    if (!next) return;
+    const prev = current.current ? actions[current.current] : null;
+    next.reset();
+    next.timeScale = anim.current.speed ?? 1;
+    if (anim.current.once) {
+      next.setLoop(THREE.LoopOnce, 1);
+      next.clampWhenFinished = true;
     } else {
-      g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0, 8, 0.016);
+      next.setLoop(THREE.LoopRepeat, Infinity);
     }
-
-    g.position.y = jump ? Math.abs(Math.sin(t * 5)) * 0.08 : 0;
-    head.current!.rotation.y = Math.sin(t * 1.4) * 0.035;
-    head.current!.rotation.x = sprint ? -0.04 : 0;
+    next.fadeIn(0.12).play();
+    prev?.fadeOut(0.12);
+    current.current = clipName;
   });
 
-  const limb = (position: [number, number, number], color: string, radius = 0.075, length = 0.46) => (
-    <mesh position={position} castShadow>
-      <capsuleGeometry args={[radius, length, 8, 16]} />
-      <meshStandardMaterial color={color} roughness={0.68} />
-    </mesh>
-  );
-
   return (
-    <group ref={groupRef} scale={scale}>
-      <group ref={rig}>
-        <mesh position={[0, 1.08, 0]} scale={[0.32, 0.48, 0.2]} castShadow>
-          <capsuleGeometry args={[0.52, 0.38, 8, 20]} />
-          <meshStandardMaterial color={colors.shirt} roughness={0.58} />
-        </mesh>
-        <mesh position={[0, 1.02, 0.205]} scale={[0.75, 0.55, 0.04]}>
-          <sphereGeometry args={[0.25, 24, 16]} />
-          <meshStandardMaterial color={colors.trim} roughness={0.5} />
-        </mesh>
-        <mesh position={[0, 0.67, 0]} scale={[0.9, 0.55, 0.65]} castShadow>
-          <capsuleGeometry args={[0.23, 0.18, 8, 16]} />
-          <meshStandardMaterial color={colors.shorts} roughness={0.72} />
-        </mesh>
-
-        <group ref={leftArm} position={[-0.34, 1.15, 0]}>
-          {limb([0, -0.25, 0], colors.shirt, 0.09, 0.26)}
-          {limb([0, -0.58, 0], colors.skin, 0.075, 0.25)}
-          <mesh position={[0, -0.75, 0]} castShadow>
-            <sphereGeometry args={[0.085, 16, 12]} />
-            <meshStandardMaterial color={colors.skin} roughness={0.7} />
-          </mesh>
-        </group>
-        <group ref={rightArm} position={[0.34, 1.15, 0]}>
-          {limb([0, -0.25, 0], colors.shirt, 0.09, 0.26)}
-          {limb([0, -0.58, 0], colors.skin, 0.075, 0.25)}
-          <mesh position={[0, -0.75, 0]} castShadow>
-            <sphereGeometry args={[0.085, 16, 12]} />
-            <meshStandardMaterial color={colors.skin} roughness={0.7} />
-          </mesh>
-        </group>
-
-        <group ref={leftLeg} position={[-0.14, 0.54, 0]}>
-          {limb([0, -0.28, 0], colors.shorts, 0.095, 0.34)}
-          {limb([0, -0.72, 0], colors.socks, 0.085, 0.38)}
-          <mesh position={[0, -0.94, 0.07]} scale={[1.15, 0.5, 1.7]} castShadow>
-            <sphereGeometry args={[0.09, 18, 12]} />
-            <meshStandardMaterial color={colors.boots} roughness={0.38} metalness={0.05} />
-          </mesh>
-        </group>
-        <group ref={rightLeg} position={[0.14, 0.54, 0]}>
-          {limb([0, -0.28, 0], colors.shorts, 0.095, 0.34)}
-          {limb([0, -0.72, 0], colors.socks, 0.085, 0.38)}
-          <mesh position={[0, -0.94, 0.07]} scale={[1.15, 0.5, 1.7]} castShadow>
-            <sphereGeometry args={[0.09, 18, 12]} />
-            <meshStandardMaterial color={colors.boots} roughness={0.38} metalness={0.05} />
-          </mesh>
-        </group>
-
-        <group ref={head} position={[0, 1.78, 0]}>
-          <mesh castShadow>
-            <sphereGeometry args={[0.205, 28, 20]} />
-            <meshStandardMaterial color={colors.skin} roughness={0.72} />
-          </mesh>
-          <mesh position={[0, 0.12, -0.015]} scale={[1.04, 0.7, 0.92]} castShadow>
-            <sphereGeometry args={[0.205, 24, 16]} />
-            <meshStandardMaterial color={colors.hair} roughness={0.9} />
-          </mesh>
-          <mesh position={[0, -0.07, 0.19]} scale={[0.52, 0.18, 0.08]}>
-            <sphereGeometry args={[0.12, 16, 10]} />
-            <meshStandardMaterial color={colors.skin} roughness={0.72} />
-          </mesh>
-          <mesh position={[-0.075, 0.025, 0.185]}>
-            <sphereGeometry args={[0.025, 12, 8]} />
-            <meshStandardMaterial color="#161616" roughness={0.5} />
-          </mesh>
-          <mesh position={[0.075, 0.025, 0.185]}>
-            <sphereGeometry args={[0.025, 12, 8]} />
-            <meshStandardMaterial color="#161616" roughness={0.5} />
-          </mesh>
-          {skin === "neymar" && (
-            <mesh position={[0, 0.12, -0.12]} scale={[0.72, 0.22, 0.35]} rotation={[0.2, 0, 0]}>
-              <sphereGeometry args={[0.22, 20, 12]} />
-              <meshStandardMaterial color="#17120e" roughness={0.92} />
-            </mesh>
-          )}
-        </group>
+    <group ref={groupRef}>
+      <group ref={inner}>
+        <primitive object={rig} />
       </group>
     </group>
   );
@@ -925,7 +836,7 @@ function Game(p: SceneProps) {
 
 export default function FutebolScene(props: SceneProps) {
   useEffect(() => {
-    ["male-b", "male-d", "male-e", "male-f", props.kickerModel, props.keeperModel].forEach((m) => useGLTF.preload(charUrl(m)));
+    useGLTF.preload(PLAYER_ASSET);
   }, [props.kickerModel, props.keeperModel]);
   return (
     <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }} camera={{ position: [0, 2, 17], fov: 50, near: 0.1, far: 300 }}>
