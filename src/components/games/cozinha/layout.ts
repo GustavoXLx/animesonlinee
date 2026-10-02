@@ -21,7 +21,7 @@ export const STATIONS: StationDef[] = [
   { id: "f_molho", type: "geladeira", x: 11, y: 0, ingredient: "molho" },
   { id: "w1", type: "parede", x: 12, y: 0 },
 
-  // laterais
+  // laterais: entrega e bancadas de passagem
   { id: "wl1", type: "parede", x: 0, y: 1 },
   { id: "wl2", type: "parede", x: 0, y: 2 },
   { id: "wl3", type: "parede", x: 0, y: 3 },
@@ -38,9 +38,17 @@ export const STATIONS: StationDef[] = [
   { id: "c_r6", type: "balcao", x: 12, y: 6 },
   { id: "wr7", type: "parede", x: 12, y: 7 },
 
-  // interior - força contorno
-  { id: "ic1", type: "balcao", x: 6, y: 3 },
-  { id: "ic2", type: "balcao", x: 6, y: 5 },
+  // duas ilhas centrais, com corredores largos para os dois jogadores
+  { id: "ic1", type: "balcao", x: 4, y: 3 },
+  { id: "ic2", type: "montagem", x: 5, y: 3 },
+  { id: "ic3", type: "balcao", x: 6, y: 3 },
+  { id: "ic4", type: "montagem", x: 7, y: 3 },
+  { id: "ic5", type: "balcao", x: 8, y: 3 },
+  { id: "ic6", type: "balcao", x: 4, y: 5 },
+  { id: "ic7", type: "tabua", x: 5, y: 5 },
+  { id: "ic8", type: "balcao", x: 6, y: 5 },
+  { id: "ic9", type: "tabua", x: 7, y: 5 },
+  { id: "ic10", type: "balcao", x: 8, y: 5 },
 
   // base
   { id: "w2", type: "parede", x: 0, y: 8 },
@@ -61,7 +69,7 @@ export const STATIONS: StationDef[] = [
 export function buildSolidGrid(): boolean[][] {
   const solid: boolean[][] = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
   for (const s of STATIONS) {
-    if (s.type !== "entrega" || true) solid[s.y][s.x] = true;
+    solid[s.y][s.x] = true;
   }
   return solid;
 }

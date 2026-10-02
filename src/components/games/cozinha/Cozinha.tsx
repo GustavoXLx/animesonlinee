@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, CookingPot, Gauge, Pause, Play, RotateCcw } from "lucide-react";
 import { useGameChannel, type Me } from "../useGameChannel";
+import { LandscapeGate, enterLandscape } from "../Landscape";
 import { applyAction, initialWorld } from "./recipes";
 import { tickProcesses, maybeSpawnOrder, expireOrders } from "./recipes";
 import type { EngineHandle, EngineHooks } from "./engine";
@@ -12,13 +14,13 @@ const DURATION = 180000;
 const OUTFIT_COLORS = ["0xf59ac2", "0x7dd0e8", "0xffd36e", "0x9ed6a3", "0xc3a6f2", "0xff9e80"];
 const HAIR_COLORS = ["0x3b2318", "0x6b4423", "0xd4a24e", "0x1a1a1a", "0xe0749b", "0x9e9e9e"];
 
-const QUICK_MESSAGES = ["Me ajuda!", "Pega o queijo!", "Pedido pronto!", "Cuidado! 😂"];
+const QUICK_MESSAGES = ["Me ajuda!", "Pega o queijo!", "Pedido pronto!", "Cuidado!"];
 
 const END_MESSAGES = [
-  "Vocês são uma dupla perfeita! ❤️",
-  "Que cozinha mais sincronizada, parabéns time! 🍳",
-  "Com vocês dois até a cozinha pega fogo (de amor) 😍",
-  "Juntos vocês conseguem qualquer receita da vida 💞",
+  "Vocês formaram uma dupla perfeita!",
+  "Que cozinha sincronizada. Parabéns, time!",
+  "Serviço encerrado com muita habilidade.",
+  "Juntos vocês dominam qualquer receita.",
 ];
 
 function loadMeta(me: Me): { outfit: string; hair: string } {
@@ -64,6 +66,8 @@ export function Cozinha({ me }: { me: Me }) {
   const [localReady, setLocalReady] = useState(false);
   const [world, setWorld] = useState<WorldSnapshot>(state.world);
   const [showFps, setShowFps] = useState(false);
+  const [held, setHeld] = useState<HeldItem>(null);
+  const [focus, setFocus] = useState<string | null>(null);
   const [bubbles, setBubbles] = useState<{ who: Me; text: string; id: number }[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<EngineHandle | null>(null);
@@ -72,6 +76,7 @@ export function Cozinha({ me }: { me: Me }) {
   const joyTouchId = useRef<number | null>(null);
   const actTouchId = useRef<number | null>(null);
   const joyBaseRef = useRef<HTMLDivElement | null>(null);
+  const joyKnobRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     saveMeta(me, meta);
@@ -212,8 +217,8 @@ export function Cozinha({ me }: { me: Me }) {
           worldRef.current = w;
           setWorld(w);
         },
-        onHeldChanged: () => {},
-        onStationFocus: () => {},
+        onHeldChanged: setHeld,
+        onStationFocus: setFocus,
         get showFps() {
           return showFpsRef.current;
         },
@@ -274,24 +279,33 @@ export function Cozinha({ me }: { me: Me }) {
   // ============ joystick / botão virtual ============
   const handleJoyStart = (e: React.PointerEvent) => {
     joyTouchId.current = e.pointerId;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    updateJoystick(e.clientX, e.clientY);
   };
-  const handleJoyMove = (e: React.PointerEvent) => {
-    if (joyTouchId.current !== e.pointerId || !joyBaseRef.current) return;
+  const updateJoystick = (clientX: number, clientY: number) => {
+    if (!joyBaseRef.current) return;
     const rect = joyBaseRef.current.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    let dx = (e.clientX - cx) / (rect.width / 2);
-    let dy = (e.clientY - cy) / (rect.height / 2);
+    let dx = (clientX - cx) / (rect.width * 0.38);
+    let dy = (clientY - cy) / (rect.height * 0.38);
     const len = Math.hypot(dx, dy);
     if (len > 1) {
       dx /= len;
       dy /= len;
     }
+    if (len < 0.12) { dx = 0; dy = 0; }
+    if (joyKnobRef.current) joyKnobRef.current.style.transform = `translate(${dx * 26}px, ${dy * 26}px)`;
     engineRef.current?.setJoystick(dx, dy);
+  };
+  const handleJoyMove = (e: React.PointerEvent) => {
+    if (joyTouchId.current !== e.pointerId) return;
+    updateJoystick(e.clientX, e.clientY);
   };
   const handleJoyEnd = (e: React.PointerEvent) => {
     if (joyTouchId.current !== e.pointerId) return;
     joyTouchId.current = null;
+    if (joyKnobRef.current) joyKnobRef.current.style.transform = "translate(0, 0)";
     engineRef.current?.setJoystick(0, 0);
   };
   const handleActDown = (e: React.PointerEvent) => {
@@ -304,95 +318,99 @@ export function Cozinha({ me }: { me: Me }) {
   };
 
   const endMessage = useMemo(() => END_MESSAGES[Math.floor(Math.random() * END_MESSAGES.length)], [state.stage === "fim"]);
+  const actionLabel = held ? "Colocar" : focus ? "Pegar" : "Ação";
 
   // ============ telas ============
   if (!localReady) {
     return (
-      <div className="h-full overflow-y-auto flex flex-col items-center justify-center gap-5 p-6 text-center bg-gradient-to-b from-rose-950 to-neutral-950">
+      <LandscapeGate><div className="h-full overflow-y-auto flex flex-col items-center justify-center gap-4 p-4 text-center bg-background">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-rose-300/80">Cozinha a Dois</p>
-          <h3 className="mt-1 text-2xl font-black text-white">Escolha seu look</h3>
+          <p className="text-xs uppercase tracking-[0.3em] text-primary">Cozinha a Dois</p>
+          <h3 className="mt-1 text-2xl font-black text-foreground">Prepare seu cozinheiro</h3>
         </div>
         <div className="flex flex-col gap-3 items-center">
-          <p className="text-xs text-white/60">Roupa</p>
+          <p className="text-xs text-muted-foreground">Uniforme</p>
           <div className="flex gap-2 flex-wrap justify-center max-w-xs">
             {OUTFIT_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setMeta((m) => ({ ...m, outfit: c }))}
-                className={`w-9 h-9 rounded-full border-2 ${meta.outfit === c ? "border-white" : "border-transparent"}`}
+                aria-label="Escolher cor do uniforme"
+                className={`w-9 h-9 rounded-full border-2 ${meta.outfit === c ? "border-foreground" : "border-transparent"}`}
                 style={{ backgroundColor: `#${c.slice(2)}` }}
               />
             ))}
           </div>
-          <p className="text-xs text-white/60 mt-2">Cabelo</p>
+          <p className="text-xs text-muted-foreground mt-2">Cabelo</p>
           <div className="flex gap-2 flex-wrap justify-center max-w-xs">
             {HAIR_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setMeta((m) => ({ ...m, hair: c }))}
-                className={`w-9 h-9 rounded-full border-2 ${meta.hair === c ? "border-white" : "border-transparent"}`}
+                aria-label="Escolher cor do cabelo"
+                className={`w-9 h-9 rounded-full border-2 ${meta.hair === c ? "border-foreground" : "border-transparent"}`}
                 style={{ backgroundColor: `#${c.slice(2)}` }}
               />
             ))}
           </div>
         </div>
-        <button onClick={setReady} className="rounded-full bg-rose-500 px-6 py-3 font-bold text-white mt-2">
-          Pronto(a)!
+        <button onClick={() => { void enterLandscape(); setReady(); }} className="rounded-md bg-primary px-6 py-3 font-bold text-primary-foreground mt-2 inline-flex items-center gap-2">
+          <Check size={18} /> Entrar na cozinha
         </button>
-      </div>
+      </div></LandscapeGate>
     );
   }
 
   if (state.stage === "espera" || !peerOnline) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-neutral-950">
-        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-          <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
+      <LandscapeGate><div className="h-full flex flex-col items-center justify-center p-8 text-center bg-background">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <CookingPot className="text-primary" />
         </div>
-        <p className="font-semibold text-white">esperando {NAME[other(me)]}...</p>
-        <p className="text-xs text-white/50 mt-1">
+        <p className="font-semibold text-foreground">esperando {NAME[other(me)]}...</p>
+        <p className="text-xs text-muted-foreground mt-1">
           {state.players[me].ready ? "você já está pronto(a)!" : "escolha o look e aperte pronto"}
         </p>
-      </div>
+      </div></LandscapeGate>
     );
   }
 
   if (state.stage === "fim") {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center bg-gradient-to-b from-rose-950 to-neutral-950">
-        <p className="text-xs uppercase tracking-[0.3em] text-rose-300/70">Fim de turno</p>
-        <p className="text-3xl font-black text-white">{world.score} pontos</p>
-        <p className="text-lg text-rose-200 max-w-sm">{endMessage}</p>
-        <button onClick={playAgain} className="rounded-full bg-rose-500 px-6 py-3 font-bold text-white mt-2">
-          Jogar de novo
+      <LandscapeGate><div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center bg-background">
+        <p className="text-xs uppercase tracking-[0.3em] text-primary">Fim do turno</p>
+        <p className="text-3xl font-black text-foreground">{world.score} pontos</p>
+        <p className="text-lg text-muted-foreground max-w-sm">{endMessage}</p>
+        <button onClick={playAgain} className="rounded-md bg-primary px-6 py-3 font-bold text-primary-foreground mt-2 inline-flex items-center gap-2">
+          <RotateCcw size={18} /> Jogar de novo
         </button>
-      </div>
+      </div></LandscapeGate>
     );
   }
 
   // jogando / pausa
   return (
-    <div className="relative h-full w-full bg-neutral-950 select-none overflow-hidden touch-none">
+    <LandscapeGate><div className="relative h-full w-full bg-background select-none overflow-hidden touch-none">
       <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
 
       {/* topo: pausa + fps */}
       <div className="absolute top-2 right-2 flex gap-2 z-20">
         <button
           onClick={() => setShowFps((v) => !v)}
-          className="bg-black/50 text-white/70 text-[10px] rounded-full px-2 py-1"
+          aria-label="Mostrar desempenho"
+          className="bg-background/80 text-muted-foreground text-[10px] rounded-md px-2 py-1 border border-border"
         >
-          FPS
+          <Gauge size={15} />
         </button>
-        <button onClick={togglePause} className="bg-black/50 text-white text-xs rounded-full px-3 py-1">
-          {state.stage === "pausa" ? "▶" : "⏸"}
+        <button aria-label={state.stage === "pausa" ? "Continuar" : "Pausar"} onClick={togglePause} className="bg-background/80 text-foreground rounded-md p-1.5 border border-border">
+          {state.stage === "pausa" ? <Play size={15} /> : <Pause size={15} />}
         </button>
       </div>
 
       {/* bolhas de chat (fallback fora do canvas, em telas pequenas) */}
       <div className="absolute top-2 left-2 flex flex-col gap-1 z-20 pointer-events-none">
         {bubbles.map((b) => (
-          <div key={b.id} className="bg-white/90 text-rose-900 text-[11px] rounded-xl px-2 py-1 max-w-[160px]">
+            <div key={b.id} className="bg-card/95 text-card-foreground text-[11px] rounded-md px-2 py-1 max-w-[160px] border border-border">
             <b>{b.who === me ? "você" : NAME[b.who]}:</b> {b.text}
           </div>
         ))}
@@ -407,7 +425,7 @@ export function Cozinha({ me }: { me: Me }) {
               sendEvent("chat", { text: m });
               showBubble(me, m);
             }}
-            className="bg-rose-500/80 hover:bg-rose-500 text-white text-[10px] rounded-full px-2.5 py-1.5"
+            className="bg-background/80 text-foreground text-[10px] rounded-md px-2.5 py-1.5 border border-border"
           >
             {m}
           </button>
@@ -422,28 +440,29 @@ export function Cozinha({ me }: { me: Me }) {
         onPointerUp={handleJoyEnd}
         onPointerCancel={handleJoyEnd}
         onPointerLeave={handleJoyEnd}
-        className="absolute left-4 bottom-20 w-24 h-24 rounded-full bg-white/10 border border-white/20 z-20 touch-none md:hidden"
-      />
+        className="absolute left-5 bottom-5 w-24 h-24 rounded-full bg-background/35 border-2 border-foreground/20 z-20 touch-none md:hidden backdrop-blur-sm grid place-items-center"
+      ><div ref={joyKnobRef} className="w-11 h-11 rounded-full bg-foreground/65 shadow-lg pointer-events-none transition-transform duration-75" /></div>
 
       {/* botão de ação (mobile) */}
       <button
         onPointerDown={handleActDown}
         onPointerUp={handleActUp}
         onPointerCancel={handleActUp}
-        className="absolute right-4 bottom-20 w-16 h-16 rounded-full bg-rose-500/80 active:bg-rose-500 text-white font-bold z-20 touch-none md:hidden"
+        className="absolute right-5 bottom-5 w-20 h-20 rounded-full bg-primary active:bg-primary/80 text-primary-foreground text-xs font-bold z-20 touch-none border-4 border-primary-foreground/20 shadow-xl"
       >
-        Ação
+        {actionLabel}
       </button>
 
       {state.stage === "pausa" && (
-        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 z-30">
-          <p className="text-white text-xl font-bold">Pausado</p>
-          {state.pausedBy && <p className="text-white/60 text-sm">por {NAME[state.pausedBy]}</p>}
-          <button onClick={togglePause} className="rounded-full bg-rose-500 px-5 py-2 font-bold text-white">
+        <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center gap-3 z-30">
+          <p className="text-foreground text-xl font-bold">Pausado</p>
+          {state.pausedBy && <p className="text-muted-foreground text-sm">por {NAME[state.pausedBy]}</p>}
+          <button onClick={togglePause} className="rounded-md bg-primary px-5 py-2 font-bold text-primary-foreground inline-flex items-center gap-2">
+            <Play size={17} />
             Continuar
           </button>
         </div>
       )}
-    </div>
+    </div></LandscapeGate>
   );
 }
