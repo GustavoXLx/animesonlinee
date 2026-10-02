@@ -168,7 +168,6 @@ export function Futebol({ me }: { me: Me }) {
   }
 
   const dots = (w: Me) => {
-  const dots = (w: Me) => {
     const mine = state.kicks.filter((k) => k.who === w);
     const n = Math.max(5, Math.ceil(state.kicks.length / 2) + 1);
     return Array.from({ length: t.sudden ? mine.length + (t.over ? 0 : 1) : n }, (_, i) => mine[i]).slice(t.sudden ? -6 : 0);
@@ -188,6 +187,7 @@ export function Futebol({ me }: { me: Me }) {
           startRef={startRef}
           aim={aim}
           curve={curve}
+          power={power}
           onAim={(x, y) => setAim({ x, y })}
         />
       </Suspense>
@@ -223,30 +223,40 @@ export function Futebol({ me }: { me: Me }) {
 
       {/* controles do batedor */}
       {aiming && iKick && (
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/80 to-transparent p-3 pb-4">
-          <p className="text-xs text-white/70">{waitingKeeper ? `Esperando ${NAME[keeperWho]} escolher o canto…` : "Arraste no gol para mirar"}</p>
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent p-3 pb-4">
+          <div className="flex items-center gap-3 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-center backdrop-blur">
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-300">1 • MIRE</span>
+            <span className="text-[10px] text-white/45">Arraste o alvo dentro do gol</span>
+          </div>
           {state.mode === "falta" && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-white/60">Efeito</span>
-              <input type="range" min={-1} max={1} step={0.05} value={curve} onChange={(e) => setCurve(+e.target.value)} className="w-40 accent-pink-500" />
-              <span className="w-10 tabular-nums">{curve > 0.05 ? "→" : curve < -0.05 ? "←" : "reto"}</span>
+            <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/45 px-3 py-2 backdrop-blur">
+              <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-white/45">2 • EFEITO</span>
+              {[
+                [-0.75, "↖ Curva esquerda"],
+                [0, "• Reto"],
+                [0.75, "Curva direita ↗"],
+              ].map(([v, label]) => (
+                <button key={String(v)} onClick={() => setCurve(Number(v))} className={`rounded-full px-3 py-1.5 text-[10px] font-black transition ${Math.abs(curve - Number(v)) < 0.1 ? "bg-pink-500 text-white" : "bg-white/10 text-white/65 hover:bg-white/15"}`}>{label}</button>
+              ))}
             </div>
           )}
-          <div className="flex w-full max-w-sm items-center gap-3">
-            <div className="relative h-4 flex-1 overflow-hidden rounded-full bg-white/10">
-              <div className="absolute inset-y-0 right-0 w-[14%] bg-red-500/40" />
-              <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${power * 100}%` }} />
+          <div className="flex w-full max-w-md flex-col gap-2">
+            <div className="flex items-center justify-between px-1 text-[10px] font-black uppercase tracking-wider">
+              <span className="text-white/45">3 • POTÊNCIA</span>
+              <span className={power > 0.88 ? "text-red-300" : power > 0.55 ? "text-yellow-200" : "text-emerald-300"}>{Math.round(power * 100)}%</span>
             </div>
-            <button
-              disabled={waitingKeeper}
-              onPointerDown={() => setCharging(true)}
-              onPointerUp={fire}
-              onPointerLeave={fire}
-              className="rounded-full bg-pink-500 px-6 py-3 text-sm font-black uppercase tracking-wide shadow-lg shadow-pink-500/30 active:scale-95 disabled:opacity-50"
-            >
-              Segure e solte
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500 transition-[width]" style={{ width: `${power * 100}%` }} />
+                <div className="absolute inset-y-0 left-[55%] w-px bg-white/50" />
+                <div className="absolute inset-y-0 left-[85%] w-px bg-white/50" />
+              </div>
+              <button disabled={waitingKeeper} onPointerDown={() => setCharging(true)} onPointerUp={fire} onPointerLeave={fire} className="rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 px-7 py-3 text-xs font-black uppercase tracking-wide shadow-lg shadow-pink-950/40 transition active:scale-95 disabled:opacity-40">
+                {charging ? "Solte!" : "Segure para chutar"}
+              </button>
+            </div>
           </div>
+          <p className="text-[10px] text-white/35">Dica: potência média + efeito costuma ser mais fácil de controlar.</p>
         </div>
       )}
 
