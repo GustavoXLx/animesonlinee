@@ -626,7 +626,10 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    const item=view.parts?.item;if(!item)return;
    item.removeAll(true);
    if(!held){item.setVisible(false);return;}
-   item.add(this.makeHeldVisual(held));
+   const visual=this.makeHeldVisual(held);
+   item.add(visual);
+   visual.setScale(.92);
+   this.tweens.add({targets:visual,scale:1,duration:120,ease:"Back.easeOut"});
    item.setVisible(true);
   }
 
