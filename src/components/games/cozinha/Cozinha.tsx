@@ -392,7 +392,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Seu chef</p>
                       <p className="mt-1 text-lg font-black">{NAME[me]}</p>
                     </div>
-                    <div className="rounded-2xl bg-white/10 p-2.5 text-pink-200">
+                    <div className="rounded-[20px] bg-white/10 p-2.5 text-pink-200">
                       <Sparkles size={18} />
                     </div>
                   </div>
@@ -412,7 +412,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="rounded-[20px] border border-white/10 bg-black/20 p-3">
                       <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
                         <Shirt size={13} /> Uniforme
                       </div>
@@ -431,7 +431,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                         ))}
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="rounded-[20px] border border-white/10 bg-black/20 p-3">
                       <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
                         <Palette size={13} /> Cabelo
                       </div>
@@ -528,7 +528,7 @@ export function Cozinha({ me, onExit }: { me: Me; onExit: () => void }) {
                       ["2", "Prepare", "as receitas"],
                       ["3", "Sirva", "sem perder tempo"],
                     ].map(([n, title, desc]) => (
-                      <div key={n} className="rounded-2xl border border-white/8 bg-black/15 p-3">
+                      <div key={n} className="rounded-[20px] border border-white/8 bg-black/15 p-3">
                         <div className="mb-2 flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-[10px] font-black text-amber-100">{n}</div>
                         <p className="text-[10px] font-black">{title}</p>
                         <p className="mt-0.5 text-[9px] leading-tight text-white/40">{desc}</p>
