@@ -762,8 +762,14 @@ function Game(p: SceneProps) {
     <>
       <mesh position={[0, -0.01, 28]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial map={grass} roughness={0.95} />
+        <meshStandardMaterial map={grass} roughness={0.9} />
       </mesh>
+      {Array.from({ length: 12 }, (_, i) => (
+        <mesh key={"turf-" + i} position={[0, 0.002, -8 + i * 6.5]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[68, 6.5]} />
+          <meshBasicMaterial color={i % 2 ? "#2b7731" : "#337f38"} transparent opacity={0.16} />
+        </mesh>
+      ))}
       <Stadium />
       <Crowd excite={excite} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.28} scale={38} blur={2.4} far={8} resolution={512} />
@@ -771,8 +777,8 @@ function Game(p: SceneProps) {
       <Confetti trigger={confetti} />
 
       <mesh ref={ball} castShadow>
-        <sphereGeometry args={[BALL_R, 28, 20]} />
-        <meshStandardMaterial map={ballTex} roughness={0.35} />
+        <sphereGeometry args={[BALL_R, 40, 28]} />
+        <meshPhysicalMaterial map={ballTex} roughness={0.28} clearcoat={0.65} clearcoatRoughness={0.18} />
       </mesh>
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.16, 20]} />
