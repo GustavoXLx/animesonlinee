@@ -48,6 +48,6 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
  }
  const game=new Phaser.Game({type:Phaser.WEBGL,parent:container,width:container.clientWidth,height:container.clientHeight,backgroundColor:"#20242a",render:{antialias:true,powerPreference:"high-performance"},scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},scene:[Scene],fps:{target:60,min:30}});
  const unsub=hooks.onPos((p,from)=>{last[from]=p;});
- const unsubAct=()=>{};};
+ const unsubAct=()=>{};
  return{destroy:()=>{unsub();game.destroy(true);},setJoystick:(x,y)=>{joy.x=x;joy.y=y;},pressAction:()=>{act=true;},pressThrow:()=>{thr=true;},showBubble:()=>{}};
 }
