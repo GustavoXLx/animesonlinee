@@ -11,6 +11,8 @@ export type SceneProps = {
   spot: { x: number; z: number };
   kickerModel: string;
   keeperModel: string;
+  kickerSkin?: "default" | "neymar";
+  keeperSkin?: "default" | "neymar";
   view: View;
   shot: Shot | null;
   startRef: MutableRefObject<number>;
@@ -116,12 +118,15 @@ function useBallTex() {
 }
 
 /* ---------------- pessoas ---------------- */
-function FootballKit({ model }: { model: string }) {
-  const palette = model.includes("female")
-    ? { shirt: "#f5f5f5", accent: "#ec4899", shorts: "#202938", socks: "#f7f7f7", boots: "#101318" }
-    : model.endsWith("c")
-      ? { shirt: "#f5f5f5", accent: "#16a34a", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" }
-      : { shirt: "#f5f5f5", accent: "#2563eb", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" };
+function FootballKit({ model, skin = "default" }: { model: string; skin?: "default" | "neymar" }) {
+  const neymar = skin === "neymar";
+  const palette = neymar
+    ? { shirt: "#f7c948", accent: "#087f3f", shorts: "#0b5e35", socks: "#f7f7f7", boots: "#1d4ed8" }
+    : model.includes("female")
+      ? { shirt: "#f5f5f5", accent: "#ec4899", shorts: "#202938", socks: "#f7f7f7", boots: "#101318" }
+      : model.endsWith("c")
+        ? { shirt: "#f5f5f5", accent: "#16a34a", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" }
+        : { shirt: "#f5f5f5", accent: "#2563eb", shorts: "#172033", socks: "#f7f7f7", boots: "#101318" };
 
   return (
     <group position={[0, 0.01, 0]}>
@@ -133,6 +138,10 @@ function FootballKit({ model }: { model: string }) {
         <sphereGeometry args={[0.25, 20, 12]} />
         <meshStandardMaterial color={palette.accent} roughness={0.5} />
       </mesh>
+      {neymar && <mesh position={[0, 1.16, 0.275]} scale={[0.16, 0.16, 0.035]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#0b5e35" />
+      </mesh>}
       <mesh position={[0, 0.62, 0]} castShadow>
         <capsuleGeometry args={[0.22, 0.2, 5, 14]} />
         <meshStandardMaterial color={palette.shorts} roughness={0.72} />
@@ -149,6 +158,16 @@ function FootballKit({ model }: { model: string }) {
           </mesh>
         </group>
       ))}
+      {neymar && <group position={[0, 1.53, -0.015]}>
+        <mesh scale={[0.22, 0.13, 0.22]} rotation={[0.18, 0, 0]}>
+          <sphereGeometry args={[0.72, 18, 10]} />
+          <meshStandardMaterial color="#17120e" roughness={0.95} />
+        </mesh>
+        <mesh position={[0, -0.12, 0.48]} scale={[0.42, 0.08, 0.12]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#17120e" roughness={0.95} />
+        </mesh>
+      </group>}
       <mesh position={[0, 1.42, 0]} scale={[0.88, 0.045, 0.88]}>
         <torusGeometry args={[0.25, 0.025, 8, 24]} />
         <meshStandardMaterial color={palette.accent} roughness={0.48} />
@@ -207,7 +226,7 @@ function Person({ model, groupRef, anim, height = 1.82 }: { model: string; group
   });
   return (
     <group ref={groupRef}>
-      <FootballKit model={model} />
+      <FootballKit model={model} skin={skin} />
       <group ref={inner} scale={scale}>
         <primitive object={obj} />
       </group>
@@ -739,8 +758,8 @@ function Game(p: SceneProps) {
       ))}
 
       <Suspense fallback={null}>
-        <Person model={p.kickerModel} groupRef={kicker} anim={kAnim} />
-        <Person model={p.keeperModel} groupRef={keeper} anim={gAnim} height={1.9} />
+        <Person model={p.kickerModel} groupRef={kicker} anim={kAnim} skin={p.kickerSkin} />
+        <Person model={p.keeperModel} groupRef={keeper} anim={gAnim} height={1.9} skin={p.keeperSkin} />
         {wall && wallRefs.map((r, i) => <Person key={i} model={["male-b", "male-d", "male-e", "male-f"][i]} groupRef={r} anim={wAnim} />)}
       </Suspense>
 
