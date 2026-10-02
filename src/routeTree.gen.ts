@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as ExplorarRouteImport } from './routes/explorar'
+import { Route as DevDollRouteImport } from './routes/dev-doll'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnimeAnimeIdRouteImport } from './routes/anime.$animeId'
 
@@ -30,6 +31,11 @@ const ExplorarRoute = ExplorarRouteImport.update({
   path: '/explorar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevDollRoute = DevDollRouteImport.update({
+  id: '/dev-doll',
+  path: '/dev-doll',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const AnimeAnimeIdRoute = AnimeAnimeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev-doll': typeof DevDollRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev-doll': typeof DevDollRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev-doll': typeof DevDollRoute
   '/explorar': typeof ExplorarRoute
   '/minha-lista': typeof MinhaListaRoute
   '/perfil': typeof PerfilRoute
@@ -65,12 +74,25 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
+  fullPaths:
+    | '/'
+    | '/dev-doll'
+    | '/explorar'
+    | '/minha-lista'
+    | '/perfil'
+    | '/anime/$animeId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explorar' | '/minha-lista' | '/perfil' | '/anime/$animeId'
+  to:
+    | '/'
+    | '/dev-doll'
+    | '/explorar'
+    | '/minha-lista'
+    | '/perfil'
+    | '/anime/$animeId'
   id:
     | '__root__'
     | '/'
+    | '/dev-doll'
     | '/explorar'
     | '/minha-lista'
     | '/perfil'
@@ -79,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevDollRoute: typeof DevDollRoute
   ExplorarRoute: typeof ExplorarRoute
   MinhaListaRoute: typeof MinhaListaRoute
   PerfilRoute: typeof PerfilRoute
@@ -108,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExplorarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev-doll': {
+      id: '/dev-doll'
+      path: '/dev-doll'
+      fullPath: '/dev-doll'
+      preLoaderRoute: typeof DevDollRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -127,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevDollRoute: DevDollRoute,
   ExplorarRoute: ExplorarRoute,
   MinhaListaRoute: MinhaListaRoute,
   PerfilRoute: PerfilRoute,

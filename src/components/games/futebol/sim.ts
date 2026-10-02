@@ -222,12 +222,12 @@ export function timeline(sol: Solved) {
   const live = RUN + sol.end;
   const showReplay = sol.result === "goal" || sol.result === "save" || sol.result === "post";
   // replays curtos: ~1.6s cada, foco no instante do impacto
-  const repLen = 1.6;
+  const repLen = 1.3;
   const span = repLen * SLOWMO; // janela de jogo coberta por replay
   const from = Math.max(RUN - 0.2, RUN + sol.flight - span * 0.55);
   const to = from + span;
   const reps = showReplay ? 2 : 0;
-  return { live, from, to, repLen, reps, total: live + 0.4 + reps * repLen + 0.3 };
+  return { live, from, to, repLen, reps, total: live + 0.6 + reps * repLen + 0.3 };
 }
 
 /** Converte o tempo real em tempo de jogo + qual câmera usar. */
