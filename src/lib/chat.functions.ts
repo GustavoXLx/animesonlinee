@@ -1064,3 +1064,65 @@ export const peekDevice = createServerFn({ method: "POST" })
     }
     return { ok: true as const, unread: (count ?? 0) > 0, count: newCount, last };
   });
+
+/** Desfile: a IA julga os dois looks dentro do tema. */
+export type FashionVerdict = {
+  gu: { score: number; comment: string };
+  li: { score: number; comment: string };
+  winner: "gu" | "li";
+  summary: string;
+};
+export const judgeFashion = createServerFn({ method: "POST" })
+  .inputValidator((d: { theme: string; gu: string; li: string }) => ({
+    theme: String(d.theme ?? "").slice(0, 80),
+    gu: String(d.gu ?? "").slice(0, 900),
+    li: String(d.li ?? "").slice(0, 900),
+  }))
+  .handler(async ({ data }): Promise<{ verdict: FashionVerdict | null; error?: string }> => {
+    await gate();
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env["LOVABLE_API_KEY"]}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        instructions:
+          "Você é jurado(a) de um desfile de moda divertido entre um casal (bb gu e bb li). Avalie o quanto cada look combina com o TEMA (peso maior), criatividade, harmonia de cores e ousadia. Seja justo, específico (cite peças do look) e engraçado, em português brasileiro. Notas de 0 a 10 com uma casa decimal; evite empate. Responda APENAS JSON: {\"gu\":{\"score\":n,\"comment\":\"máx 2 frases\"},\"li\":{\"score\":n,\"comment\":\"máx 2 frases\"},\"winner\":\"gu\"|\"li\",\"summary\":\"1 frase dizendo o motivo da vitória\"}",
+        input: `Tema: "${data.theme}"\nLook de bb gu: ${data.gu}\nLook de bb li: ${data.li}`,
+      }),
+    });
+    if (!res.ok) return { verdict: null, error: res.status === 429 ? "Muitos pedidos, tente em instantes." : res.status === 402 ? "Créditos de IA esgotados." : "Jurados indisponíveis agora." };
+    let text = "";
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const l of lines) {
+        if (!l.startsWith("data:")) continue;
+        try {
+          const ev = JSON.parse(l.slice(5).trim()) as { type?: string; delta?: string };
+          if (ev.type === "response.output_text.delta" && ev.delta) text += ev.delta;
+        } catch {}
+      }
+    }
+    try {
+      const j = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? "{}") as Partial<FashionVerdict>;
+      const fix = (x?: { score?: number; comment?: string }) => ({
+        score: Math.max(0, Math.min(10, Math.round(Number(x?.score ?? 5) * 10) / 10)),
+        comment: String(x?.comment ?? "").slice(0, 260),
+      });
+      const gu = fix(j.gu);
+      const li = fix(j.li);
+      const winner = j.winner === "gu" || j.winner === "li" ? j.winner : gu.score >= li.score ? "gu" : "li";
+      return { verdict: { gu, li, winner, summary: String(j.summary ?? "").slice(0, 220) } };
+    } catch {
+      return { verdict: null, error: "Os jurados se enrolaram, tente de novo." };
+    }
+  });

@@ -3,6 +3,8 @@ import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { Doll, type DollAnim } from "@/components/avatar/Doll";
+import type { Look } from "@/lib/look";
 import { CAT_BY_KEY, FLOORS, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
 export type Avatar = { x: number; z: number; room?: number; sit: string | null; emote: string | null; emoteAt: number; say?: string; sayAt?: number };
@@ -57,8 +59,6 @@ function Furn({
     o.traverse((m) => {
       const mesh = m as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         if (ghost) {
           const mat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
           mat.transparent = true;
@@ -338,17 +338,10 @@ function Frame({ pos, rot, small, url, onTap }: { pos: [number, number, number];
 
 // ---------- personagens ----------
 function Character({
-  model, who, av, items, label, speed = 1.8,
-}: { model: string; who: Who; av: Avatar; items: PlacedItem[]; label: string; speed?: number }) {
-  const gltf = useGLTF(`/house/chars/character-${model}.glb`);
-  const obj = useMemo(() => {
-    const o = skClone(gltf.scene);
-    o.traverse((m) => ((m as THREE.Mesh).isMesh ? (((m as THREE.Mesh).castShadow = true), undefined) : undefined));
-    return o;
-  }, [gltf.scene]);
+  look, who, av, items, label, speed = 1.8,
+}: { look: Look; who: Who; av: Avatar; items: PlacedItem[]; label: string; speed?: number }) {
   const group = useRef<THREE.Group>(null);
-  const { actions } = useAnimations(gltf.animations, group);
-  const cur = useRef<string>("");
+  const anim = useRef<DollAnim>({ name: "idle" });
   const pos = useRef(new THREE.Vector3(av.x, 0, av.z));
   const firstRef = useRef(true);
   const [bubble, setBubble] = useState<string | null>(null);
@@ -380,21 +373,11 @@ function Character({
     }
   }, [target, av.room]);
 
-  const play = (name: string, once = false) => {
-    if (cur.current === name) return;
-    const next = actions[name];
-    if (!next) return;
-    const prev = cur.current ? actions[cur.current] : null;
-    next.reset();
-    if (once) {
-      next.setLoop(THREE.LoopOnce, 1);
-      next.clampWhenFinished = true;
-    } else next.setLoop(THREE.LoopRepeat, Infinity);
-    next.fadeIn(0.18).play();
-    prev?.fadeOut(0.18);
-    cur.current = name;
+  const play = (name: string) => {
+    const map: Record<string, string> = { "emote-yes": "wave", "emote-no": "no", jump: "jump" };
+    const n = map[name] ?? name;
+    if (anim.current.name !== n) anim.current = { name: n };
   };
-
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05);
     const g = group.current;
@@ -418,7 +401,7 @@ function Character({
       g.rotation.y += diff * (1 - Math.exp(-12 * dt));
       play("sit");
     } else if (emoting) {
-      play(av.emote!, true);
+      play(av.emote!);
     } else play("idle");
     const seatY = seat && dist < 0.05 ? (CAT_BY_KEY[seat.k]?.key.startsWith("bed") ? 0.2 : 0.14) : 0;
     g.position.set(pos.current.x, THREE.MathUtils.damp(g.position.y, seatY, 10, dt), pos.current.z);
@@ -426,7 +409,11 @@ function Character({
 
   return (
     <group ref={group}>
-      <primitive object={obj} scale={0.95} />
+      <Doll look={look} anim={anim} />
+      <mesh rotation-x={-Math.PI / 2} position-y={0.01}>
+        <circleGeometry args={[0.2, 20]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.22} depthWrite={false} />
+      </mesh>
       <Html position={[0, 0.95, 0]} center distanceFactor={undefined} zIndexRange={[10, 0]}>
         <div className="pointer-events-none flex select-none flex-col items-center gap-1">
           {bubble && (
@@ -450,7 +437,6 @@ function PetModel({ kind, sad, onTap, action, seed }: { kind: string; sad: boole
   const gltf = useGLTF(`/house/pets/animal-${kind}.glb`);
   const obj = useMemo(() => {
     const o = skClone(gltf.scene);
-    o.traverse((m) => ((m as THREE.Mesh).isMesh ? (((m as THREE.Mesh).castShadow = true), undefined) : undefined));
     return o;
   }, [gltf.scene]);
   const group = useRef<THREE.Group>(null);
@@ -493,6 +479,10 @@ function PetModel({ kind, sad, onTap, action, seed }: { kind: string; sad: boole
       }}
     >
       <primitive object={obj} scale={0.2} />
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.05}>
+        <circleGeometry args={[0.13, 16]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.2} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
@@ -511,6 +501,7 @@ function CameraRig() {
 
 export type SceneProps = {
   home: Home;
+  looks: Record<Who, Look>;
   me: Who;
   avatars: Record<Who, Avatar>;
   online: Record<Who, boolean>;
@@ -536,7 +527,7 @@ export default function HouseScene(p: SceneProps) {
   const wItems = useMemo(() => items.filter((it) => (it.room ?? 0) === p.room), [items, p.room]);
   const wGhost = p.ghost;
   return (
-    <Canvas shadows orthographic dpr={[1, 1.4]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance", stencil: false }}>
+    <Canvas orthographic dpr={[1, 1.25]} camera={{ near: 0.1, far: 100 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance", stencil: false }}>
       <CameraRig />
       <ambientLight intensity={night ? 0.35 : 0.55} color={night ? "#9fb0ff" : "#fff4e6"} />
       <hemisphereLight args={[night ? "#8090ff" : "#fff1dc", "#6b4a3a", night ? 0.35 : 0.6]} />
@@ -544,7 +535,6 @@ export default function HouseScene(p: SceneProps) {
         position={[9, 12, 5]}
         intensity={night ? 0.5 : 1.6}
         color={night ? "#aab8ff" : "#ffe8c7"}
-        castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
         shadow-camera-left={-6}
@@ -584,7 +574,7 @@ export default function HouseScene(p: SceneProps) {
         )}
         {(["gu", "li"] as Who[]).map((w) =>
           w === p.me || (p.online[w] && (p.avatars[w].room ?? 0) === p.room) ? (
-            <Character key={w + p.home.avatars[w]} who={w} model={p.home.avatars[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
+            <Character key={w} who={w} look={p.looks[w]} av={p.avatars[w]} items={wItems} label={w === "gu" ? "bb gu" : "bb li"} />
           ) : null,
         )}
         {p.home.pets.map((pet, i) => (
@@ -605,6 +595,4 @@ export default function HouseScene(p: SceneProps) {
 
 export function preloadHouse(home: Home) {
   home.items.forEach((i) => useGLTF.preload(furnUrl(i.k)));
-  useGLTF.preload(`/house/chars/character-${home.avatars.gu}.glb`);
-  useGLTF.preload(`/house/chars/character-${home.avatars.li}.glb`);
 }

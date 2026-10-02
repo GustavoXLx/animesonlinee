@@ -1,3 +1,4 @@
+import { sanitizeLook } from "./look";
 // Nossa Casa — regras compartilhadas (cliente e servidor).
 export type Who = "gu" | "li";
 
@@ -169,6 +170,8 @@ export type Home = {
   floor: string;
   styles: string[];
   avatars: Record<Who, string>;
+  /** visual personalizado de cada um */
+  looks?: Partial<Record<Who, import("./look").Look>>;
   pet: Pet | null;
   /** todos os pets (o primeiro também fica em `pet`) */
   pets: Pet[];
@@ -274,6 +277,7 @@ export type HomeAction =
   | { t: "store"; uid: string }
   | { t: "style"; kind: "wall" | "floor"; id: string }
   | { t: "avatar"; model: string }
+  | { t: "look"; look: unknown }
   | { t: "adopt"; kind: string; name: string }
   | { t: "feed"; i?: number }
   | { t: "pat"; i?: number }
@@ -329,6 +333,10 @@ export function applyHome(h: Home, who: Who, a: HomeAction, otherOnline: boolean
       }
       if (a.kind === "wall") h.wall = s.id;
       else h.floor = s.id;
+      return "";
+    }
+    case "look": {
+      h.looks = { ...(h.looks ?? {}), [who]: sanitizeLook(a.look, who) };
       return "";
     }
     case "avatar": {

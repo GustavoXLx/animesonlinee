@@ -4,9 +4,11 @@ import { ImagePlus, MessageCircle, Send, Trash2, X, Heart, Hammer, ShoppingBag, 
 import { supabase } from "@/integrations/supabase/client";
 import { createUpload, homeAct, homeFrameUrls, homePing } from "@/lib/chat.functions";
 import {
-  CATALOG, CAT_BY_KEY, CHARACTERS, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
+  CATALOG, CAT_BY_KEY, FLOORS, MISSIONS, PETS, ROOM, ROOM_NAMES, TOGETHER_GOAL, WALLS, BONUS, petStats, MAX_PETS,
   type Home, type Pet, type HomeAction, type PlacedItem, type Who,
 } from "@/lib/home";
+import { LookEditor } from "@/components/avatar/LookEditor";
+import { DEFAULT_LOOKS, sanitizeLook, type Look } from "@/lib/look";
 import { roomDoors, type Avatar, type Door } from "./HouseScene";
 
 const HouseScene = lazy(() => import("./HouseScene"));
@@ -158,6 +160,12 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
     }
   };
 
+  const [draft, setDraft] = useState<Look | null>(null);
+  const looks: Record<Who, Look> = {
+    gu: me === "gu" && draft ? draft : sanitizeLook(home?.looks?.gu ?? DEFAULT_LOOKS.gu, "gu"),
+    li: me === "li" && draft ? draft : sanitizeLook(home?.looks?.li ?? DEFAULT_LOOKS.li, "li"),
+  };
+
   const run = async (action: HomeAction) => {
     setBusy(true);
     try {
@@ -290,6 +298,7 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
         <Suspense fallback={null}>
           <HouseScene
             home={home}
+            looks={looks}
             me={me}
             avatars={avatars}
             online={online}
@@ -513,17 +522,28 @@ export function NossaCasa({ me, onClose, onGames }: { me: Who; onClose: () => vo
 
             {panel === "char" && (
               <>
-                <Head title="Seu personagem" />
-                <div className="grid grid-cols-4 gap-2">
-                  {CHARACTERS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => run({ t: "avatar", model: c })}
-                      className={`overflow-hidden rounded-2xl border-2 bg-white/5 ${home.avatars[me] === c ? "border-pink-400" : "border-transparent"}`}
-                    >
-                      <img src={`/house/chars/prev/${c}.png`} alt="" className="aspect-square w-full object-cover" loading="lazy" />
+                <Head title="Seu visual" />
+                <div className="h-[62vh]">
+                  <LookEditor compact look={draft ?? looks[me]} onChange={setDraft} />
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    disabled={!draft || busy}
+                    onClick={async () => {
+                      if (draft && (await run({ t: "look", look: draft }))) {
+                        setDraft(null);
+                        say("Visual salvo!");
+                      }
+                    }}
+                    className="flex-1 rounded-xl bg-pink-500 py-2.5 text-sm font-bold disabled:opacity-40"
+                  >
+                    Salvar visual
+                  </button>
+                  {draft && (
+                    <button onClick={() => setDraft(null)} className="rounded-xl bg-white/10 px-4 text-sm">
+                      Desfazer
                     </button>
-                  ))}
+                  )}
                 </div>
               </>
             )}
