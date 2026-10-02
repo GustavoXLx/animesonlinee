@@ -76,7 +76,6 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    this.keys=this.input.keyboard?.addKeys("W,A,S,D,UP,DOWN,LEFT,RIGHT,E,SPACE,Q");
    this.cameras.main.setBackgroundColor("#171318");
    this.cameras.main.centerOn(COLS*TILE/2,ROWS*TILE/2);
-   if (this.cameras.main.postFX) this.cameras.main.postFX.addVignette(0.5,0.48,0.78,0.16);
    this.fitCamera();
    this.scale.on("resize",()=>this.fitCamera());
   }
@@ -118,14 +117,12 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    plate.lineStyle(2,0xffd36e,.45).strokeRoundedRect(0,0,135,31,9);
    sign.add(plate);
    sign.add(this.add.text(68,8,"SERVICE", {fontFamily:"Arial",fontSize:"9px",fontStyle:"bold",color:"#fff2d2",letterSpacing:2}).setOrigin(.5));
-   if (sign.postFX) sign.postFX.addBloom(0xffd36e,1,1,.35,.12,2);
 
    for(let i=0;i<5;i++){
     const lamp=this.add.container(120+i*180,76).setDepth(4);
     const cord=this.add.graphics().lineStyle(2,0x3b3034,.75).lineBetween(0,-18,0,0);
     const shade=this.add.graphics();shade.fillStyle(0x3b3034).fillTriangle(-13,0,13,0,8,10);shade.fillStyle(0xffd98a,.18).fillCircle(0,12,17);
     lamp.add([cord,shade]);
-    if (lamp.postFX) lamp.postFX.addGlow(0xffd98a,2,1,false,.35,4);
    }
    const plant=this.add.container(34,ROWS*TILE-54).setDepth(5);
    plant.add(this.add.graphics().fillStyle(0x6a4a34).fillRoundedRect(-10,7,20,10,4));
@@ -243,7 +240,6 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     if(s.type==="lixeira")color=0x596268;
     if(s.type==="liquidificador")color=0x8d75b7;
     const box=this.stationBox(x,y,TILE-8,TILE-10,color);
-    if((s.type==="fogao"||s.type==="forno"||s.type==="entrega") && box.postFX) box.postFX.addGlow(s.type==="entrega"?0x8ff0bf:0xffb65b,2,1,false,.45,5);
     const g=this.add.graphics().setDepth(4);
 
     // Micro-details that give each station a manufactured, usable feel.
