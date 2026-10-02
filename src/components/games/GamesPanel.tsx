@@ -200,6 +200,22 @@ export function GamesPanel({
         </div>
       );
     }
+    if (active === "desfile") {
+      return (
+        <div className="fixed inset-0 z-[100] h-dvh w-screen overflow-hidden bg-neutral-950 text-white animate-fade-in">
+          <Desfile me={me} />
+          <button
+            type="button"
+            onClick={() => setActive(null)}
+            aria-label="Voltar aos jogos"
+            className="fixed left-[max(0.5rem,env(safe-area-inset-left))] top-[max(0.5rem,env(safe-area-inset-top))] z-[70] rounded-md border border-white/10 bg-neutral-950/75 p-2 text-white backdrop-blur-sm"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <GameChat gameKey="desfile" me={me} />
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col animate-fade-in">
         <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10 shrink-0">
@@ -223,7 +239,6 @@ export function GamesPanel({
           {active === "gartic" && <Gartic me={me} />}
           {active === "headball" && <HeadBall me={me} />}
           {active === "futebol" && <Futebol me={me} />}
-          {active === "desfile" && <Desfile me={me} />}
           {active === "lig4" && <Lig4 me={me} />}
           {active === "memoria" && <Memoria me={me} />}
           {active === "forca" && <Forca me={me} />}
