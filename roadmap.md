@@ -8,3 +8,5 @@
 - [x] Leilão: notas melhores + penalidade time incompleto + animações
 - [x] Sintonia: mais animações + muito mais temas
 - [x] Safadeza: muito mais cartas + remover da aba Jogos
+- [x] Notificações bb gu + sino com bolinha
+- [ ] Chamada: efeito de voz (fina/feminina)
