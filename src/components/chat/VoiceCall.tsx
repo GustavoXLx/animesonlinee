@@ -1,3 +1,4 @@
+import { makeVoiceFx, FX_LEVELS, type VoiceFx } from "./voiceFx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff, Mic, MicOff, Minimize2, Maximize2, Volume2, Volume1 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,9 @@ export function VoiceCall({
   const callId = useRef("");
   const pc = useRef<RTCPeerConnection | null>(null);
   const local = useRef<MediaStream | null>(null);
+  const fx = useRef<VoiceFx | null>(null);
+  const [fxIdx, setFxIdx] = useState(0);
+  const fxIdxRef = useRef(0);
   const pendingIce = useRef<RTCIceCandidateInit[]>([]);
   const chan = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const audioEl = useRef<HTMLAudioElement | null>(null);
@@ -118,6 +122,8 @@ export function VoiceCall({
       pc.current = null;
       local.current?.getTracks().forEach((t) => t.stop());
       local.current = null;
+      fx.current?.close();
+      fx.current = null;
       pendingIce.current = [];
       if (audioEl.current) audioEl.current.srcObject = null;
       callId.current = "";
@@ -145,6 +151,11 @@ export function VoiceCall({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
     local.current = s;
+    fx.current = await makeVoiceFx(s);
+    if (fx.current) {
+      fx.current.setRatio(FX_LEVELS[fxIdxRef.current].ratio);
+      return fx.current.stream;
+    }
     return s;
   };
 
@@ -335,6 +346,12 @@ export function VoiceCall({
     send({ t: "hangup" });
     cleanup("chamada encerrada");
   };
+  const cycleFx = () => {
+    const n = (fxIdxRef.current + 1) % FX_LEVELS.length;
+    fxIdxRef.current = n;
+    setFxIdx(n);
+    fx.current?.setRatio(FX_LEVELS[n].ratio);
+  };
   const toggleMute = () => {
     const n = !muted;
     local.current?.getAudioTracks().forEach((t) => (t.enabled = !n));
@@ -464,6 +481,10 @@ export function VoiceCall({
               </button>
             </div>
           ) : (
+            <div className="flex flex-col items-center gap-4">
+            <button onClick={cycleFx} className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 ${fxIdx ? "bg-fuchsia-500" : "bg-white/15"}`} aria-label="Efeito de voz">
+              <Wand2 size={14} /> {FX_LEVELS[fxIdx].label}
+            </button>
             <div className="flex gap-8">
               <button onClick={toggleSpeaker} className={`w-16 h-16 rounded-full flex items-center justify-center ${speaker ? "bg-white text-black" : "bg-white/15"}`} aria-label="Viva voz">
                 {speaker ? <Volume2 size={24} /> : <Volume1 size={24} />}
@@ -474,6 +495,7 @@ export function VoiceCall({
               <button onClick={hangup} className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center" aria-label="Desligar">
                 <PhoneOff size={26} />
               </button>
+            </div>
             </div>
           )}
         </div>
