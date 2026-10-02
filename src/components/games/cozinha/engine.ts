@@ -598,6 +598,14 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    p.hatBand.y=-27+bob*.55;
    p.shadow.scaleX=1+(moving?Math.abs(Math.sin(this.pulse*.018))*.08:0);
    p.shadow.scaleY=1-(moving?Math.abs(Math.sin(this.pulse*.018))*.05:0);
+   // Gentle idle breathing makes the chefs feel alive even when waiting.
+   if(!moving){
+    const breath=Math.sin(this.pulse*.0045)*.35;
+    p.body.scaleY=1+breath*.012;
+    p.head.scaleY=1+breath*.008;
+   }else{
+    p.body.scaleY=1;p.head.scaleY=1;
+   }
    view.setDepth(Math.floor(view.y));
   }
 
