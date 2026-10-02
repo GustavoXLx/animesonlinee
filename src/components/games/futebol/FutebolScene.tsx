@@ -575,6 +575,7 @@ function Game(p: SceneProps) {
   const confetti = useRef(0);
   const kickImpact = useRef(0);
   const firedFor = useRef<Solved | null>(null);
+  const impactFiredFor = useRef<Solved | null>(null);
 
   const ball = useRef<THREE.Mesh>(null);
   const shadow = useRef<THREE.Mesh>(null);
@@ -623,7 +624,6 @@ function Game(p: SceneProps) {
       camMode = s.cam;
       if (s.cam === "live" && t > RUN + sol.flight + 0.2 && firedFor.current !== sol) {
         firedFor.current = sol;
-        if (tk >= 0.32 && tk < 0.48) kickImpact.current++;
         if (sol.result === "goal") {
           excite.current = 1;
           confetti.current++;
@@ -632,6 +632,10 @@ function Game(p: SceneProps) {
     }
     tRef.current = t;
     const tk = t - RUN; // tempo desde o chute
+    if (sol && tk >= 0.28 && tk < 0.5 && impactFiredFor.current !== sol) {
+      impactFiredFor.current = sol;
+      kickImpact.current++;
+    }
 
     // bola
     const bp = sol ? sol.at(tk) : [sx, BALL_R, sz];
