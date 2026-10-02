@@ -50,6 +50,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   vx=0;vy=0;facing:PosMsg["facing"]="down";nearest:string|null=null;lastSend=0;lastHeld:HeldItem=null;
   pulse=0;
   rushSteam:Phaser.GameObjects.Graphics[]=[];
+  processFx:Phaser.GameObjects.Graphics[]=[];
   rushActive=false;
   lastScore=0;
   lastStreak=0;
