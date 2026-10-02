@@ -311,16 +311,17 @@ export function Impostor({ me }: { me: Me }) {
   const myImpostor = state.seed ? playerIsImpostor(state.seed, me) : false;
   const impostor = state.seed ? PLAYERS[roleIndex(state.seed)] : null;
 
-  const bothReady = state.ready.gu && state.ready.li;
-  const myReady = state.ready[me];
+  const ready = state.ready ?? { gu:false, li:false };
+  const bothReady = ready.gu && ready.li;
+  const myReady = ready[me];
 
   const toggleReady = () => {
     if (!peerOnline || state.phase !== "lobby") return;
-    setState((prev) => ({ ...prev, ready:{ ...prev.ready, [me]:!prev.ready[me] } }));
+    setState((prev) => { const current = prev.ready ?? { gu:false, li:false }; return { ...prev, ready:{ ...current, [me]:!current[me] } }; });
   };
 
   useEffect(() => {
-    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !state.ready.gu || !state.ready.li) return;
+    if (me !== "gu" || !peerOnline || state.phase !== "lobby" || !(state.ready ?? { gu:false, li:false }).gu || !(state.ready ?? { gu:false, li:false }).li) return;
     const timer = window.setTimeout(() => {
       setState((prev) => {
         if (prev.phase !== "lobby" || !prev.ready.gu || !prev.ready.li) return prev;
@@ -329,7 +330,7 @@ export function Impostor({ me }: { me: Me }) {
       });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [me, peerOnline, state.phase, state.ready.gu, state.ready.li]);
+  }, [me, peerOnline, state.phase, state.ready?.gu, state.ready?.li]);
 
   useEffect(() => {
     if (me !== "gu" || state.phase !== "cards") return;
@@ -480,13 +481,13 @@ export function Impostor({ me }: { me: Me }) {
                         <p className="mt-1 text-sm font-black">{bothReady ? "Tudo pronto" : "Aguardando confirmação"}</p>
                       </div>
                       <div className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${bothReady ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
-                        {bothReady ? "2 de 2" : `${Number(state.ready.gu) + Number(state.ready.li)} de 2`}
+                        {bothReady ? "2 de 2" : `${Number(ready.gu) + Number(ready.li)} de 2`}
                       </div>
                     </div>
                     <div className="space-y-2">
                       {(["gu","li"] as const).map((p) => {
                         const isMe = p === me;
-                        const ready = state.ready[p];
+                        const playerReady = ready[p];
                         return (
                           <div key={p} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3">
                             <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CPU_COLORS[p]} text-[10px] font-black`}>
@@ -494,9 +495,9 @@ export function Impostor({ me }: { me: Me }) {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-black">{playerName(p)}{isMe ? " • você" : ""}</p>
-                              <p className="mt-0.5 text-[9px] uppercase tracking-wider text-white/30">{ready ? "Pronto para iniciar" : "Ainda não confirmou"}</p>
+                              <p className="mt-0.5 text-[9px] uppercase tracking-wider text-white/30">{playerReady ? "Pronto para iniciar" : "Ainda não confirmou"}</p>
                             </div>
-                            {ready ? <UserCheck size={17} className="text-emerald-300" /> : <span className="h-2.5 w-2.5 rounded-full bg-white/15" />}
+                            {playerReady ? <UserCheck size={17} className="text-emerald-300" /> : <span className="h-2.5 w-2.5 rounded-full bg-white/15" />}
                           </div>
                         );
                       })}
