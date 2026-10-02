@@ -171,24 +171,34 @@ function buildPassengers(){
 
 function makeAlienGame():AlienStateLocal{
   const passengers=buildPassengers();
+  const secretPool=[
+    "coleciona cartões-postais das cidades que visita.",
+    "sempre leva um caderno pequeno para anotar lugares.",
+    "prefere viajar bem cedo para evitar movimento.",
+    "tem o hábito de guardar uma lembrança de cada viagem."
+  ];
+  passengers.forEach((p,i)=>{p.secret=secretPool[i%secretPool.length];});
   const alien=Math.floor(Math.random()*passengers.length);
-  const secrets=[
-    `O passageiro alienígena não reconhece bem uma comida humana comum e tenta responder sem demonstrar.`,
-    `O passageiro alienígena não consegue explicar com naturalidade o que fazia antes de entrar no carro.`,
-    `O passageiro alienígena conhece o destino apenas de forma superficial, apesar de dizer que já esteve lá.`
-  ];
-  passengers[alien]={...passengers[alien],secret:secrets[Math.floor(Math.random()*secrets.length)]};
-  const clueVariants=[
-    `Existe uma resposta sobre comida que não combina perfeitamente com o conhecimento humano esperado de um dos passageiros.`,
-    `Uma resposta sobre o que alguém fazia antes da viagem é estranha quando comparada à própria história dessa pessoa.`,
-    `Um passageiro descreve sua relação com a cidade de um jeito incompatível com a memória que apresentou.`
-  ];
+  const anomaly=Math.floor(Math.random()*3);
+  let alienSecret="";
+  let clue="";
+  if(anomaly===0){
+    alienSecret="O alienígena não reconhece pão de queijo como comida.";
+    clue="O passageiro alienígena não reconhece pão de queijo como comida, embora os outros passageiros humanos conheçam esse alimento.";
+  }else if(anomaly===1){
+    alienSecret="O alienígena não entende por que as pessoas colocam o cinto de segurança no carro.";
+    clue="O passageiro alienígena não sabe explicar o que fazia antes de entrar no carro porque ainda não entende bem para que serve o cinto de segurança.";
+  }else{
+    alienSecret="O alienígena não consegue lembrar uma experiência real nesta cidade.";
+    clue="O passageiro alienígena diz que já esteve nesta cidade, mas não consegue relacionar a visita a uma lembrança concreta.";
+  }
+  passengers[alien]={...passengers[alien],secret:alienSecret};
   return {
     phase:"home",
     passengers,
     alien,
     rounds:[],
-    clues:shuffle(clueVariants,Math.floor(Math.random()*100000)).slice(0,2),
+    clues:[clue],
     driverVote:null,
     investigatorVote:null
   };
@@ -196,12 +206,17 @@ function makeAlienGame():AlienStateLocal{
 
 function answerFor(game:AlienStateLocal,passenger:number,question:number){
   const p=game.passengers[passenger];
-  if(passenger===game.alien){
-    if(question===4)return ALIEN_RESPONSES[question](p);
-    if(question===5)return ALIEN_RESPONSES[question](p);
-    return ALIEN_RESPONSES[question](p);
+  if(passenger!==game.alien)return HUMAN_RESPONSES[question](p);
+  if(game.clues[0].startsWith("O passageiro alienígena não reconhece pão de queijo")&&question===4){
+    return "Não conheço muito bem essas comidas. Talvez eu escolheria algo simples.";
   }
-  return HUMAN_RESPONSES[question](p);
+  if(game.clues[0].startsWith("O passageiro alienígena não sabe explicar")&&question===6){
+    return "Eu estava esperando o carro e tentando entender como funciona esse cinto.";
+  }
+  if(game.clues[0].startsWith("O passageiro alienígena diz que já esteve")&&question===5){
+    return "Acho que já passei por aqui, mas não consigo lembrar de nada específico.";
+  }
+  return ALIEN_RESPONSES[question](p);
 }
 
 export function AlienBancoTras({me:_me}:{me:Me}){
