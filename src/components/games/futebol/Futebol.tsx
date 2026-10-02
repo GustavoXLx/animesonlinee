@@ -149,7 +149,7 @@ export function Futebol({ me }: { me: Me }) {
               ["penalti","PÊNALTIS","⚡","Escolha o canto e tente adivinhar o salto do goleiro.","5 cobranças por jogador"],
               ["falta","FALTAS","🎯","Mire, controle a força e coloque efeito na bola.","Curva + potência + precisão"],
             ].map(([k,n,icon,d,tag]) => (
-              <button key={k} disabled={!connected} onClick={() => start(k as Mode)} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
+              <button key={k} onClick={() => start(k as Mode)} className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 text-left shadow-2xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/30 disabled:opacity-35">
                 <div className="flex items-start justify-between"><span className="text-3xl">{icon}</span><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-200">{tag}</span></div>
                 <p className="mt-5 text-xl font-black">{n}</p><p className="mt-1 text-xs leading-relaxed text-white/50">{d}</p>
                 <div className="mt-4 text-[10px] font-bold text-white/35">● 2 jogadores • online</div>
@@ -161,7 +161,7 @@ export function Futebol({ me }: { me: Me }) {
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">{NAME.li}</p><p className="text-[9px] uppercase text-white/35">Jogador 2</p></div>
             <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-center"><p className="text-xs font-black">5</p><p className="text-[9px] uppercase text-white/35">Rodadas</p></div>
           </div>
-          <div className={connected ? "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[10px] font-bold text-emerald-200" : "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-[10px] font-bold text-amber-200"}><span className={connected ? "h-2 w-2 rounded-full bg-emerald-400 animate-pulse" : "h-2 w-2 rounded-full bg-amber-400"} />{connected ? "Os dois jogadores estão na sala" : "Esperando " + NAME[other(me)] + " entrar…"}</div>
+          <div className={connected ? "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[10px] font-bold text-emerald-200" : "mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-[10px] font-bold text-amber-200"}><span className={connected ? "h-2 w-2 rounded-full bg-emerald-400 animate-pulse" : "h-2 w-2 rounded-full bg-amber-400"} />{connected ? "Os dois jogadores estão na sala" : "Você pode começar; aguardando " + NAME[other(me)] + " entrar…"}</div>
         </div>
       </div>
     );
