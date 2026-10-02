@@ -247,6 +247,10 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
      g.fillStyle(0x3b4247).fillCircle(x,y,5);
      g.lineStyle(2,0xff8f35,.7).strokeCircle(x,y,5);
      g.fillStyle(0xffc65c,.35).fillCircle(x,y,3);
+     g.fillStyle(0x343b40,.95).fillEllipse(x,y-5,13,7);
+     g.fillStyle(0x6c777d,.9).fillEllipse(x,y-7,10,4);
+     g.lineStyle(1,0xadb7bb,.45).strokeEllipse(x,y-7,10,4);
+     g.fillStyle(0xff9b45,.5).fillCircle(x-4,y-1,2);
     }else if(s.type==="forno"){
      g.fillStyle(0x181c1f).fillRoundedRect(x-18,y-15,36,30,5);
      g.fillStyle(0x30383d).fillRoundedRect(x-13,y-9,26,17,4);
@@ -255,6 +259,9 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
      g.fillStyle(0xffe19a,.35).fillCircle(x-3,y-1,3);
      g.fillStyle(0xc7d1d5,.75).fillCircle(x+10,y-11,2);
      g.fillStyle(0xc7d1d5,.55).fillCircle(x+4,y-11,2);
+     g.fillStyle(0x59646a,.9).fillCircle(x-10,y+11,2.5);
+     g.fillStyle(0x59646a,.9).fillCircle(x,y+11,2.5);
+     g.fillStyle(0x59646a,.9).fillCircle(x+10,y+11,2.5);
     }else if(s.type==="montagem"){
      g.fillStyle(0xfff4d5,.95).fillRoundedRect(x-19,y-12,38,24,5);
      g.lineStyle(2,0xa57a38,.6).strokeRoundedRect(x-19,y-12,38,24,5);
@@ -275,6 +282,10 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
      g.lineStyle(2,0x5b4b76,.75).strokeRoundedRect(x-10,y-14,20,19,5);
      g.fillStyle(0x8ce0c3,.55).fillCircle(x,y-4,5);
      g.fillStyle(0xffffff,.35).fillCircle(x-2,y-6,2);
+     g.fillStyle(0x514466,.9).fillRoundedRect(x-10,y+9,20,3,1.5);
+     g.fillStyle(0xc8b9e8,.8).fillCircle(x-6,y+10.5,1);
+     g.fillStyle(0xc8b9e8,.8).fillCircle(x,y+10.5,1);
+     g.fillStyle(0xc8b9e8,.8).fillCircle(x+6,y+10.5,1);
     }else if(s.type==="lixeira"){
      g.fillStyle(0x252b2f).fillRoundedRect(x-14,y-10,28,22,4);
      g.fillStyle(0x747f84).fillRoundedRect(x-17,y-14,34,5,3);
