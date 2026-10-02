@@ -452,7 +452,7 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    }else{
     hooks.sendAct({seq:++seq,stationId:this.nearest,held,kind:"interact"});
    }
-   this.flashAction(this.nearest);
+   this.flashAction(this.nearest);\n   this.interactionBurst(this.nearest,held?itemColor(held):C.accent);
   }
 
   throwItem(){
@@ -574,6 +574,19 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
     c.add(this.add.circle(0,0,9,itemColor(item)).setStrokeStyle(1.5,0x2d2529,.85));
    }
    return c;
+  }
+
+  interactionBurst(stationId:string,color:number=0xffd36e){
+   const s=STATIONS.find(v=>v.id===stationId);if(!s)return;
+   const x=(s.x+.5)*TILE,y=(s.y+.5)*TILE;
+   for(let i=0;i<7;i++){
+    const dot=this.add.circle(x,y,2.2,color,.82).setDepth(125);
+    const a=(Math.PI*2*i)/7;
+    const dist=18+(i%3)*6;
+    this.tweens.add({targets:dot,x:x+Math.cos(a)*dist,y:y+Math.sin(a)*dist,scale:.25,alpha:0,duration:260+(i%3)*35,ease:"Cubic.easeOut",onComplete:()=>dot.destroy()});
+   }
+   const ring=this.add.circle(x,y,12,0xffffff,0).setStrokeStyle(2,color,.7).setDepth(124);
+   this.tweens.add({targets:ring,scale:1.9,alpha:0,duration:300,ease:"Quad.easeOut",onComplete:()=>ring.destroy()});
   }
 
   flashAction(stationId:string){
