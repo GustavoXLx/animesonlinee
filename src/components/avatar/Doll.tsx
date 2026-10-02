@@ -233,12 +233,47 @@ function patternTex(p: string, c1: string, c2: string) {
   return t;
 }
 
-export function mat(color: string, pattern = "solid", c2 = "#ffffff"): THREE.Material {
-  const key = `${color}|${pattern}|${c2}`;
+function fabricNoiseTex() {
+  const key = "fabricNoise";
+  const hit = texCache.get(key);
+  if (hit) return hit;
+  const S = 64;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = S;
+  const g = cv.getContext("2d")!;
+  const id = g.createImageData(S, S);
+  for (let i = 0; i < S * S; i++) {
+    const v = 145 + Math.random() * 100;
+    id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v;
+    id.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(10, 10);
+  texCache.set(key, t);
+  return t;
+}
+
+export type Finish = "matte" | "satin" | "leather" | "knit";
+export function mat(color: string, pattern = "solid", c2 = "#ffffff", finish: Finish = "matte"): THREE.Material {
+  const key = `${color}|${pattern}|${c2}|${finish}`;
   const hit = matCache.get(key);
   if (hit) return hit;
-  const m = new THREE.MeshStandardMaterial({ color: pattern === "solid" || pattern === "metal" || pattern === "neon" ? color : "#ffffff", roughness: 0.72 });
+  const m = new THREE.MeshStandardMaterial({ color: pattern === "solid" || pattern === "metal" || pattern === "neon" ? color : "#ffffff", roughness: 0.8 });
   if (pattern !== "solid" && pattern !== "metal") m.map = patternTex(pattern, color, c2);
+  if (pattern !== "metal" && pattern !== "neon") m.roughnessMap = fabricNoiseTex();
+  if (finish === "satin") {
+    m.roughness = 0.28;
+    m.metalness = 0.12;
+    m.envMapIntensity = 1.3;
+  } else if (finish === "leather") {
+    m.roughness = 0.35;
+    m.metalness = 0.08;
+    m.envMapIntensity = 1.1;
+  } else if (finish === "knit") {
+    m.roughness = 0.95;
+  }
   if (pattern === "metal") {
     m.metalness = 0.85;
     m.roughness = 0.22;
@@ -253,7 +288,15 @@ export function mat(color: string, pattern = "solid", c2 = "#ffffff"): THREE.Mat
     m.emissive.set(c2);
     m.emissiveIntensity = 0.35;
   }
-  if (pattern === "denim") m.roughness = 0.9;
+  if (pattern === "denim") m.roughness = 0.88;
+  matCache.set(key, m);
+  return m;
+}
+function skinMat(color: string): THREE.Material {
+  const key = `skin|${color}`;
+  const hit = matCache.get(key);
+  if (hit) return hit;
+  const m = new THREE.MeshStandardMaterial({ color, roughness: 0.52, metalness: 0.02 });
   matCache.set(key, m);
   return m;
 }
@@ -280,7 +323,7 @@ function geo(key: string, make: () => THREE.BufferGeometry) {
   return g;
 }
 const sph = (r: number, ws = 18, hs = 14) => geo(`s${r}${ws}`, () => new THREE.SphereGeometry(r, ws, hs));
-const cap = (r: number, l: number) => geo(`c${r}:${l}`, () => new THREE.CapsuleGeometry(r, l, 4, 12));
+const cap = (r: number, l: number) => geo(`c${r}:${l}`, () => new THREE.CapsuleGeometry(r, l, 8, 14));
 const cyl = (a: number, b: number, h: number, s = 16, open = false) => geo(`y${a}:${b}:${h}:${s}:${open}`, () => new THREE.CylinderGeometry(a, b, h, s, 1, open));
 const box = (x: number, y: number, z: number) => geo(`b${x}:${y}:${z}`, () => new THREE.BoxGeometry(x, y, z));
 const cone = (r: number, h: number, s = 14) => geo(`k${r}:${h}:${s}`, () => new THREE.ConeGeometry(r, h, s));
@@ -339,6 +382,25 @@ const BARE_BELLY = new Set(["crop", "bikini", "none"]);
 const FULL_PANTS = new Set(["pants", "jeans", "cargo", "leggings", "flare", "sweatpants", "overalls"]);
 const SHORT_PANTS = new Set(["shorts", "bermuda"]);
 const TALL_SHOES = new Set(["boots", "cowboy", "combat"]);
+const SATIN_TOPS = new Set(["tux", "gown", "corset", "kimono", "ruffle", "sailor", "tube", "tank"]);
+const LEATHER_TOPS = new Set(["leather", "jacket", "vest"]);
+const KNIT_TOPS = new Set(["sweater", "hoodie", "poncho"]);
+function topFinish(t: string): Finish {
+  if (SATIN_TOPS.has(t)) return "satin";
+  if (LEATHER_TOPS.has(t)) return "leather";
+  if (KNIT_TOPS.has(t)) return "knit";
+  return "matte";
+}
+const SATIN_BOTTOMS = new Set(["gown", "dress", "longskirt", "tutu", "mermaid"]);
+function bottomFinish(b: string): Finish {
+  if (SATIN_BOTTOMS.has(b)) return "satin";
+  if (b === "sweatpants") return "knit";
+  return "matte";
+}
+const LEATHER_SHOES = new Set(["boots", "cowboy", "combat", "heels", "platform", "clogs"]);
+function shoeFinish(sh: string): Finish {
+  return LEATHER_SHOES.has(sh) ? "leather" : "matte";
+}
 
 const R = 0.14; // raio da cabeça
 
@@ -501,7 +563,7 @@ function Hair({ l }: { l: Look }) {
 
 function Face({ l }: { l: Look }) {
   const z = R * 0.93;
-  const skin = mat(l.skin);
+  const skin = skinMat(l.skin);
   return (
     <group>
       {[-1, 1].map((s) => (
@@ -524,8 +586,22 @@ function Face({ l }: { l: Look }) {
       {l.face === "tears" && <mesh geometry={sph(0.01, 8, 6)} material={glass("#60a5fa", 0.8)} position={[0.05, -0.035, z + 0.01]} scale={[1, 1.6, 0.6]} />}
       {l.face === "whiskers" && [-1, 1].flatMap((s) => [-1, 1].map((k) => <mesh key={s + ":" + k} geometry={box(0.05, 0.003, 0.003)} material={BLACK()} position={[s * 0.07, -0.03 + k * 0.008, z + 0.005]} rotation={[0, 0, s * k * 0.15]} />))}
       {l.face === "paint" && [-1, 1].map((s) => <mesh key={s} geometry={box(0.04, 0.008, 0.01)} material={mat("#ef4444")} position={[s * 0.07, -0.03, z]} />)}
-      {l.face === "mustache" && <mesh geometry={tor(0.025, 0.009, Math.PI, 6, 12)} material={mat(l.hairC)} position={[0, -0.04, z + 0.008]} />}
-      {l.face === "beard" && <mesh geometry={geo("beard", () => new THREE.SphereGeometry(R * 1.03, 20, 10, -0.9 + Math.PI / 2, 1.8 + Math.PI / 2, 1.9, 1.0))} material={mat(l.hairC)} rotation={[0, Math.PI / 2 + 0.6, 0]} />}
+      {l.face === "mustache" && (
+        <group position={[0, -0.036, z + 0.009]}>
+          {[-1, 1].map((s) => (
+            <mesh key={s} geometry={cap(0.009, 0.028)} material={mat(l.hairC)} position={[s * 0.021, -0.003, 0]} rotation={[0, 0, s * 0.55]} />
+          ))}
+          <mesh geometry={sph(0.009, 8, 6)} material={mat(l.hairC)} position={[0, -0.006, 0.002]} />
+        </group>
+      )}
+      {l.face === "beard" && (
+        <group>
+          <mesh geometry={sph(0.08, 16, 12)} material={mat(l.hairC)} position={[0, -0.075, z - 0.058]} scale={[1, 0.82, 0.62]} />
+          {[-1, 1].map((s) => (
+            <mesh key={s} geometry={sph(0.05, 14, 10)} material={mat(l.hairC)} position={[s * 0.088, -0.03, z - 0.07]} scale={[0.75, 1.05, 0.6]} rotation={[0, s * 0.3, 0]} />
+          ))}
+        </group>
+      )}
     </group>
   );
 }
@@ -1042,10 +1118,10 @@ export function Doll({ look: l, anim, scale = 1 }: { look: Look; anim: React.Mut
   const clock = useRef(0);
   const lastName = useRef("");
 
-  const skin = mat(l.skin);
-  const topM = mat(l.topC, l.topP, l.topC2);
-  const botM = mat(l.botC, l.botP, l.topC2);
-  const shoeM = mat(l.shoeC, l.shoes === "clogs" ? "solid" : "solid");
+  const skin = skinMat(l.skin);
+  const topM = mat(l.topC, l.topP, l.topC2, topFinish(l.top));
+  const botM = mat(l.botC, l.botP, l.topC2, bottomFinish(l.bottom));
+  const shoeM = mat(l.shoeC, "solid", "#ffffff", shoeFinish(l.shoes));
   const sleeves = SLEEVES[l.top] ?? 0;
   const dressy = l.bottom === "dress" || l.bottom === "gown" || l.bottom === "overalls";
   const chestM = l.top !== "none" ? topM : dressy ? botM : skin;
