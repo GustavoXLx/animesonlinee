@@ -32,11 +32,7 @@ const itemColor=(i:string)=>{
  return 0xd8d8d8;
 };
 
-type ChefView=Phaser.GameObjects.Container&{parts?:{
- body:Phaser.GameObjects.Rectangle;head:Phaser.GameObjects.Arc;hat:Phaser.GameObjects.Ellipse;
- armL:Phaser.GameObjects.Rectangle;armR:Phaser.GameObjects.Rectangle;legL:Phaser.GameObjects.Rectangle;legR:Phaser.GameObjects.Rectangle;
- item:Phaser.GameObjects.GameObject;shadow:Phaser.GameObjects.Ellipse;
-}};
+type ChefView=Phaser.GameObjects.Container&{parts?:any};
 
 export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks):Promise<EngineHandle>{
  const remote:Record<Me,ChefView|null>={gu:null,li:null};
