@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       "Não escolha automaticamente o jogador com a pista mais curta. Uma pista curta pode ser boa se for específica.",
       "Os votos dos três CPUs podem ser diferentes.",
       "Não revele a palavra secreta nem o papel do impostor no texto de análise.",
-      "Responda SOMENTE com JSON válido no formato: {"votes":{"cpu1":"gu|li|cpu1|cpu2|cpu3","cpu2":"gu|li|cpu1|cpu2|cpu3","cpu3":"gu|li|cpu1|cpu2|cpu3"},"analysis":{"gu":0,"li":0,"cpu1":0,"cpu2":0,"cpu3":0}}.",
+      "Responda SOMENTE com JSON válido no formato: {\\\"votes\\\":{\\\"cpu1\\\":\\\"gu|li|cpu1|cpu2|cpu3\\\",\\\"cpu2\\\":\\\"gu|li|cpu1|cpu2|cpu3\\\",\\\"cpu3\\\":\\\"gu|li|cpu1|cpu2|cpu3\\\"},\\\"analysis\\\":{\\\"gu\\\":0,\\\"li\\\":0,\\\"cpu1\\\":0,\\\"cpu2\\\":0,\\\"cpu3\\\":0}}.",
       "A pontuação de analysis deve ser de 0 a 100 e representa apenas quão suspeito cada jogador parece.",
     ].join(" ");
 
