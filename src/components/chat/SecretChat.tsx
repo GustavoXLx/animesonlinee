@@ -13,7 +13,7 @@ import {
 
 
 } from "@/lib/chat.functions";
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, memo } from "react";
 import {
   ArrowLeft,
   Send,
@@ -227,6 +227,7 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const endRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const atBottomRef = useRef(true);
+  const historyAnchorRef = useRef<{ height: number; top: number } | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const site = useSiteState();
   // bloqueado: o chat some para quem não entrou pelo acesso mestre
@@ -471,11 +472,28 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (el.scrollTop < 40) setShowAll((v) => v || true);
+    if (el.scrollTop < 40 && !showAll) {
+      historyAnchorRef.current = { height: el.scrollHeight, top: el.scrollTop };
+      setShowAll(true);
+    }
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     atBottomRef.current = near;
     setAtBottom(near);
     if (near) setNewCount(0);
+  }, [showAll]);
+
+  useLayoutEffect(() => {
+    const anchor = historyAnchorRef.current;
+    const el = scrollRef.current;
+    if (!showAll || !anchor || !el) return;
+    el.scrollTop = anchor.top + (el.scrollHeight - anchor.height);
+    historyAnchorRef.current = null;
+  }, [showAll]);
+
+  const revealHistory = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) historyAnchorRef.current = { height: el.scrollHeight, top: el.scrollTop };
+    setShowAll(true);
   }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -1035,11 +1053,11 @@ export function SecretChat({ onExit, master = false }: { onExit: () => void; mas
         ref={scrollRef}
         onScroll={onScroll}
         className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-2"
-        style={{ contain: "strict" as never, willChange: "transform" }}
+        style={{ overflowAnchor: "auto" }}
       >
         {!searchHits && !showAll && filteredMsgs.length > MAX_VISIBLE && (
           <div className="text-center">
-            <button onClick={() => setShowAll(true)} className="text-[11px] text-white/40 py-2">
+            <button onClick={revealHistory} className="text-[11px] text-white/40 py-2">
               puxe pra cima ou toque pra ver mais ({filteredMsgs.length - MAX_VISIBLE})
             </button>
           </div>

@@ -3,7 +3,8 @@ import { Environment, Html, Lightformer, useAnimations, useGLTF, ContactShadows 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clone as skClone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { Doll, type DollAnim } from "@/components/avatar/Doll";
+import type { DollAnim } from "@/components/avatar/Doll";
+import { HouseDoll } from "@/components/avatar/HouseDoll";
 import type { Look } from "@/lib/look";
 import { CAT_BY_KEY, FLOORS, ROOM, ROOM_NAMES, WALLS, type Home, type PlacedItem, type Who } from "@/lib/home";
 
@@ -409,7 +410,7 @@ function Character({
 
   return (
     <group ref={group}>
-      <Doll look={look} anim={anim} />
+      <HouseDoll look={look} anim={anim} />
       <mesh rotation-x={-Math.PI / 2} position-y={0.01}>
         <circleGeometry args={[0.2, 20]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.22} depthWrite={false} />

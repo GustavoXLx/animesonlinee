@@ -11,6 +11,7 @@ const FEED = "as-feed-ping";
 export function rememberWho(who: "gu" | "li") {
   try {
     localStorage.setItem(WHO_KEY, who);
+    window.dispatchEvent(new Event("as-notify-identity"));
     const t = localStorage.getItem(TOKEN_KEY);
     if (!t || !t.startsWith(who + ".")) {
       void issueDeviceToken({ data: { who } })
@@ -69,6 +70,21 @@ function preview(text: string, mediaType: string | null) {
 export function useChatNotifier(active: boolean) {
   const lastIdRef = useRef<string | null>(null);
   const [unread, setUnread] = useState(false);
+  const [identityVersion, setIdentityVersion] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+
+  useEffect(() => {
+    setHydrated(true);
+    setPermission("Notification" in window ? Notification.permission : "unsupported");
+    const refresh = () => setIdentityVersion((value) => value + 1);
+    window.addEventListener("as-notify-identity", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("as-notify-identity", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
 
   useEffect(() => {
     if (!active || typeof window === "undefined") return;
@@ -79,13 +95,6 @@ export function useChatNotifier(active: boolean) {
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const askOnce = () => {
-      if (canNotify && Notification.permission === "default") void Notification.requestPermission();
-    };
-    if (canNotify && Notification.permission === "default") {
-      window.addEventListener("pointerdown", askOnce, { once: true });
-    }
 
     const notify = (body: string, count: number) => {
       if (!canNotify || Notification.permission !== "granted") return;
@@ -149,9 +158,20 @@ export function useChatNotifier(active: boolean) {
       supabase.removeChannel(ch);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
-      window.removeEventListener("pointerdown", askOnce);
     };
-  }, [active]);
+  }, [active, identityVersion]);
 
-  return unread;
+  const who = hydrated ? getWho() : null;
+  const requestPermission = async () => {
+    if (who !== "gu" || !("Notification" in window)) {
+      setPermission("unsupported");
+      return "unsupported" as const;
+    }
+    if (window.top !== window.self) return "open-in-new-tab" as const;
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    return result;
+  };
+
+  return { unread, permission, canRequest: who === "gu", requestPermission };
 }
