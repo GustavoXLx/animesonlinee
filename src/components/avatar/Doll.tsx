@@ -260,15 +260,17 @@ export function mat(color: string, pattern = "solid", c2 = "#ffffff", finish: Fi
   const key = `${color}|${pattern}|${c2}|${finish}`;
   const hit = matCache.get(key);
   if (hit) return hit;
-  const m = new THREE.MeshStandardMaterial({ color: pattern === "solid" || pattern === "metal" || pattern === "neon" ? color : "#ffffff", roughness: 0.8 });
+  const m = new THREE.MeshPhysicalMaterial({ color: pattern === "solid" || pattern === "metal" || pattern === "neon" ? color : "#ffffff", roughness: 0.72, sheen: 0.16, sheenRoughness: 0.65 });
   if (pattern !== "solid" && pattern !== "metal") m.map = patternTex(pattern, color, c2);
   if (pattern !== "metal" && pattern !== "neon") m.roughnessMap = fabricNoiseTex();
   if (finish === "satin") {
-    m.roughness = 0.28;
+    m.roughness = 0.26;
+    if (m instanceof THREE.MeshPhysicalMaterial) { m.clearcoat = 0.16; m.clearcoatRoughness = 0.3; }
     m.metalness = 0.12;
     m.envMapIntensity = 1.3;
   } else if (finish === "leather") {
-    m.roughness = 0.35;
+    m.roughness = 0.32;
+    if (m instanceof THREE.MeshPhysicalMaterial) { m.clearcoat = 0.3; m.clearcoatRoughness = 0.22; }
     m.metalness = 0.08;
     m.envMapIntensity = 1.1;
   } else if (finish === "knit") {
@@ -296,7 +298,7 @@ function skinMat(color: string): THREE.Material {
   const key = `skin|${color}`;
   const hit = matCache.get(key);
   if (hit) return hit;
-  const m = new THREE.MeshStandardMaterial({ color, roughness: 0.52, metalness: 0.02 });
+  const m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, metalness: 0.01, sheen: 0.08, sheenRoughness: 0.7 });
   matCache.set(key, m);
   return m;
 }
@@ -322,8 +324,8 @@ function geo(key: string, make: () => THREE.BufferGeometry) {
   geoCache.set(key, g);
   return g;
 }
-const sph = (r: number, ws = 18, hs = 14) => geo(`s${r}${ws}`, () => new THREE.SphereGeometry(r, ws, hs));
-const cap = (r: number, l: number) => geo(`c${r}:${l}`, () => new THREE.CapsuleGeometry(r, l, 8, 14));
+const sph = (r: number, ws = 24, hs = 18) => geo(`s${r}${ws}`, () => new THREE.SphereGeometry(r, ws, hs));
+const cap = (r: number, l: number) => geo(`c${r}:${l}`, () => new THREE.CapsuleGeometry(r, l, 12, 18));
 const cyl = (a: number, b: number, h: number, s = 16, open = false) => geo(`y${a}:${b}:${h}:${s}:${open}`, () => new THREE.CylinderGeometry(a, b, h, s, 1, open));
 const box = (x: number, y: number, z: number) => geo(`b${x}:${y}:${z}`, () => new THREE.BoxGeometry(x, y, z));
 const cone = (r: number, h: number, s = 14) => geo(`k${r}:${h}:${s}`, () => new THREE.ConeGeometry(r, h, s));
@@ -367,7 +369,7 @@ function strandTex() {
 function hairMat(color: string): THREE.Material {
   return special("hair" + color, () => {
     const t = strandTex();
-    return new THREE.MeshStandardMaterial({ color, map: t, bumpMap: t, bumpScale: 1.5, roughness: 0.42, metalness: 0.04, side: THREE.DoubleSide });
+    return new THREE.MeshStandardMaterial({ color, map: t, bumpMap: t, bumpScale: 1.5, roughness: 0.36, metalness: 0.02, side: THREE.DoubleSide });
   });
 }
 const shapeGeo = (key: string, draw: (s: THREE.Shape) => void, depth = 0.01) =>
