@@ -51,6 +51,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
   pulse=0;
   rushSteam:Phaser.GameObjects.Graphics[]=[];
   rushActive=false;
+  lastScore=0;
+  lastStreak=0;
 
   constructor(){super("kitchen");}
 
@@ -61,6 +63,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    this.player=this.chef(hooks.me,hooks.outfits[hooks.me]);
    this.add.existing(this.player);
    this.player.setPosition(hooks.me==="gu"?6.2*TILE:9.8*TILE,7.45*TILE);
+   this.lastScore=hooks.getWorld().score;
+   this.lastStreak=hooks.getWorld().streak;
    this.focusRing=this.add.graphics().setDepth(7);
    this.heldLabel=this.add.text(0,0,"",{fontFamily:"Arial",fontSize:"11px",fontStyle:"bold",color:"#ffffff",backgroundColor:"#292229ee",padding:{x:7,y:4}})
     .setOrigin(.5).setDepth(120);
@@ -454,6 +458,12 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    item.setVisible(true);
   }
 
+  scoreFeedback(delta:number,streak:number){
+   const text=streak>1?`+${delta}  •  COMBO x${streak}`:`+${delta}`;
+   const t=this.add.text(this.player.x,this.player.y-78,text,{fontFamily:"Arial",fontSize:streak>1?"14px":"13px",fontStyle:"bold",color:streak>1?"#ffe08a":"#ffffff",stroke:"#2a2025",strokeThickness:5,shadow:{offsetX:0,offsetY:2,color:"#000000",blur:5,fill:true}}).setOrigin(.5).setDepth(180);
+   this.tweens.add({targets:t,y:t.y-30,alpha:0,scale:1.12,duration:720,ease:"Cubic.easeOut",onComplete:()=>t.destroy()});
+  }
+
   updateProcessFx(){
    for(const g of this.processFx)g.destroy();
    this.processFx=[];
@@ -522,6 +532,8 @@ export async function createCozinhaGame(container:HTMLElement,hooks:EngineHooks)
    if(held!==this.lastHeld){this.lastHeld=held;hooks.onHeldChanged(held);}
    this.updateHeldVisual(this.player,held);
    this.updateProcessFx();
+   const world=hooks.getWorld();
+   if(world.score>this.lastScore){this.scoreFeedback(world.score-this.lastScore,world.streak);this.lastScore=world.score;this.lastStreak=world.streak;}
    this.updateChef(this.player,Math.hypot(this.vx,this.vy),dt);
    this.updateFocus();
 
