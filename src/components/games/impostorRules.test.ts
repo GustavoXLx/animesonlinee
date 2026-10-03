@@ -45,11 +45,11 @@ describe("Impostor", () => {
     const base = { ...freshGame(10), seed: 99, phase: "result" as const };
     const [a, b] = impostorsFor(99, 10);
     const voters = playersFor(10);
-    const votes = Object.fromEntries(voters.map((p, i) => [p, i < 5 ? a : b]));
+    const votes = Object.fromEntries(voters.map((p, i) => [p, p === a ? b : p === b ? a : i < 5 ? a : b]));
     expect(tally({ ...base, votes }).caught).toBe(true);
     const wrong = voters.find(p => p !== a && p !== b);
     if (!wrong) throw Error("missing innocent");
-    const wrongVotes = Object.fromEntries(voters.map((p, i) => [p, i < 5 ? a : wrong]));
+    const wrongVotes = Object.fromEntries(voters.map((p, i) => [p, p === a ? wrong : p === wrong ? a : i < 5 ? a : wrong]));
     expect(tally({ ...base, votes: wrongVotes }).caught).toBe(false);
   });
 });
